@@ -36,7 +36,7 @@ The static `dist/` directory can be hosted anywhere. The Sites project identity 
 
 ## Rendering and tradeoffs
 
-This is a **Three.js 0.180.0 WebGL 2 GPU viewer**, not a port of the Rust renderer or Mitsuba. Tiger’s eye combines derivative-filtered procedural fibers, an artist-tuned directional scattering highlight, and a polished clear coat. The moving light and eye are transformed into the stone’s local coordinates, so its band responds to actual specimen/light motion. This is not a measured mineral model or volumetric scattering simulation.
+This is a **Three.js 0.180.0 WebGL 2 GPU viewer**, not a port of the Rust renderer or Mitsuba. Tiger’s eye combines derivative-filtered procedural fibers, an artist-tuned directional scattering highlight, and one polished dielectric boundary (IOR 1.545, roughness 0.17, zero metalness). A separate glossy clear-coat lobe is omitted so reflections do not bury the fiber body. The moving light and eye are transformed into the stone’s local coordinates, so its band responds to actual specimen/light motion. The brown/gold macro-bands retain contrast when fine fibers are filtered at distance. This is not a measured mineral model or volumetric scattering simulation.
 
 Diamond and emerald use a custom convex-facet GPU tracer: Snell refraction, exact unpolarized Fresnel splitting, total internal reflection, RGB Beer absorption and three-channel dispersion, up to 12 internal bounces. The live diamond is the same Zsky mesh as the offline Rust diamond (21 distinct planes, not a certified 57-facet brilliant); emerald uses a repaired convex hull of the project step-cut mesh. Diamond uses IOR 2.417. This replaces the screen-space glass approximation that could show a warped gold band underneath.
 

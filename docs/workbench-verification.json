@@ -53,7 +53,8 @@
       "gallery/workbench/workshop-realism.jpg",
       "gallery/workbench/diamond-facets.jpg",
       "gallery/workbench/ring-drag-fixed.jpg",
-      "gallery/workbench/table-lighting-fixed.jpg"
+      "gallery/workbench/table-lighting-fixed.jpg",
+      "gallery/workbench/tigers-eye-balanced.jpg"
     ],
     "png_export_retained": "output/workshop-realism-photo.png",
     "pickup_reversal_observed": {
@@ -103,12 +104,12 @@
   },
   "deployment": {
     "project_id": "appgprj_6ad1d1ee181c819186c337d3573bdaea",
-    "source_commit": "f613982918c6e2c2dc33240d43c2397fbeea1740",
-    "deployment_id": "appgdep_6ad1ef3037c08191b238dbdd92a446fa",
+    "source_commit": "fb082681d630160d0e14e6ef004333cc533473dd",
+    "deployment_id": "appgdep_6ad1f19803048191bdf17011bb3bacae",
     "status": "succeeded",
     "url": "https://heathers-little-jeweler.zoeholtz2000.chatgpt.site",
     "audience": "owner-private",
-    "browser_handoff": "Corrected hosted scene inspected; actual physical lamp drag passed after a normal reload. Original owner-private audience preserved."
+    "browser_handoff": "New polished tiger eye verified live at 2x, visible body bands and retained highlights. Owner-private audience preserved."
   },
   "limits": [
     "No measured device FPS benchmark",
@@ -147,5 +148,22 @@
     "hosted_browser": "Passed actual physical lamp drag after ready reload; changed direct lamp illumination and jewelry highlights with the separated room environment. No frame-time benchmark was performed.",
     "rollout_note": "First immediate hosted load had a dynamic-module fetch failure during deployment propagation; a later normal reload loaded the corrected scene and hosted lamp drag passed.",
     "evidence": "gallery/workbench/table-lighting-fixed.jpg"
+  },
+  "tigers_eye_polish": {
+    "request": "Window reflection dominated the fiber material.",
+    "changes": {
+      "metalness": 0,
+      "clearcoat": 0,
+      "roughness": 0.17,
+      "ior": 1.545,
+      "environment_strength": "Unchanged .8 material factor \u00d7 .6 room factor; no reflection intensity suppression.",
+      "fibers": "Stronger brown/gold macro-band contrast while retaining derivative-filtered fine fibers. Directional sheen calculation and light response unchanged."
+    },
+    "local_visual_qa": "Compared original hosted material and revised local material at identical default 2x loupe pose. Forest/window image is softer; brown/gold body bands more visible. Inspected two opposite lamp positions with a moving directional band.",
+    "evidence": "gallery/workbench/tigers-eye-balanced.jpg",
+    "baseline": "output/tiger-before-polish.jpg",
+    "limits": "Artist-tuned real-time surface study remains; no measured mineral calibration or new volume transport.",
+    "checks": "22 web tests, static build, Rust format/strict Clippy and 98 Rust tests; 12 class baseline hashes unchanged.",
+    "hosted_visual_qa": "Published material inspected at the same default 2x loupe view, ready=true and no console errors. Actual hosted screenshot retained."
   }
 }

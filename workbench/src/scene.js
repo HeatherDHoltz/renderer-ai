@@ -15,10 +15,10 @@ function tigerMaterial() {
   };
   const material = new THREE.MeshPhysicalMaterial({
     color: "#ae762b",
-    roughness: 0.31,
-    metalness: 0.1,
-    clearcoat: 1,
-    clearcoatRoughness: 0.065,
+    // One polished dielectric boundary; a second glossy coat hid the fibers.
+    roughness: 0.17,
+    metalness: 0,
+    clearcoat: 0,
     ior: 1.545,
     envMapIntensity: 0.8,
   });
@@ -55,10 +55,10 @@ function tigerMaterial() {
       }
       vec3 stoneColor(vec3 p) {
         float warp = p.x + 0.008*sin(p.z*7.0) + 0.002*sin(p.z*31.0 + p.x*11.0);
-        float layers = 0.5 + 0.18*sin(warp*32.0) + 0.13*sin(warp*69.0 + 1.4);
+        float layers = 0.5 + 0.26*sin(warp*32.0) + 0.16*sin(warp*69.0 + 1.4);
         float threads = 0.5 + 0.34*fiberSignal(600.0,warp) + 0.15*fiberSignal(1500.0,warp + 0.0004*sin(p.z*40.0));
-        float colorMix = clamp(layers * 0.4 + threads * 0.6, 0.0, 1.0);
-        return mix(vec3(0.018,0.006,0.0015),vec3(0.24,0.105,0.022),colorMix);
+        float colorMix = clamp(layers * 0.68 + threads * 0.32, 0.0, 1.0);
+        return mix(vec3(0.022,0.007,0.0015),vec3(0.32,0.145,0.028),colorMix);
       }
       float stoneBand(vec3 p, vec3 n) {
         vec3 viewDir = normalize(fiberEye-p);
