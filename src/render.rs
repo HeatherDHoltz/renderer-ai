@@ -1,6 +1,14 @@
-use crate::{material::shade_pixel, scene::Scene, camera::Camera, film::Film};
+use crate::{camera::Camera, film::Film, material::shade_pixel, scene::Scene};
 
-pub fn render(camera: &Camera, scene: &Scene, width: u32, height: u32, t_min: f32, t_max: f32, background: [u8; 3]) -> Film {
+pub fn render(
+    camera: &Camera,
+    scene: &Scene,
+    width: u32,
+    height: u32,
+    t_min: f32,
+    t_max: f32,
+    background: [u8; 3],
+) -> Film {
     let mut film = Film::new(width, height);
     for y in 0..height {
         for x in 0..width {
@@ -24,17 +32,24 @@ pub fn render(camera: &Camera, scene: &Scene, width: u32, height: u32, t_min: f3
 #[cfg(test)]
 mod tests {
     use super::*;
-    use glam::Vec3;
     use crate::{material::Material, sphere::Sphere};
+    use glam::Vec3;
 
     fn material(color: Vec3) -> Material {
-        Material { diffuse: color, specular: Vec3::ZERO, shininess: 32.0 }
+        Material {
+            diffuse: color,
+            specular: Vec3::ZERO,
+            shininess: 32.0,
+        }
     }
 
     #[test]
     fn empty_scene() {
         let camera = Camera::new(Vec3::ZERO, -Vec3::Z, Vec3::Y, 1.0, 90.0);
-        let scene = Scene { shapes: vec![], lights: vec![] };
+        let scene = Scene {
+            shapes: vec![],
+            lights: vec![],
+        };
         let film = render(&camera, &scene, 2, 2, 0.001, 100.0, [80, 120, 200]);
         for y in 0..2 {
             for x in 0..2 {
@@ -46,9 +61,14 @@ mod tests {
     #[test]
     fn top_pixel_hits_upper_sphere() {
         let camera = Camera::new(Vec3::ZERO, -Vec3::Z, Vec3::Y, 1.0, 90.0);
-        let scene = Scene { shapes: vec![
-            Box::new(Sphere::new(Vec3::new(0.0, 2.0, -3.0), 0.4, material(Vec3::X))),
-        ], lights: vec![] };
+        let scene = Scene {
+            shapes: vec![Box::new(Sphere::new(
+                Vec3::new(0.0, 2.0, -3.0),
+                0.4,
+                material(Vec3::X),
+            ))],
+            lights: vec![],
+        };
         let film = render(&camera, &scene, 3, 3, 0.001, 100.0, [25, 30, 40]);
         assert_eq!(film.get_pixel(1, 0), [69, 0, 0]);
         assert_eq!(film.get_pixel(1, 2), [25, 30, 40]);
@@ -57,12 +77,25 @@ mod tests {
     #[test]
     fn nearest_sphere() {
         let camera = Camera::new(Vec3::new(0.0, 0.0, 5.0), Vec3::ZERO, Vec3::Y, 1.0, 45.0);
-        let mut scene = Scene { shapes: vec![
-            Box::new(Sphere::new(Vec3::ZERO, 1.0, material(Vec3::X))),
-            Box::new(Sphere::new(Vec3::new(0.0, 0.0, 2.0), 1.0, material(Vec3::Y))),
-        ], lights: vec![] };
-        assert_eq!(render(&camera, &scene, 1, 1, 0.001, 100.0, [25, 30, 40]).get_pixel(0, 0), [0, 69, 0]);
+        let mut scene = Scene {
+            shapes: vec![
+                Box::new(Sphere::new(Vec3::ZERO, 1.0, material(Vec3::X))),
+                Box::new(Sphere::new(
+                    Vec3::new(0.0, 0.0, 2.0),
+                    1.0,
+                    material(Vec3::Y),
+                )),
+            ],
+            lights: vec![],
+        };
+        assert_eq!(
+            render(&camera, &scene, 1, 1, 0.001, 100.0, [25, 30, 40]).get_pixel(0, 0),
+            [0, 69, 0]
+        );
         scene.shapes.reverse();
-        assert_eq!(render(&camera, &scene, 1, 1, 0.001, 100.0, [25, 30, 40]).get_pixel(0, 0), [0, 69, 0]);
+        assert_eq!(
+            render(&camera, &scene, 1, 1, 0.001, 100.0, [25, 30, 40]).get_pixel(0, 0),
+            [0, 69, 0]
+        );
     }
 }

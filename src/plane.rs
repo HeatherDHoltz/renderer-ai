@@ -1,5 +1,9 @@
+use crate::{
+    material::Material,
+    ray::Ray,
+    shape::{Hit, Shape},
+};
 use glam::{Mat4, Quat, Vec3};
-use crate::{material::Material, ray::Ray, shape::{Hit, Shape}};
 
 pub struct Plane {
     pub transform: Mat4,
@@ -13,34 +17,37 @@ impl Plane {
         let rotation = Quat::from_rotation_arc(Vec3::Y, normal);
         let translation = Mat4::from_translation(position);
         let transform = translation * Mat4::from_quat(rotation);
-        Self { transform, material }
+        Self {
+            transform,
+            material,
+        }
     }
 }
 
 impl Shape for Plane {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
-        
         // intersection of ray and plane
         let mut normal = self.transform.transform_vector3(Vec3::Y).normalize();
         let position = self.transform.transform_point3(Vec3::ZERO);
         let denominator = ray.direction().dot(normal);
-        if denominator.abs() < 1e-6 { // for rounding errors
+        if denominator.abs() < 1e-6 {
+            // for rounding errors
             return None;
         }
         let t = (position - ray.origin()).dot(normal) / denominator;
-        
+
         if t_min <= t && t <= t_max {
-            if denominator > 0.0 { // camera on other side of plane
+            if denominator > 0.0 {
+                // camera on other side of plane
                 normal = -normal;
             }
             Some(Hit {
-                t: t,
+                t,
                 point: ray.point(t),
-                normal: normal,
-                material: self.material
+                normal,
+                material: self.material,
             })
-        }
-        else {
+        } else {
             None
         }
     }
@@ -51,7 +58,11 @@ mod tests {
     use super::*;
 
     fn material() -> Material {
-        Material { diffuse: Vec3::X, specular: Vec3::ONE, shininess: 32.0 }
+        Material {
+            diffuse: Vec3::X,
+            specular: Vec3::ONE,
+            shininess: 32.0,
+        }
     }
 
     #[test]

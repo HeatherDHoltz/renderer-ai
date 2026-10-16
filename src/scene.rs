@@ -1,5 +1,8 @@
+use crate::{
+    ray::Ray,
+    shape::{Hit, Shape},
+};
 use glam::Vec3;
-use crate::{ray::Ray, shape::{Hit, Shape}};
 
 pub struct PointLight {
     pub position: Vec3,
@@ -13,14 +16,14 @@ pub struct Scene {
 
 impl Scene {
     pub fn nearest_hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
-        let mut closest_t = f32::INFINITY;
+        let mut closest_t = t_max;
         let mut closest_hit = None;
         for shape in &self.shapes {
-            if let Some(hit) = shape.hit(ray, t_min, t_max) {
-                if hit.t < closest_t {
-                    closest_t = hit.t;
-                    closest_hit = Some(hit);
-                }
+            if let Some(hit) = shape.hit(ray, t_min, closest_t)
+                && (closest_hit.is_none() || hit.t < closest_t)
+            {
+                closest_t = hit.t;
+                closest_hit = Some(hit);
             }
         }
         closest_hit
@@ -30,36 +33,53 @@ impl Scene {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use glam::Vec3;
     use crate::{material::Material, plane::Plane, sphere::Sphere};
+    use glam::Vec3;
 
     fn material(color: Vec3) -> Material {
-        Material { diffuse: color, specular: Vec3::ZERO, shininess: 32.0 }
+        Material {
+            diffuse: color,
+            specular: Vec3::ZERO,
+            shininess: 32.0,
+        }
     }
 
     #[test]
     fn empty_scene() {
-        let scene = Scene { lights: vec![], shapes: vec![] };
+        let scene = Scene {
+            lights: vec![],
+            shapes: vec![],
+        };
         let ray = Ray::new(Vec3::ZERO, -Vec3::Z);
         assert!(scene.nearest_hit(&ray, 0.001, 100.0).is_none());
     }
 
     #[test]
     fn all_shapes_missed() {
-        let scene = Scene { lights: vec![], shapes: vec![
-            Box::new(Sphere::new(Vec3::new(5.0, 0.0, 0.0), 1.0, material(Vec3::X))),
-            Box::new(Plane::new(-Vec3::Y, Vec3::Y, material(Vec3::Y))),
-        ] };
+        let scene = Scene {
+            lights: vec![],
+            shapes: vec![
+                Box::new(Sphere::new(
+                    Vec3::new(5.0, 0.0, 0.0),
+                    1.0,
+                    material(Vec3::X),
+                )),
+                Box::new(Plane::new(-Vec3::Y, Vec3::Y, material(Vec3::Y))),
+            ],
+        };
         let ray = Ray::new(Vec3::new(0.0, 0.0, 5.0), -Vec3::Z);
         assert!(scene.nearest_hit(&ray, 0.001, 100.0).is_none());
     }
 
     #[test]
     fn nearest_sphere_in_either_order() {
-        let mut scene = Scene { lights: vec![], shapes: vec![
-            Box::new(Sphere::new(Vec3::ZERO, 1.0, material(Vec3::X))),
-            Box::new(Sphere::new(2.0 * Vec3::Z, 1.0, material(Vec3::Y))),
-        ] };
+        let mut scene = Scene {
+            lights: vec![],
+            shapes: vec![
+                Box::new(Sphere::new(Vec3::ZERO, 1.0, material(Vec3::X))),
+                Box::new(Sphere::new(2.0 * Vec3::Z, 1.0, material(Vec3::Y))),
+            ],
+        };
         let ray = Ray::new(5.0 * Vec3::Z, -Vec3::Z);
         for _ in 0..2 {
             let hit = scene.nearest_hit(&ray, 0.001, 100.0).unwrap();
@@ -73,10 +93,13 @@ mod tests {
 
     #[test]
     fn sphere_and_plane() {
-        let scene = Scene { lights: vec![], shapes: vec![
-            Box::new(Plane::new(Vec3::ZERO, Vec3::Y, material(Vec3::Y))),
-            Box::new(Sphere::new(2.0 * Vec3::Y, 1.0, material(Vec3::X))),
-        ] };
+        let scene = Scene {
+            lights: vec![],
+            shapes: vec![
+                Box::new(Plane::new(Vec3::ZERO, Vec3::Y, material(Vec3::Y))),
+                Box::new(Sphere::new(2.0 * Vec3::Y, 1.0, material(Vec3::X))),
+            ],
+        };
         let above_sphere = Ray::new(5.0 * Vec3::Y, -Vec3::Y);
         let hit = scene.nearest_hit(&above_sphere, 0.001, 100.0).unwrap();
         assert_eq!(hit.t, 2.0);
@@ -90,10 +113,13 @@ mod tests {
 
     #[test]
     fn respects_hit_range() {
-        let scene = Scene { lights: vec![], shapes: vec![
-            Box::new(Plane::new(3.0 * Vec3::Y, Vec3::Y, material(Vec3::X))),
-            Box::new(Plane::new(Vec3::ZERO, Vec3::Y, material(Vec3::Y))),
-        ] };
+        let scene = Scene {
+            lights: vec![],
+            shapes: vec![
+                Box::new(Plane::new(3.0 * Vec3::Y, Vec3::Y, material(Vec3::X))),
+                Box::new(Plane::new(Vec3::ZERO, Vec3::Y, material(Vec3::Y))),
+            ],
+        };
         let ray = Ray::new(5.0 * Vec3::Y, -Vec3::Y);
         assert!(scene.nearest_hit(&ray, 0.001, 1.0).is_none());
         assert!(scene.nearest_hit(&ray, 6.0, 10.0).is_none());

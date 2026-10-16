@@ -1,11 +1,11 @@
-use glam::{Vec3, Mat4};
-use crate::ray::Ray;
 use crate::material::Material;
-use crate::shape::{Shape, Hit};
+use crate::ray::Ray;
+use crate::shape::{Hit, Shape};
+use glam::{Mat4, Vec3};
 
 pub struct Sphere {
     pub transform: Mat4,
-    pub material: Material
+    pub material: Material,
 }
 
 impl Sphere {
@@ -14,10 +14,11 @@ impl Sphere {
         let scale = Mat4::from_scale(Vec3::splat(radius));
         let translation = Mat4::from_translation(position);
         let transform = translation * scale;
-        Self { transform, material }
+        Self {
+            transform,
+            material,
+        }
     }
-
-
 }
 
 impl Shape for Sphere {
@@ -37,33 +38,34 @@ impl Shape for Sphere {
         let root = discriminant.sqrt();
         let near = (-b - root) / (2.0 * a);
         let far = (-b + root) / (2.0 * a);
-        
+
         if t_max >= near && near >= t_min {
             let mut normal = (ray.point(near) - center).normalize();
-            if normal.dot(ray.direction()) > 0.0 { // camera inside sphere
+            if normal.dot(ray.direction()) > 0.0 {
+                // camera inside sphere
                 normal = -normal;
             }
             Some(Hit {
                 t: near,
                 point: ray.point(near),
-                normal: normal,
-                material: self.material
+                normal,
+                material: self.material,
             })
         } else if t_max >= far && far >= t_min {
             let mut normal = (ray.point(far) - center).normalize();
-            if normal.dot(ray.direction()) > 0.0 { // camera inside sphere
+            if normal.dot(ray.direction()) > 0.0 {
+                // camera inside sphere
                 normal = -normal;
             }
             Some(Hit {
                 t: far,
                 point: ray.point(far),
-                normal: normal,
-                material: self.material
+                normal,
+                material: self.material,
             })
         } else {
             None
         }
-
     }
 }
 
@@ -72,7 +74,11 @@ mod tests {
     use super::*;
 
     fn material() -> Material {
-        Material { diffuse: Vec3::X, specular: Vec3::ONE, shininess: 32.0 }
+        Material {
+            diffuse: Vec3::X,
+            specular: Vec3::ONE,
+            shininess: 32.0,
+        }
     }
 
     #[test]
@@ -91,7 +97,9 @@ mod tests {
     #[test]
     fn ray_inside_sphere() {
         let sphere = Sphere::new(Vec3::ZERO, 1.0, material());
-        let hit = sphere.hit(&Ray::new(Vec3::ZERO, Vec3::X), 0.001, 10.0).unwrap();
+        let hit = sphere
+            .hit(&Ray::new(Vec3::ZERO, Vec3::X), 0.001, 10.0)
+            .unwrap();
         assert_eq!(hit.t, 1.0);
         assert_eq!(hit.point, Vec3::X);
         assert_eq!(hit.normal, -Vec3::X);

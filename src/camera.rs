@@ -1,5 +1,5 @@
-use glam::Vec3;
 use crate::ray::Ray;
+use glam::Vec3;
 
 pub struct Camera {
     position: Vec3,
@@ -17,7 +17,12 @@ impl Camera {
         let horizontal = aspect * height * u;
         let vertical = height * v;
         let lower_left = position - w - horizontal / 2.0 - vertical / 2.0;
-        Self { position, lower_left, horizontal, vertical }
+        Self {
+            position,
+            lower_left,
+            horizontal,
+            vertical,
+        }
     }
 
     pub fn ray(&self, s: f32, t: f32) -> Ray {

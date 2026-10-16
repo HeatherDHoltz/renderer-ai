@@ -6,7 +6,9 @@ pub struct Film {
 
 impl Film {
     pub fn new(width: u32, height: u32) -> Self {
-        Self { pixels: RgbImage::new(width, height) }
+        Self {
+            pixels: RgbImage::new(width, height),
+        }
     }
 
     pub fn set_pixel(&mut self, x: u32, y: u32, color: [u8; 3]) {

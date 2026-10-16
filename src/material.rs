@@ -1,5 +1,5 @@
-use glam::Vec3;
 use crate::{ray::Ray, scene::Scene, shape::Hit};
+use glam::Vec3;
 
 #[derive(Clone, Copy)]
 pub struct Material {
@@ -26,7 +26,10 @@ pub fn shade_pixel(hit: &Hit, view_ray: &Ray, scene: &Scene) -> Vec3 {
         }
 
         let shadow_ray = Ray::new(hit.point, direction);
-        if scene.nearest_hit(&shadow_ray, 0.001, distance - 0.001).is_some() {
+        if scene
+            .nearest_hit(&shadow_ray, 0.001, distance - 0.001)
+            .is_some()
+        {
             continue;
         }
 
@@ -49,14 +52,21 @@ mod tests {
             t: 1.0,
             point: Vec3::ZERO,
             normal: Vec3::Y,
-            material: Material { diffuse: Vec3::splat(0.4), specular: Vec3::ZERO, shininess: 32.0 },
+            material: Material {
+                diffuse: Vec3::splat(0.4),
+                specular: Vec3::ZERO,
+                shininess: 32.0,
+            },
         }
     }
 
     fn scene() -> Scene {
         Scene {
             shapes: vec![],
-            lights: vec![PointLight { position: 4.0 * Vec3::Y, color: Vec3::ONE }],
+            lights: vec![PointLight {
+                position: 4.0 * Vec3::Y,
+                color: Vec3::ONE,
+            }],
         }
     }
 
@@ -75,10 +85,14 @@ mod tests {
         let hit = surface();
         let ray = Ray::new(Vec3::Y, -Vec3::Y);
         let mut scene = scene();
-        scene.shapes.push(Box::new(Sphere::new(2.0 * Vec3::Y, 0.5, hit.material)));
+        scene
+            .shapes
+            .push(Box::new(Sphere::new(2.0 * Vec3::Y, 0.5, hit.material)));
         assert!((shade_pixel(&hit, &ray, &scene) - Vec3::splat(0.108)).length() < 0.0001);
         scene.shapes.clear();
-        scene.shapes.push(Box::new(Sphere::new(6.0 * Vec3::Y, 0.5, hit.material)));
+        scene
+            .shapes
+            .push(Box::new(Sphere::new(6.0 * Vec3::Y, 0.5, hit.material)));
         assert!((shade_pixel(&hit, &ray, &scene) - Vec3::splat(0.508)).length() < 0.0001);
     }
 
@@ -87,7 +101,10 @@ mod tests {
         let hit = surface();
         let ray = Ray::new(Vec3::Y, -Vec3::Y);
         let mut scene = scene();
-        scene.lights.push(PointLight { position: -4.0 * Vec3::Y, color: Vec3::ONE });
+        scene.lights.push(PointLight {
+            position: -4.0 * Vec3::Y,
+            color: Vec3::ONE,
+        });
         assert!((shade_pixel(&hit, &ray, &scene) - Vec3::splat(0.508)).length() < 0.0001);
         scene.lights[1].position = 4.0 * Vec3::Y;
         assert!((shade_pixel(&hit, &ray, &scene) - Vec3::splat(0.908)).length() < 0.0001);
