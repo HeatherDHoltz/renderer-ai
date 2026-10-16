@@ -1,0 +1,32 @@
+{
+  "glass": {
+    "width": 128,
+    "height": 96,
+    "identical_png_bytes": true,
+    "sha256": {
+      "none": "26606dc0713b57d2b1d418b8f98258e66fd3b355ebc69eea2e3b5a5c0b2cbd20",
+      "bvh": "26606dc0713b57d2b1d418b8f98258e66fd3b355ebc69eea2e3b5a5c0b2cbd20",
+      "octree": "26606dc0713b57d2b1d418b8f98258e66fd3b355ebc69eea2e3b5a5c0b2cbd20"
+    }
+  },
+  "mesh": {
+    "width": 128,
+    "height": 96,
+    "identical_png_bytes": true,
+    "sha256": {
+      "none": "e224c088a8ee24aea85e71cc54349cdb42a2070d9b44cade7b2d5f7c33bb5e7b",
+      "bvh": "e224c088a8ee24aea85e71cc54349cdb42a2070d9b44cade7b2d5f7c33bb5e7b",
+      "octree": "e224c088a8ee24aea85e71cc54349cdb42a2070d9b44cade7b2d5f7c33bb5e7b"
+    }
+  },
+  "benchmark": {
+    "width": 128,
+    "height": 96,
+    "identical_png_bytes": true,
+    "sha256": {
+      "none": "beaf8be6cf655899208f757009cb75316d268d2c945411eaab11ab09b670e1a9",
+      "bvh": "beaf8be6cf655899208f757009cb75316d268d2c945411eaab11ab09b670e1a9",
+      "octree": "beaf8be6cf655899208f757009cb75316d268d2c945411eaab11ab09b670e1a9"
+    }
+  }
+}

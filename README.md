@@ -18,7 +18,7 @@ Versioned JSON scenes now support named materials/textures, reusable OBJ meshes,
 
 ![Imported textured mesh, flat and smooth shading](gallery/mesh.png)
 
-Current limits: one center sample per pixel, serial rendering, hard point-light shadows, and educational materials. Selectable brute-force, binned-SAH BVH, and reference octree traversal now cover both instances and mesh triangles. Antialiasing, physical HDR lighting, animation, and procedural generation remain in progress. Benchmark measurement is underway; no speedup is claimed yet.
+Current limits: one center sample per pixel, serial rendering, hard point-light shadows, and educational materials. Selectable brute-force, binned-SAH BVH, and reference octree traversal now cover both instances and mesh triangles. Antialiasing, physical HDR lighting, animation, and procedural generation remain in progress. [Measured benchmarks](docs/BENCHMARKS.md) include raw data, hardware, settings, construction cost, and brute-force agreement. In the fixed 8,192-triangle ray-query workload, BVH reduced the median from 734.6 ms to 2.87 ms on Apple M1 Max; this measures intersection work. Full-render and thread-scaling measurements are pending.
 
 ![Canonical shapes and nonuniform affine geometry](gallery/shapes.png)
 

@@ -12,6 +12,47 @@ use renderer_project::{
 };
 use std::path::Path;
 
+#[test]
+fn mesh_vertices_edges_and_finite_endpoints_survive_acceleration() {
+    use renderer_project::{
+        mesh::{Mesh, MeshInstance},
+        shape::Shape,
+    };
+    use std::sync::Arc;
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let source = std::fs::read_to_string(root.join("assets/uv-sphere.obj")).unwrap();
+    let reference = Mesh::parse(&source).unwrap();
+    let mut points = reference.positions.clone();
+    for triangle in &reference.triangles {
+        let p = triangle.map(|c| reference.positions[c.position]);
+        points.push((p[0] + p[1]) * 0.5);
+    }
+    let instances: Vec<_> = [AccelKind::None, AccelKind::Bvh, AccelKind::Octree]
+        .into_iter()
+        .map(|kind| {
+            let mut mesh = Mesh::parse(&source).unwrap();
+            mesh.build_accel(kind).unwrap();
+            MeshInstance::new(Arc::new(mesh), Mat4::IDENTITY, Material::default(), false).unwrap()
+        })
+        .collect();
+    for point in points {
+        let direction = -point.normalize();
+        let ray = Ray::new(point - 2.0 * direction, direction);
+        for max in [2.0, 2.0001, 100.0] {
+            for instance in &instances[1..] {
+                compare(
+                    instances[0].hit(&ray, 0.0, max),
+                    instance.hit(&ray, 0.0, max),
+                );
+                assert_eq!(
+                    instances[0].occluded(&ray, 0.0, max),
+                    instance.occluded(&ray, 0.0, max)
+                );
+            }
+        }
+    }
+}
+
 fn random(seed: &mut u64) -> f32 {
     *seed = seed.wrapping_add(0x9e3779b97f4a7c15);
     let mut x = *seed;

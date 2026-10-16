@@ -6,6 +6,7 @@
 - `assets/uv-sphere.obj`: generated latitude/longitude sphere fixture, 12 segments and 6 latitude divisions; 62 shared positions and 120 triangles, per-corner UVs and unit vertex normals. No external model.
 - `assets/uv-grid.png`: generated 64×32 color atlas with four colored quadrants and grid lines; no external art.
 - `scenes/mesh.json` reuses the sphere geometry twice with flat/smooth normals; `gallery/mesh.png` was rendered with the documented CLI command and default 640×420 settings.
+- `assets/benchmark-grid.obj` and `scenes/benchmark.json`: deterministic 64×64 sinusoidal grid, 4,225 vertices / 8,192 triangles, recreated by `python3 scripts/generate_benchmark.py`. `gallery/wave.png` is the inspected default BVH render.
 - Course slides, handouts, syllabus, and class submission files are not redistributed here.
 
 No license has been assigned to project-authored files or images. Dependency licenses remain those declared by their respective packages.

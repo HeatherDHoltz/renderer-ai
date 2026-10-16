@@ -1,0 +1,103 @@
+{
+  "source_commit": "04d3221dc227b77dbabfcdf5aca88a0aaa122753",
+  "tracked_source_dirty": false,
+  "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+  "os": "14.6.1",
+  "architecture": "aarch64",
+  "machine": "MacBookPro18,2",
+  "cpu": "Apple M1 Max",
+  "logical_cpus": "10",
+  "scene": "scenes/benchmark.json",
+  "scene_fnv1a64": "e71ce018e3f71a78",
+  "seed": 116,
+  "ray_count": 4096,
+  "image_dimensions": [
+    384,
+    256
+  ],
+  "instance_count": 1,
+  "instanced_primitive_count": 8192,
+  "instanced_triangle_count": 8192,
+  "workload": "Each camera ray: closest hit [0.0001,infinity] plus any hit [0.0001,100]. Seeded jittered square film grid; single-thread intersection queries, no shading, bounces, light samples, or output writes. Stats collected separately; all per-ray results compared before timing.",
+  "profile": "release",
+  "threads": 1,
+  "warmups": 1,
+  "runs": 5,
+  "backend_results": [
+    {
+      "backend": "none",
+      "parse_seconds": 0.00005,
+      "build": {
+        "total_seconds": 0.004318417,
+        "asset_seconds": 0.00418075,
+        "acceleration_seconds": 0.000131709
+      },
+      "query_seconds": [
+        0.722606791,
+        0.704653458,
+        0.737806417,
+        0.734619417,
+        0.747482125
+      ],
+      "median_seconds": 0.734619417,
+      "min_seconds": 0.704653458,
+      "max_seconds": 0.747482125,
+      "stats": {
+        "node_visits": 0,
+        "instance_tests": 8192,
+        "primitive_tests": 63262758
+      },
+      "checksum": 29409887450432087
+    },
+    {
+      "backend": "bvh",
+      "parse_seconds": 0.000101958,
+      "build": {
+        "total_seconds": 0.0105895,
+        "asset_seconds": 0.004425167,
+        "acceleration_seconds": 0.006154125000000001
+      },
+      "query_seconds": [
+        0.002870541,
+        0.002873375,
+        0.002918958,
+        0.002860792,
+        0.002947
+      ],
+      "median_seconds": 0.002873375,
+      "min_seconds": 0.002860792,
+      "max_seconds": 0.002947,
+      "stats": {
+        "node_visits": 72178,
+        "instance_tests": 3142,
+        "primitive_tests": 14382
+      },
+      "checksum": 29409887450432087
+    },
+    {
+      "backend": "octree",
+      "parse_seconds": 0.000084916,
+      "build": {
+        "total_seconds": 0.004998542,
+        "asset_seconds": 0.004327041,
+        "acceleration_seconds": 0.000667418
+      },
+      "query_seconds": [
+        0.067873,
+        0.077267584,
+        0.077930959,
+        0.078570625,
+        0.074576334
+      ],
+      "median_seconds": 0.077267584,
+      "min_seconds": 0.067873,
+      "max_seconds": 0.078570625,
+      "stats": {
+        "node_visits": 52508,
+        "instance_tests": 3142,
+        "primitive_tests": 5767740
+      },
+      "checksum": 29409887450432087
+    }
+  ]
+}
