@@ -4,6 +4,7 @@ pub mod accel;
 pub mod animation;
 pub mod benchmark;
 pub mod camera;
+pub mod chatoyant;
 pub mod environment;
 pub mod film;
 pub mod geometry;

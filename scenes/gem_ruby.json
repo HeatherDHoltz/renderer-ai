@@ -1,0 +1,162 @@
+{
+  "version": 1,
+  "camera": {
+    "position": [
+      2.8,
+      3.4,
+      5.4
+    ],
+    "target": [
+      0,
+      0.9,
+      0
+    ],
+    "fov": 25
+  },
+  "render": {
+    "width": 448,
+    "height": 448,
+    "spp": 256,
+    "seed": 116,
+    "integrator": "physical",
+    "max_depth": 16,
+    "min_throughput": 0.0001,
+    "exposure": 0.1
+  },
+  "environment": {
+    "kind": "hdr",
+    "path": "../assets/gems/light-tent.hdr",
+    "intensity": 1
+  },
+  "materials": {
+    "floor": {
+      "physical": {
+        "model": "diffuse",
+        "base_color": [
+          0.23,
+          0.27,
+          0.32
+        ]
+      }
+    },
+    "podium": {
+      "physical": {
+        "model": "diffuse",
+        "base_color": [
+          0.48,
+          0.5,
+          0.53
+        ]
+      }
+    },
+    "gem": {
+      "physical": {
+        "model": "gemstone",
+        "ior": 1.77,
+        "absorption": [
+          0.055,
+          2.7,
+          1.7
+        ]
+      }
+    }
+  },
+  "geometries": {
+    "floor": {
+      "kind": "plane"
+    },
+    "podium": {
+      "kind": "cylinder"
+    },
+    "gem": {
+      "kind": "mesh",
+      "path": "../assets/gems/zsky-jewel-02.obj"
+    }
+  },
+  "objects": [
+    {
+      "name": "floor",
+      "geometry": "floor",
+      "material": "floor",
+      "transform": {
+        "translation": [
+          0,
+          -0.025,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "smooth": false
+    },
+    {
+      "name": "podium",
+      "geometry": "podium",
+      "material": "podium",
+      "transform": {
+        "translation": [
+          0,
+          0.08,
+          0
+        ],
+        "scale": [
+          1.13,
+          0.08,
+          1.13
+        ]
+      },
+      "smooth": false
+    },
+    {
+      "name": "gem",
+      "geometry": "gem",
+      "material": "gem",
+      "transform": {
+        "translation": [
+          0,
+          0.18,
+          0
+        ],
+        "scale": [
+          0.65,
+          0.65,
+          0.65
+        ],
+        "rotation_degrees": [
+          0,
+          -12,
+          0
+        ]
+      },
+      "smooth": false
+    }
+  ],
+  "lights": [
+    {
+      "kind": "area",
+      "center": [
+        -3,
+        6,
+        4
+      ],
+      "edge_u": [
+        3,
+        0,
+        0
+      ],
+      "edge_v": [
+        0,
+        0,
+        3
+      ],
+      "radiance": [
+        6,
+        5.5,
+        4.8
+      ]
+    }
+  ]
+}

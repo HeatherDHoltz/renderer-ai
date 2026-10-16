@@ -17,3 +17,9 @@ Acceptance criteria and full scope: [implementation handoff](IMPLEMENTATION_HAND
 | M10 Portfolio/release | verified | Clean checkout at 83bd4ce; 91 tests, format/Clippy/build/offline examples; Linux/macOS CI green; inspected hero/gallery, measured reports, asset/claim audit |
 
 Proceed in order. Scene IO may be introduced early if it makes diagnostics reproducible; record any dependency change here. Keep milestone commits small enough to review. No reduced scope has been agreed.
+
+## Requested extension after M10
+
+| Feature | State | Evidence |
+| --- | --- | --- |
+| Gem meshes and material gallery | verified | Four online Zsky meshes imported with CC BY 3.0 credits; supplemental step cut/cabochon, homogeneous absorption, anisotropic sheen, 98 tests, 22 offline scenes; inspected six-gem panel, three stone variants, twelve-state moving-light GIF. See docs/GEMS.md. |

@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "camera": {
+    "position": [
+      0,
+      3.8,
+      6
+    ],
+    "target": [
+      0,
+      0.35,
+      0
+    ],
+    "fov": 27
+  },
+  "render": {
+    "width": 480,
+    "height": 400,
+    "spp": 256,
+    "seed": 116,
+    "integrator": "physical",
+    "max_depth": 4,
+    "min_throughput": 0.0001,
+    "exposure": 0.1
+  },
+  "environment": {
+    "kind": "hdr",
+    "path": "../assets/gems/light-tent.hdr",
+    "intensity": 0.2
+  },
+  "materials": {
+    "floor": {
+      "physical": {
+        "model": "diffuse",
+        "base_color": [
+          0.23,
+          0.27,
+          0.32
+        ]
+      }
+    },
+    "podium": {
+      "physical": {
+        "model": "diffuse",
+        "base_color": [
+          0.48,
+          0.5,
+          0.53
+        ]
+      }
+    },
+    "gold": {
+      "physical": {
+        "model": "chatoyant",
+        "base_color": [
+          1,
+          1,
+          1
+        ],
+        "fiber_direction": [
+          0,
+          0,
+          1
+        ],
+        "roughness_along": 0.18,
+        "roughness_across": 0.75
+      },
+      "texture": "gold"
+    },
+    "blue": {
+      "physical": {
+        "model": "chatoyant",
+        "base_color": [
+          1,
+          1,
+          1
+        ],
+        "fiber_direction": [
+          0,
+          0,
+          1
+        ],
+        "roughness_along": 0.18,
+        "roughness_across": 0.75
+      },
+      "texture": "blue"
+    },
+    "red": {
+      "physical": {
+        "model": "chatoyant",
+        "base_color": [
+          1,
+          1,
+          1
+        ],
+        "fiber_direction": [
+          0,
+          0,
+          1
+        ],
+        "roughness_along": 0.18,
+        "roughness_across": 0.75
+      },
+      "texture": "red"
+    }
+  },
+  "geometries": {
+    "floor": {
+      "kind": "plane"
+    },
+    "podium": {
+      "kind": "cylinder"
+    },
+    "cabochon": {
+      "kind": "mesh",
+      "path": "../assets/gems/cabochon.obj"
+    }
+  },
+  "objects": [
+    {
+      "name": "floor",
+      "geometry": "floor",
+      "material": "floor",
+      "transform": {
+        "translation": [
+          0,
+          -0.025,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "smooth": false
+    },
+    {
+      "name": "podium-gold",
+      "geometry": "podium",
+      "material": "podium",
+      "transform": {
+        "translation": [
+          0,
+          0.08,
+          0
+        ],
+        "scale": [
+          1.13,
+          0.08,
+          1.13
+        ]
+      },
+      "smooth": false
+    },
+    {
+      "name": "gold",
+      "geometry": "cabochon",
+      "material": "gold",
+      "transform": {
+        "translation": [
+          0,
+          0.18,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "smooth": true
+    }
+  ],
+  "lights": [
+    {
+      "kind": "point",
+      "position": [
+        -2,
+        6,
+        -5
+      ],
+      "color": [
+        130,
+        115,
+        95
+      ]
+    }
+  ],
+  "textures": {
+    "gold": {
+      "kind": "image",
+      "path": "../assets/gems/tiger-gold.png",
+      "wrap": "clamp",
+      "filter": "bilinear"
+    },
+    "blue": {
+      "kind": "image",
+      "path": "../assets/gems/tiger-blue.png",
+      "wrap": "clamp",
+      "filter": "bilinear"
+    },
+    "red": {
+      "kind": "image",
+      "path": "../assets/gems/tiger-red.png",
+      "wrap": "clamp",
+      "filter": "bilinear"
+    }
+  }
+}

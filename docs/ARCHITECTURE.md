@@ -32,6 +32,8 @@ The focused OBJ loader retains separate position/normal/UV corner indices and re
 
 Textures are immutable scene data referenced by small material IDs; hits still copy only a small material value. PNG color texels are decoded to linear RGB once. Checker sampling and nearest/bilinear filtering happen at the hit UV. OBJ v=1 corresponds to the image top. Canonical primitive UV formulas retain the conventions documented above. Wrapping includes bilinear neighbors at the seam. All image radiance remains linear until output conversion.
 
+Mesh hit positions reconstruct the double-precision barycentric surface point before world conversion, avoiding long-camera-ray cancellation near small facets. The absorbing `gemstone` model validates closed oriented edges and a common interior kernel at the bounds center, then nudges inside rays toward that kernel to stay within adjacent sharp faces. It tracks one homogeneous RGB absorption medium and rejects nested/intersecting transport. A separate `chatoyant` surface model uses anisotropic GGX reflection and a world-space fiber direction. [GEMS.md](GEMS.md) records geometry restrictions, PDFs, scalar optical approximations, regressions, online asset credits, and actual renders.
+
 ## Educational transport
 
 `Whitted` implements `local + km*reflection + kt*(F*reflection + (1-F)*transmission)` in linear RGB. Local ambient is 0.27*diffuse once, plus visible Lambert/Blinn–Phong point-light contributions with no distance attenuation in this educational mode. Reflection is shared when both km and kt need it. Glass presets set km=0 to avoid duplicate Fresnel reflection. Tint is applied per interface, not Beer–Lambert volume absorption.

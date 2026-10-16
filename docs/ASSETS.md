@@ -16,6 +16,8 @@
 - `assets/torus.obj`: project-generated closed Y-axis torus (R=1, r=0.24), 2,304 positions / 4,608 triangles, vertex normals and independent seam UVs. Recreate with `python3 scripts/generate_torus.py` (Python standard library only).
 - `scenes/ai_gallery.json`: Codex-authored still-life scene following the documented constrained prompt; project-generated meshes, analytic shapes, and synthetic environment only. No external art or model service.
 - `gallery/hero.png`: inspected 1200×800, 512-spp render of that still life, using only the generated meshes and environment above. Exact command/settings are in GALLERY.md; raw HDR stays in ignored `output/`.
+- `assets/gems/zsky-jewel-01.obj` through `04.obj`: **Jewel by Zsky**, downloaded from Poly Pizza under **CC BY 3.0**, converted/adapted for this renderer. The fourth uses a repaired outer hull. Required creator/source/license/change notices and SHA-256 metadata are in [assets/gems/ATTRIBUTION.md](../assets/gems/ATTRIBUTION.md). This third-party license remains applicable independently of the unassigned repository source-code license.
+- Supplemental emerald step/cabochon geometry, procedural gold/blue/red stone textures, and the gem light-tent HDR are project-generated. Gallery panels and the light-sweep GIF use actual Rust-rendered images; Pillow adds labels/layout and GIF encoding only. [GEMS.md](GEMS.md) records settings, regeneration, attribution, and optical approximations.
 - Course slides, handouts, syllabus, and class submission files are not redistributed here.
 
-No license has been assigned to project-authored files or images. Dependency licenses remain those declared by their respective packages.
+No license has been assigned to project-authored source files. Third-party gem meshes retain CC BY 3.0 and their attribution notices; rendered adaptations also credit Zsky. Dependency licenses remain those declared by their respective packages.

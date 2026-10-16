@@ -4,7 +4,7 @@ This repository is an AI-assisted engineering project extending Heather's early-
 
 Possible resume wording, after personally reviewing and being ready to explain the code:
 
-- Directed and reviewed an AI-assisted Rust CPU ray tracer with affine geometry, indexed OBJ meshes, HDR physical direct lighting, glass, quaternion animation, and bounded procedural generation; verified with 91 tests and Linux/macOS CI.
+- Directed and reviewed an AI-assisted Rust CPU ray tracer with affine geometry, indexed OBJ meshes, HDR physical direct lighting, glass, quaternion animation, and bounded procedural generation; verified with 98 tests and Linux/macOS CI.
 - Evaluated a two-level SAH BVH against brute force and octree using fixed seeded rays; measured 734.619 ms to 2.873 ms median query time on an 8,192-triangle workload, with hit/occlusion agreement.
 - Validated deterministic Rayon rendering across worker counts, tiles, and progressive batches; measured 8.72× full-render scaling from one to ten workers on a documented area-light workload.
 

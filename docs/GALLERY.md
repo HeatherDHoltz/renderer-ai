@@ -2,6 +2,8 @@
 
 Every image below is output from this Rust renderer and was visually inspected. No image-generation model was used to create render evidence. Commands run from the repository root; Cargo's release profile is used throughout. Scene defaults specify camera, seed, materials, lights, depth, and output conversion. Auto workers depend on the machine; same-build images are independent of worker count.
 
+The [gemstone gallery](GEMS.md) adds six transmitting gems and three chatoyant stone variants, using four credited online jewel meshes and two supplemental generated shapes. Its labeled panels and moving-light GIF are assembled from real Rust-rendered frames.
+
 | Image | Settings and reproduction |
 | --- | --- |
 | [Hero](../gallery/hero.png) | 1200×800, 512 spp; `cargo run --release --locked -- render scenes/ai_gallery.json --output output/hero.png --hdr-output output/hero.hdr` |

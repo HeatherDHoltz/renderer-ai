@@ -1,0 +1,62 @@
+[
+  {
+    "file": "zsky-jewel-01.obj",
+    "title": "Jewel",
+    "author": "Zsky",
+    "source": "https://poly.pizza/m/velVo80s1D",
+    "download": "https://static.poly.pizza/8308edd8-389c-4cb7-9112-28c94f43e801.glb",
+    "license": "CC BY 3.0",
+    "license_url": "https://creativecommons.org/licenses/by/3.0/",
+    "source_sha256": "305db2f0f7df501a5d6cc395486a7527fba4f909954b0fc2d7dbe3eba97f7849",
+    "obj_sha256": "a3de31c45d49f22231549a6ec195f50b99bb8f857311775ad988d2d2f52bad9f",
+    "vertices": 21,
+    "triangles": 38,
+    "closed_oriented_manifold": true,
+    "convex_hull_repair": false
+  },
+  {
+    "file": "zsky-jewel-02.obj",
+    "title": "Jewel",
+    "author": "Zsky",
+    "source": "https://poly.pizza/m/fvsPsdeT7T",
+    "download": "https://static.poly.pizza/d737a426-69eb-4277-bf36-3c41e74ba071.glb",
+    "license": "CC BY 3.0",
+    "license_url": "https://creativecommons.org/licenses/by/3.0/",
+    "source_sha256": "e587199bb838515c3642e9adf65e7133b68cec8b1e694fb92664c9ccd507a788",
+    "obj_sha256": "953de4b8a43e0873fadb9c7de96867bd730b15957bfd748fb31a9081465c2f0b",
+    "vertices": 45,
+    "triangles": 86,
+    "closed_oriented_manifold": true,
+    "convex_hull_repair": false
+  },
+  {
+    "file": "zsky-jewel-03.obj",
+    "title": "Jewel",
+    "author": "Zsky",
+    "source": "https://poly.pizza/m/fOScYcI2Oh",
+    "download": "https://static.poly.pizza/25c558a3-fb0e-4da1-a353-bbf27acaf7c6.glb",
+    "license": "CC BY 3.0",
+    "license_url": "https://creativecommons.org/licenses/by/3.0/",
+    "source_sha256": "ceab1a2a1119b6845dec86751e174d14d93ce521ac25380e3a2915947ccd2054",
+    "obj_sha256": "eb78fa25e0459f9e49555d4bb09c2a45cbc22a22992626cf41067faa2e1fc1c1",
+    "vertices": 15,
+    "triangles": 26,
+    "closed_oriented_manifold": true,
+    "convex_hull_repair": false
+  },
+  {
+    "file": "zsky-jewel-04.obj",
+    "title": "Jewel",
+    "author": "Zsky",
+    "source": "https://poly.pizza/m/KfOELiDp7l",
+    "download": "https://static.poly.pizza/b2834678-ca1e-4911-9ad2-c6fa45d576f9.glb",
+    "license": "CC BY 3.0",
+    "license_url": "https://creativecommons.org/licenses/by/3.0/",
+    "source_sha256": "634a6ee27da655a77c88c50c929b4dd3442ead615c261381f8642c13852741d4",
+    "obj_sha256": "5a59bd880a156cd6e618d6c255388007a9eed43082fccbb25f8913c77617a6ff",
+    "vertices": 24,
+    "triangles": 44,
+    "closed_oriented_manifold": true,
+    "convex_hull_repair": true
+  }
+]

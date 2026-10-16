@@ -1,0 +1,74 @@
+[
+  {
+    "key": "diamond",
+    "label": "Diamond",
+    "cut": "Decagonal brilliant-style",
+    "scene": "scenes/gem_diamond.json",
+    "ior": 2.42,
+    "absorption": [
+      0.002,
+      0.002,
+      0.002
+    ]
+  },
+  {
+    "key": "emerald",
+    "label": "Emerald",
+    "cut": "Rectangular step cut",
+    "scene": "scenes/gem_emerald.json",
+    "ior": 1.58,
+    "absorption": [
+      1.65,
+      0.045,
+      1.05
+    ]
+  },
+  {
+    "key": "ruby",
+    "label": "Ruby",
+    "cut": "Oval fancy shape",
+    "scene": "scenes/gem_ruby.json",
+    "ior": 1.77,
+    "absorption": [
+      0.055,
+      2.7,
+      1.7
+    ]
+  },
+  {
+    "key": "sapphire",
+    "label": "Sapphire",
+    "cut": "Octagonal faceted form",
+    "scene": "scenes/gem_sapphire.json",
+    "ior": 1.77,
+    "absorption": [
+      4.8,
+      1.65,
+      0.025
+    ]
+  },
+  {
+    "key": "amethyst",
+    "label": "Amethyst",
+    "cut": "Pointed fantasy shape",
+    "scene": "scenes/gem_amethyst.json",
+    "ior": 1.54,
+    "absorption": [
+      0.75,
+      2.5,
+      0.08
+    ]
+  },
+  {
+    "key": "aquamarine",
+    "label": "Aquamarine",
+    "cut": "Oval fancy shape",
+    "scene": "scenes/gem_aquamarine.json",
+    "ior": 1.58,
+    "absorption": [
+      0.7,
+      0.04,
+      0.018
+    ]
+  }
+]

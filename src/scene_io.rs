@@ -489,6 +489,15 @@ impl SceneFile {
                     "material {name}: physical albedo texture must stay in [0,1]"
                 ));
             }
+            if matches!(
+                m.physical,
+                Some(crate::pbr::PhysicalMaterial::Gemstone { .. })
+            ) && m.texture.is_some()
+            {
+                return Err(format!(
+                    "material {name}: gemstone absorption is homogeneous; textures are unsupported"
+                ));
+            }
             materials.insert(name.clone(), m);
         }
         let mut meshes = BTreeMap::new();
@@ -512,6 +521,7 @@ impl SceneFile {
             }
         }
         let mut names = BTreeMap::new();
+        let mut validated_absorbing_meshes = BTreeSet::new();
         for (i, object) in self.objects.iter().enumerate() {
             if object.name.is_empty()
                 || object.name.len() > 128
@@ -596,6 +606,24 @@ impl SceneFile {
                 format!("object {}: unknown material {material_name}", object.name)
             })?;
             let matrix = world[i].expect("all transforms evaluated");
+            if matches!(
+                material.physical,
+                Some(crate::pbr::PhysicalMaterial::Gemstone { .. })
+            ) {
+                if matches!(def, GeometryDef::Plane) {
+                    return Err(format!(
+                        "object {}: gemstone requires finite closed geometry",
+                        object.name
+                    ));
+                }
+                if matches!(def, GeometryDef::Mesh { .. })
+                    && validated_absorbing_meshes.insert(geometry_name)
+                {
+                    meshes[geometry_name]
+                        .validate_absorbing_solid()
+                        .map_err(|e| format!("geometry {geometry_name}: {e}"))?;
+                }
+            }
             if let GeometryDef::Mesh { .. } = def {
                 scene.shapes.push(Box::new(MeshInstance::new(
                     meshes[geometry_name].clone(),

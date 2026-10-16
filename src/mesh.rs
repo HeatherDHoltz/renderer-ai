@@ -196,6 +196,53 @@ impl Mesh {
 }
 
 impl Mesh {
+    /// Absorbing solids need a closed oriented surface and a common interior
+    /// kernel at the bounds center, so sharp-edge offsets can move safely inward.
+    pub fn validate_absorbing_solid(&self) -> Result<(), String> {
+        use std::collections::BTreeMap;
+        if self.triangles.len() > 100_000 || self.positions.len() > 200_000 {
+            return Err(
+                "absorbing gemstone meshes support at most 100000 triangles/200000 positions"
+                    .into(),
+            );
+        }
+        let bounds = self.bounds.ok_or("absorbing mesh has no bounds")?;
+        let center = bounds.centroid().as_dvec3();
+        let tolerance = (bounds.max - bounds.min).as_dvec3().length() * 1e-9;
+        let mut unique = BTreeMap::new();
+        let indices: Vec<_> = self
+            .positions
+            .iter()
+            .map(|p| {
+                let key = p.to_array().map(|x| if x == 0.0 { 0 } else { x.to_bits() });
+                let next = unique.len();
+                *unique.entry(key).or_insert(next)
+            })
+            .collect();
+        let mut edges: BTreeMap<(usize, usize), (usize, i32)> = BTreeMap::new();
+        for triangle in &self.triangles {
+            let p = triangle.map(|c| self.positions[c.position].as_dvec3());
+            let normal = (p[1] - p[0]).cross(p[2] - p[0]);
+            if normal.dot(center - p[0]) >= -tolerance * normal.length() {
+                return Err("absorbing mesh requires outward facets with its bounds center strictly inside every face plane".into());
+            }
+            for i in 0..3 {
+                let a = indices[triangle[i].position];
+                let b = indices[triangle[(i + 1) % 3].position];
+                let (key, sign) = if a < b { ((a, b), 1) } else { ((b, a), -1) };
+                let edge = edges.entry(key).or_default();
+                edge.0 += 1;
+                edge.1 += sign;
+            }
+        }
+        if edges
+            .values()
+            .any(|(count, balance)| *count != 2 || *balance != 0)
+        {
+            return Err("absorbing mesh must be watertight with consistent outward winding".into());
+        }
+        Ok(())
+    }
     pub fn build_accel(&mut self, kind: crate::accel::AccelKind) -> Result<(), String> {
         let boxes: Vec<_> = self
             .triangles
@@ -295,6 +342,16 @@ impl MeshInstance {
         // Orientation follows the local mesh's winding even under mirrored instances.
         let outward = self.transform.normal(geom);
         let mut hit = Hit::new(ray, t, outward, self.material, uv);
+        // Reconstruct on the triangle, rather than cancelling a long camera ray
+        // against its origin with a rounded f32 t. Small faceted solids need the
+        // hit point to lie on the surface before applying the geometric offset.
+        let local_point = p[0] + e1 * beta + e2 * gamma;
+        hit.point = self
+            .transform
+            .model()
+            .as_dmat4()
+            .transform_point3(local_point)
+            .as_vec3();
         if self.smooth {
             let n = self.transform.normal(normal);
             hit.normal = if hit.front_face { n } else { -n };

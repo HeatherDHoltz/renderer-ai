@@ -18,6 +18,18 @@ pub enum PhysicalMaterial {
         tint: [f32; 3],
         ior: f32,
     },
+    /// Homogeneous RGB absorption per world unit inside an isolated closed solid.
+    Gemstone {
+        absorption: [f32; 3],
+        ior: f32,
+    },
+    /// Surface approximation of a polished fibrous stone; fiber direction is world-space.
+    Chatoyant {
+        base_color: [f32; 3],
+        fiber_direction: [f32; 3],
+        roughness_along: f32,
+        roughness_across: f32,
+    },
 }
 pub struct BrdfSample {
     pub direction: Vec3,
@@ -57,8 +69,11 @@ pub fn local_direction(n: Vec3, local: Vec3) -> Vec3 {
 impl PhysicalMaterial {
     pub fn validate(self) -> Result<(), String> {
         let color = match self {
-            Self::Diffuse { base_color } | Self::MetalRough { base_color, .. } => base_color,
+            Self::Diffuse { base_color }
+            | Self::MetalRough { base_color, .. }
+            | Self::Chatoyant { base_color, .. } => base_color,
             Self::Dielectric { tint, .. } => tint,
+            Self::Gemstone { .. } => [1.0; 3],
         };
         let color = Vec3::from_array(color);
         if !color.is_finite() || color.min_element() < 0.0 || color.max_element() > 1.0 {
@@ -78,8 +93,37 @@ impl PhysicalMaterial {
                     return Err("metallic/roughness must be in [0,1]".into());
                 }
             }
-            Self::Dielectric { ior, .. } if !ior.is_finite() || !(1.0..=4.0).contains(&ior) => {
+            Self::Dielectric { ior, .. } | Self::Gemstone { ior, .. }
+                if !ior.is_finite() || !(1.0..=4.0).contains(&ior) =>
+            {
                 return Err("dielectric IOR must be in [1,4]".into());
+            }
+            Self::Gemstone { absorption, .. } => {
+                if absorption
+                    .iter()
+                    .any(|s| !s.is_finite() || !(0.0..=1000.0).contains(s))
+                {
+                    return Err(
+                        "gemstone absorption must be finite RGB in [0,1000] per world unit".into(),
+                    );
+                }
+            }
+            Self::Chatoyant {
+                fiber_direction,
+                roughness_along,
+                roughness_across,
+                ..
+            } => {
+                let fiber = Vec3::from_array(fiber_direction);
+                if !fiber.is_finite()
+                    || !fiber.length_squared().is_finite()
+                    || fiber.length_squared() < 1e-12
+                    || [roughness_along, roughness_across]
+                        .iter()
+                        .any(|r| !r.is_finite() || !(0.01..=1.0).contains(r))
+                {
+                    return Err("chatoyant material requires a finite nonzero fiber direction and roughness in [0.01,1]".into());
+                }
             }
             _ => {}
         }
@@ -102,6 +146,18 @@ impl PhysicalMaterial {
             Self::Dielectric { tint, ior } => Self::Dielectric {
                 tint: (Vec3::from_array(tint) * texture).to_array(),
                 ior,
+            },
+            Self::Gemstone { .. } => self,
+            Self::Chatoyant {
+                base_color,
+                fiber_direction,
+                roughness_along,
+                roughness_across,
+            } => Self::Chatoyant {
+                base_color: (Vec3::from_array(base_color) * texture).to_array(),
+                fiber_direction,
+                roughness_along,
+                roughness_across,
             },
         }
     }
@@ -128,7 +184,21 @@ impl PhysicalMaterial {
         }
         match self {
             Self::Diffuse { base_color } => Vec3::from_array(base_color) / PI,
-            Self::Dielectric { .. } => Vec3::ZERO,
+            Self::Dielectric { .. } | Self::Gemstone { .. } => Vec3::ZERO,
+            Self::Chatoyant {
+                base_color,
+                fiber_direction,
+                roughness_along,
+                roughness_across,
+            } => crate::chatoyant::eval(
+                n,
+                wo,
+                wi,
+                base_color.into(),
+                fiber_direction.into(),
+                roughness_along,
+                roughness_across,
+            ),
             Self::MetalRough { .. } => {
                 let (base, metallic, alpha, _) = self.parameters();
                 let h = (wo + wi).normalize_or_zero();
@@ -150,7 +220,20 @@ impl PhysicalMaterial {
         }
         match self {
             Self::Diffuse { .. } => nl / PI,
-            Self::Dielectric { .. } => 0.0,
+            Self::Dielectric { .. } | Self::Gemstone { .. } => 0.0,
+            Self::Chatoyant {
+                fiber_direction,
+                roughness_along,
+                roughness_across,
+                ..
+            } => crate::chatoyant::pdf(
+                n,
+                wo,
+                wi,
+                fiber_direction.into(),
+                roughness_along,
+                roughness_across,
+            ),
             Self::MetalRough { .. } => {
                 let (_, _, alpha, q) = self.parameters();
                 let h = (wi + wo).normalize_or_zero();
@@ -166,8 +249,30 @@ impl PhysicalMaterial {
         }
     }
     pub fn sample(self, n: Vec3, wo: Vec3, u: [f32; 3]) -> Option<BrdfSample> {
-        if matches!(self, Self::Dielectric { .. }) || n.dot(wo) <= 0.0 {
+        if matches!(self, Self::Dielectric { .. } | Self::Gemstone { .. }) || n.dot(wo) <= 0.0 {
             return None;
+        }
+        if let Self::Chatoyant {
+            fiber_direction,
+            roughness_along,
+            roughness_across,
+            ..
+        } = self
+        {
+            let direction = crate::chatoyant::sample(
+                n,
+                wo,
+                fiber_direction.into(),
+                roughness_along,
+                roughness_across,
+                u,
+            )?;
+            let pdf = self.pdf(n, wo, direction);
+            return (pdf > 0.0 && pdf.is_finite()).then(|| BrdfSample {
+                direction,
+                value: self.eval(n, wo, direction),
+                pdf,
+            });
         }
         let (alpha, q) = if matches!(self, Self::MetalRough { .. }) {
             let (_, _, a, q) = self.parameters();
@@ -203,6 +308,15 @@ impl PhysicalMaterial {
             pdf,
         })
     }
+}
+
+/// Beer–Lambert transmittance, for validated nonnegative coefficients and distance.
+pub fn beer_transmittance(absorption: Vec3, distance: f32) -> Vec3 {
+    Vec3::from_array(
+        absorption
+            .to_array()
+            .map(|s| if s == 0.0 { 1.0 } else { (-s * distance).exp() }),
+    )
 }
 
 /// Exact unpolarized dielectric Fresnel and radiance-throughput scale.
