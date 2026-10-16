@@ -42,4 +42,28 @@ cargo run --release --locked -- render scenes/benchmark.json --output output/wav
 
 The generator deterministically recreates the checked-in OBJ and JSON. Defaults and scene seed are fixed; benchmark JSON should show a clean source state after generation. Avoid concurrent CPU-heavy jobs when comparing timings. Debug builds deliberately reject the benchmark command.
 
-Full renderer sample/thread/tile/progressive benchmarks are pending M6. Physical lighting and larger showcase compositions may change the bottlenecks; measure them separately when implemented.
+Progressive output equivalence is verified separately in PARALLEL.md; preview I/O is excluded from the thread-scaling timings below. Physical lighting and larger showcase compositions may change the bottlenecks and should be measured separately.
+
+## Full-render thread scaling
+
+Measured on the same Apple M1 Max/macOS machine at clean engine commit `4707af9`, October 15, 2026. Raw reports: [area-light study](benchmarks/render-soft.json), [triangle wave](benchmarks/render-mesh.json). Both use 320×224 output, BVH at both levels, seed 116, jittered camera sampling, 16px tiles, Whitted mode with configured maximum depth 8. These scenes use local materials, so no recursive mirror/glass bounces are spawned. The area-light study has four instances, one rectangular source, and one point source; the wave has one 8,192-triangle instance and one point source.
+
+Each worker setting ran sequentially with one warmup and five measured renders. Timing includes dedicated-pool startup, film allocation, primary/shadow tracing and shading, tile scheduling, and tile merge. It excludes scene/asset/acceleration construction, verification hashes, tone mapping/PNG encoding, and progressive preview writes. Every warmup and measured film matched the one-worker reference hash exactly. Default/auto selected ten available workers.
+
+| Scene | Workers | Median s | Min–max s | Relative to one worker |
+| --- | ---: | ---: | ---: | ---: |
+| Area-light study, 32 spp | 1 | 0.8746 | 0.8408–0.9213 | 1.00× |
+| Area-light study, 32 spp | 2 | 0.4696 | 0.4498–0.4873 | 1.86× |
+| Area-light study, 32 spp | 4 | 0.2174 | 0.2124–0.2203 | 4.02× |
+| Area-light study, 32 spp | 10 | 0.1003 | 0.0979–0.1058 | 8.72× |
+| 8,192-triangle wave, 16 spp | 1 | 0.6304 | 0.6088–0.6550 | 1.00× |
+| 8,192-triangle wave, 16 spp | 2 | 0.3111 | 0.3019–0.3169 | 2.03× |
+| 8,192-triangle wave, 16 spp | 4 | 0.1591 | 0.1461–0.1951 | 3.96× |
+| 8,192-triangle wave, 16 spp | 10 | 0.0716 | 0.0674–0.0757 | 8.81× |
+
+The measured scaling is specific to these workloads, image/sample counts, and the current machine. Tile count, heterogeneous CPU scheduling, scene complexity, physical shading, and preview I/O can change it. The raw reports preserve every run rather than extrapolating linear scaling.
+
+```sh
+cargo run --release --locked -- benchmark-render scenes/parallel_benchmark.json --threads 1,2,4,0 --runs 5 --warmups 1 --output output/render-soft.json
+cargo run --release --locked -- benchmark-render scenes/parallel_mesh_benchmark.json --threads 1,2,4,0 --runs 5 --warmups 1 --output output/render-mesh.json
+```

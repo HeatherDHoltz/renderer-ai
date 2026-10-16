@@ -1,0 +1,95 @@
+{
+  "source_commit": "4707af9f62703c232fe175fbc0b1535581bea727",
+  "tracked_source_dirty": false,
+  "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+  "cpu": "Apple M1 Max",
+  "machine": "MacBookPro18,2",
+  "os": "14.6.1",
+  "logical_cpus": 10,
+  "scene": "scenes/parallel_mesh_benchmark.json",
+  "instance_count": 1,
+  "instanced_triangle_count": 8192,
+  "scene_fnv1a64": "7c894450141be2ab",
+  "settings": {
+    "width": 320,
+    "height": 224,
+    "spp": 16,
+    "seed": 116,
+    "integrator": "whitted",
+    "max_depth": 8,
+    "min_throughput": 0.0001,
+    "exposure": 0.0,
+    "tone_map": "reinhard",
+    "accel": "bvh",
+    "sampling": "jittered",
+    "threads": 0,
+    "tile_size": 16,
+    "progressive": false,
+    "preview_every": 8
+  },
+  "warmups": 1,
+  "runs": 5,
+  "workload": "Release render_sampled wall time including worker-pool creation, linear film allocation, all camera/lighting/recursive work, tiled scheduling, and merge. Scene/asset/acceleration loading, hash verification, tone mapping, PNG writes, and progressive previews are excluded. Exact linear-film hashes checked against one-thread reference on every run.",
+  "thread_results": [
+    {
+      "requested_threads": 1,
+      "actual_threads": 1,
+      "seconds": [
+        0.6087725,
+        0.642963375,
+        0.655026875,
+        0.630364584,
+        0.630139542
+      ],
+      "median_seconds": 0.630364584,
+      "min_seconds": 0.6087725,
+      "max_seconds": 0.655026875,
+      "film_fnv1a64": "779b3ab7a43aec9c"
+    },
+    {
+      "requested_threads": 2,
+      "actual_threads": 2,
+      "seconds": [
+        0.302404334,
+        0.316857084,
+        0.311074375,
+        0.313494666,
+        0.301877542
+      ],
+      "median_seconds": 0.311074375,
+      "min_seconds": 0.301877542,
+      "max_seconds": 0.316857084,
+      "film_fnv1a64": "779b3ab7a43aec9c"
+    },
+    {
+      "requested_threads": 4,
+      "actual_threads": 4,
+      "seconds": [
+        0.153798,
+        0.190590917,
+        0.146131458,
+        0.195078125,
+        0.159115291
+      ],
+      "median_seconds": 0.159115291,
+      "min_seconds": 0.146131458,
+      "max_seconds": 0.195078125,
+      "film_fnv1a64": "779b3ab7a43aec9c"
+    },
+    {
+      "requested_threads": 0,
+      "actual_threads": 10,
+      "seconds": [
+        0.072107708,
+        0.067924,
+        0.075687125,
+        0.071574833,
+        0.067399917
+      ],
+      "median_seconds": 0.071574833,
+      "min_seconds": 0.067399917,
+      "max_seconds": 0.075687125,
+      "film_fnv1a64": "779b3ab7a43aec9c"
+    }
+  ]
+}
