@@ -418,6 +418,9 @@ export function makeBenchObjects(
   }
   return {
     targets,
+    reflectionMaterials: samples
+      .filter((s) => s.kind === "metal")
+      .map((s) => s.object.material),
     loupe,
     baffle,
     restPosition,

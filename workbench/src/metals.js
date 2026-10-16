@@ -34,7 +34,6 @@ export function applyMetal(material, id, finish) {
   material.anisotropy = 0.08 + 0.86 * t;
   material.bumpMap = brushingTexture();
   material.bumpScale = 0.0035 * t * t;
-  material.envMapIntensity = 1;
 }
 export function metalMaterial(id, finish) {
   const m = new THREE.MeshPhysicalMaterial({ metalness: 1, roughness: 0.1 });

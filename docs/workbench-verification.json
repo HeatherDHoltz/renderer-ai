@@ -7,7 +7,7 @@
   },
   "checks": {
     "web_tests": {
-      "passed": 20,
+      "passed": 22,
       "failed": 0,
       "command": "npm test --prefix workbench"
     },
@@ -52,7 +52,8 @@
       "gallery/workbench/workshop-live.jpg",
       "gallery/workbench/workshop-realism.jpg",
       "gallery/workbench/diamond-facets.jpg",
-      "gallery/workbench/ring-drag-fixed.jpg"
+      "gallery/workbench/ring-drag-fixed.jpg",
+      "gallery/workbench/table-lighting-fixed.jpg"
     ],
     "png_export_retained": "output/workshop-realism-photo.png",
     "pickup_reversal_observed": {
@@ -102,12 +103,12 @@
   },
   "deployment": {
     "project_id": "appgprj_6ad1d1ee181c819186c337d3573bdaea",
-    "source_commit": "3fdb7f0017f0265bbeb19252352c97ffa9507fc5",
-    "deployment_id": "appgdep_6ad1edc9c06c81918020d126a073d65e",
+    "source_commit": "f613982918c6e2c2dc33240d43c2397fbeea1740",
+    "deployment_id": "appgdep_6ad1ef3037c08191b238dbdd92a446fa",
     "status": "succeeded",
     "url": "https://heathers-little-jeweler.zoeholtz2000.chatgpt.site",
     "audience": "owner-private",
-    "browser_handoff": "Hosted direct ring drag visibly rotates band and stone after reload; hover label restored. Owner-private audience preserved."
+    "browser_handoff": "Corrected hosted scene inspected; actual physical lamp drag passed after a normal reload. Original owner-private audience preserved."
   },
   "limits": [
     "No measured device FPS benchmark",
@@ -125,7 +126,7 @@
     "internal_bounce_limit": 12,
     "diamond_ior": 2.417,
     "dispersion": "Three RGB refraction indices, not full spectral integration",
-    "reflection_probe": "256-square half-float cube; cached, max 10 Hz while dirty; main jewelry and loupe excluded; filtered PMREM for metals",
+    "reflection_probe": "256-square half-float cube; cached max 10 Hz while dirty; main jewelry/loupe excluded; raw cube for faceted gems, explicit filtered material envMaps for main metal, tiger eye and ring samples. Room keeps its stable HDR environment.",
     "sample_case": "Six artist-tuned metal presets \u00d7 three finish rows = 18 rings",
     "msaa": "Up to four samples in offscreen target"
   },
@@ -137,5 +138,14 @@
     "checks": "20 web tests, standalone build, Rust fmt, 98 Rust tests and strict Clippy; 12 original class hashes unchanged.",
     "hosted_browser": "Passed: pointer drag from (604,379) to (720,402) visibly turns the band and stone; Turn the jewelry hover label present.",
     "evidence": "gallery/workbench/ring-drag-fixed.jpg"
+  },
+  "table_lighting_regression": {
+    "cause": "The 100 ms reflection-capture refresh replaced scene.environment globally, making table/room indirect light step at probe cadence and feeding captured room light back into itself.",
+    "fix": "Keep scene.environment at its original HDR environment. Bind the filtered moving capture only to jewelry materials; direct lamp/shadow changes continue on each relevant main draw.",
+    "checks": "22 web tests including scoped reflection bindings and finish intensity preservation; standalone build; Rust fmt, 98 tests and strict Clippy; all 12 class hashes unchanged.",
+    "performance_limit": "Removed the 10 Hz environment-update dependency from room surfaces. No new GPU/device FPS benchmark or 60 FPS guarantee. Jewelry capture remains capped at 10 Hz.",
+    "hosted_browser": "Passed actual physical lamp drag after ready reload; changed direct lamp illumination and jewelry highlights with the separated room environment. No frame-time benchmark was performed.",
+    "rollout_note": "First immediate hosted load had a dynamic-module fetch failure during deployment propagation; a later normal reload loaded the corrected scene and hosted lamp drag passed.",
+    "evidence": "gallery/workbench/table-lighting-fixed.jpg"
   }
 }

@@ -93,6 +93,7 @@ function tigerMaterial() {
 import { loadSurfaces } from "./surfaces.js";
 import { makeFacetMaterial, convexFacetHull } from "./gem-optics.js";
 import { applyMetal } from "./metals.js";
+import { specimenEnvironment } from "./reflections.js";
 import { buildWorkshop } from "./workshop.js";
 import { makeBenchObjects } from "./bench-objects.js";
 import {
@@ -163,7 +164,7 @@ export async function createWorkbench(host, onFatalError) {
     metalness: 1,
     roughness: 0.14,
     anisotropy: 0.2,
-    envMapIntensity: 1.1,
+    envMapIntensity: 1,
   });
   const spin = new THREE.Group(),
     root = new THREE.Group(),
@@ -424,6 +425,10 @@ export async function createWorkbench(host, onFatalError) {
   objects.setLamp(key.position);
   objects.select("gem", selectedGem);
   objects.select("metal", "gold");
+  const updateSpecimenEnvironment = specimenEnvironment(
+    [metal, tiger, ...objects.reflectionMaterials],
+    scene.environmentIntensity,
+  );
   function updateReflections(now) {
     if (!reflectionDirty || now - lastReflection < 100) return;
     scene.updateMatrixWorld(true);
@@ -437,7 +442,7 @@ export async function createWorkbench(host, onFatalError) {
       reflectionTarget.texture,
       reflectionFiltered,
     );
-    scene.environment = reflectionFiltered.texture;
+    updateSpecimenEnvironment(reflectionFiltered.texture);
     key.shadow.needsUpdate = true;
     workshop.sun.shadow.needsUpdate = true;
     reflectionDirty = false;
