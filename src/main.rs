@@ -23,6 +23,29 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Command {
+    /// Render an inclusive frame range with fresh transforms and bounds at every time.
+    Animate {
+        scene: PathBuf,
+        #[arg(long, default_value = "output/frames")]
+        output: PathBuf,
+        #[arg(long, default_value = "0:60")]
+        frames: renderer_project::animation::FrameRange,
+        #[arg(long, default_value_t = 24.0)]
+        fps: f64,
+        #[arg(long, default_value_t = 0.0, allow_hyphen_values = true)]
+        start_time: f64,
+        #[arg(long)]
+        width: Option<u32>,
+        #[arg(long)]
+        height: Option<u32>,
+        #[arg(long)]
+        spp: Option<u32>,
+        #[arg(long)]
+        threads: Option<usize>,
+        /// Also save raw linear RGBE for every completed frame.
+        #[arg(long)]
+        hdr: bool,
+    },
     /// Measure full-render thread scaling with exact linear-film verification.
     BenchmarkRender {
         scene: PathBuf,
@@ -93,6 +116,8 @@ enum Command {
         hdr_output: Option<PathBuf>,
         #[arg(long)]
         integrator: Option<String>,
+        #[arg(long, default_value_t = 0.0, allow_hyphen_values = true)]
+        time: f64,
     },
 }
 fn main() {
@@ -103,6 +128,42 @@ fn main() {
 }
 fn run() -> Result<(), Box<dyn Error>> {
     match Cli::parse().command {
+        Command::Animate {
+            scene,
+            output,
+            frames,
+            fps,
+            start_time,
+            width,
+            height,
+            spp,
+            threads,
+            hdr,
+        } => {
+            let mut file = SceneFile::load(&scene)?;
+            if let Some(v) = width {
+                file.render.width = v;
+            }
+            if let Some(v) = height {
+                file.render.height = v;
+            }
+            if let Some(v) = spp {
+                file.render.spp = v;
+            }
+            if let Some(v) = threads {
+                file.render.threads = v;
+            }
+            renderer_project::animation::render_sequence(
+                &file,
+                scene.parent().unwrap_or(Path::new(".")),
+                &output,
+                frames,
+                fps,
+                start_time,
+                hdr,
+            )?;
+            Ok(())
+        }
         Command::BenchmarkRender {
             scene,
             output,
@@ -187,6 +248,7 @@ fn run() -> Result<(), Box<dyn Error>> {
             preview_every,
             hdr_output,
             integrator,
+            time,
         } => {
             let start = Instant::now();
             let mut file = SceneFile::load(&scene)?;
@@ -232,7 +294,7 @@ fn run() -> Result<(), Box<dyn Error>> {
             if let Some(v) = integrator {
                 file.render.integrator = v;
             }
-            let loaded = file.build(scene.parent().unwrap_or(Path::new(".")))?;
+            let loaded = file.build_at(scene.parent().unwrap_or(Path::new(".")), time)?;
             let load_time = start.elapsed();
             if !output
                 .extension()

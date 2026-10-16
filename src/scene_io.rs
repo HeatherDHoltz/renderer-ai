@@ -249,6 +249,8 @@ pub struct ObjectDef {
     #[serde(default)]
     pub transform: TransformDef,
     #[serde(default)]
+    pub animation: Option<crate::animation::TransformTrack>,
+    #[serde(default)]
     pub smooth: bool,
 }
 
@@ -348,6 +350,10 @@ impl SceneFile {
             .map_err(|e| format!("{}: {e}", path.display()))
     }
     pub fn build(&self, base: &Path) -> Result<LoadedScene, String> {
+        self.build_at(base, 0.0)
+    }
+    pub fn build_at(&self, base: &Path, time: f64) -> Result<LoadedScene, String> {
+        crate::animation::validate_time(time)?;
         let build_start = std::time::Instant::now();
         let mut build_timings = BuildTimings::default();
         if self.version != 1 {
@@ -364,6 +370,15 @@ impl SceneFile {
             || self.lights.len() > 1024
         {
             return Err("scene resource counts exceed supported limits".into());
+        }
+        let keys: usize = self
+            .objects
+            .iter()
+            .filter_map(|o| o.animation.as_ref())
+            .map(|t| t.keyframes.len())
+            .sum();
+        if keys > 100_000 {
+            return Err("scene exceeds 100000 combined animation keyframes".into());
         }
         let aspect = self.render.width as f32 / self.render.height as f32;
         let c = &self.camera;
@@ -550,7 +565,12 @@ impl SceneFile {
                     * object
                         .transform
                         .matrix()
-                        .map_err(|e| format!("object {}: {e}", object.name))?;
+                        .map_err(|e| format!("object {}: {e}", object.name))?
+                    * object
+                        .animation
+                        .as_ref()
+                        .map_or(Ok(Mat4::IDENTITY), |track| track.matrix_at(time))
+                        .map_err(|e| format!("object {} animation: {e}", object.name))?;
                 Transform::new(matrix)?;
                 world[i] = Some(matrix);
             }

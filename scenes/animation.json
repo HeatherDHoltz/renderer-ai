@@ -1,0 +1,471 @@
+{
+  "version": 1,
+  "camera": {
+    "position": [
+      5,
+      3.6,
+      8
+    ],
+    "target": [
+      0,
+      1.3,
+      0
+    ],
+    "fov": 36
+  },
+  "render": {
+    "width": 640,
+    "height": 420,
+    "spp": 32,
+    "seed": 116,
+    "integrator": "whitted",
+    "max_depth": 6
+  },
+  "background": [
+    0.055,
+    0.075,
+    0.11
+  ],
+  "textures": {
+    "floor": {
+      "kind": "checker",
+      "a": [
+        0.23,
+        0.27,
+        0.31
+      ],
+      "b": [
+        0.14,
+        0.17,
+        0.2
+      ],
+      "scale": [
+        0.5,
+        0.5
+      ]
+    }
+  },
+  "materials": {
+    "teal": {
+      "diffuse": [
+        0.035,
+        0.48,
+        0.43
+      ],
+      "specular": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "shininess": 96
+    },
+    "gold": {
+      "diffuse": [
+        0.72,
+        0.4,
+        0.075
+      ],
+      "specular": [
+        0.4,
+        0.35,
+        0.2
+      ],
+      "shininess": 64
+    },
+    "orange": {
+      "diffuse": [
+        0.75,
+        0.16,
+        0.045
+      ],
+      "specular": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "shininess": 64
+    },
+    "arm": {
+      "diffuse": [
+        0.12,
+        0.15,
+        0.19
+      ],
+      "specular": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "shininess": 128
+    },
+    "floor": {
+      "diffuse": [
+        0.65,
+        0.65,
+        0.65
+      ],
+      "texture": "floor"
+    }
+  },
+  "geometries": {
+    "sphere": {
+      "kind": "sphere"
+    },
+    "box": {
+      "kind": "box"
+    },
+    "cylinder": {
+      "kind": "cylinder"
+    },
+    "plane": {
+      "kind": "plane"
+    },
+    "mesh": {
+      "kind": "mesh",
+      "path": "../assets/uv-sphere.obj"
+    }
+  },
+  "objects": [
+    {
+      "name": "floor",
+      "geometry": "plane",
+      "material": "floor"
+    },
+    {
+      "name": "plinth",
+      "geometry": "cylinder",
+      "material": "arm",
+      "transform": {
+        "translation": [
+          0,
+          0.13,
+          0
+        ],
+        "scale": [
+          0.85,
+          0.13,
+          0.85
+        ]
+      }
+    },
+    {
+      "name": "stem",
+      "geometry": "cylinder",
+      "material": "arm",
+      "transform": {
+        "translation": [
+          0,
+          0.9,
+          0
+        ],
+        "scale": [
+          0.12,
+          0.7,
+          0.12
+        ]
+      }
+    },
+    {
+      "name": "rotor",
+      "transform": {
+        "translation": [
+          0,
+          1.6,
+          0
+        ]
+      },
+      "animation": {
+        "keyframes": [
+          {
+            "time": 0,
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "time": 1,
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0.0,
+              0.7071067811865475,
+              0.0,
+              0.7071067811865476
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "time": 2,
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0.0,
+              1.0,
+              0.0,
+              6.123233995736766e-17
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "hub",
+      "geometry": "sphere",
+      "material": "teal",
+      "transform": {
+        "scale": [
+          0.45,
+          0.45,
+          0.45
+        ]
+      },
+      "parent": "rotor"
+    },
+    {
+      "name": "east-arm",
+      "geometry": "cylinder",
+      "material": "arm",
+      "transform": {
+        "translation": [
+          1,
+          0,
+          0
+        ],
+        "rotation_degrees": [
+          0,
+          0,
+          90
+        ],
+        "scale": [
+          0.055,
+          1,
+          0.055
+        ]
+      },
+      "parent": "rotor"
+    },
+    {
+      "name": "east-satellite",
+      "geometry": "box",
+      "material": "gold",
+      "transform": {
+        "translation": [
+          2,
+          0,
+          0
+        ],
+        "scale": [
+          0.34,
+          0.34,
+          0.34
+        ]
+      },
+      "parent": "rotor",
+      "animation": {
+        "keyframes": [
+          {
+            "time": 0,
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "time": 1,
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0.49999999999999994,
+              0.0,
+              0.0,
+              0.8660254037844387
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "time": 2,
+            "translation": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0.8660254037844386,
+              0.0,
+              0.0,
+              0.5000000000000001
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "west-arm",
+      "geometry": "cylinder",
+      "material": "arm",
+      "transform": {
+        "translation": [
+          -0.9,
+          0,
+          0
+        ],
+        "rotation_degrees": [
+          0,
+          0,
+          90
+        ],
+        "scale": [
+          0.055,
+          0.9,
+          0.055
+        ]
+      },
+      "parent": "rotor"
+    },
+    {
+      "name": "west-satellite",
+      "geometry": "mesh",
+      "material": "orange",
+      "transform": {
+        "translation": [
+          -1.8,
+          0,
+          0
+        ],
+        "scale": [
+          0.42,
+          0.42,
+          0.42
+        ]
+      },
+      "parent": "rotor",
+      "smooth": true
+    },
+    {
+      "name": "moon-arm",
+      "geometry": "cylinder",
+      "material": "arm",
+      "transform": {
+        "translation": [
+          0,
+          0.5,
+          0
+        ],
+        "scale": [
+          0.04,
+          0.5,
+          0.04
+        ]
+      },
+      "parent": "west-satellite"
+    },
+    {
+      "name": "moon",
+      "geometry": "sphere",
+      "material": "teal",
+      "transform": {
+        "translation": [
+          0,
+          1,
+          0
+        ],
+        "scale": [
+          0.28,
+          0.28,
+          0.28
+        ]
+      },
+      "parent": "west-satellite"
+    }
+  ],
+  "lights": [
+    {
+      "kind": "area",
+      "center": [
+        -3,
+        6,
+        4
+      ],
+      "edge_u": [
+        3,
+        0,
+        0
+      ],
+      "edge_v": [
+        0,
+        0,
+        3
+      ],
+      "radiance": [
+        14,
+        13,
+        11
+      ]
+    },
+    {
+      "kind": "point",
+      "position": [
+        5,
+        4,
+        -3
+      ],
+      "color": [
+        0.35,
+        0.45,
+        0.65
+      ]
+    }
+  ]
+}

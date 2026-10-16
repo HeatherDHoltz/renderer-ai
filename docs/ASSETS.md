@@ -11,6 +11,7 @@
 - `gallery/soft-1.png`, `soft-shadows.png`, and `soft-small.png`: inspected 320×224 rectangular-light diagnostics, generated from the included soft-shadow scenes; exact commands in SAMPLING.md.
 - `assets/studio.hdr`: synthetic 256×128 linear Radiance RGBE map with three angular softboxes and a dim upper/lower field, generated entirely by `cargo run --release --locked --example generate_environment`. No photograph or external environment. Values exceed one before display mapping.
 - `gallery/physical-studio.png`: inspected 960×540, 256-spp environment-only render of `scenes/physical_studio.json`; command, material ordering, and limitations in PHYSICAL.md. The accompanying raw HDR stays in ignored `output/`.
+- `gallery/animation-{first,middle,last}.png`: actual 640×420, 32-spp frames 0/8/16 of the included kinetic sculpture, at 8 fps; analytic geometry and the existing generated OBJ only. Sequence command and composition in ANIMATION.md.
 - Course slides, handouts, syllabus, and class submission files are not redistributed here.
 
 No license has been assigned to project-authored files or images. Dependency licenses remain those declared by their respective packages.

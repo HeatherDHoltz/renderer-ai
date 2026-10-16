@@ -26,7 +26,7 @@ See [PLAN.md](../PLAN.md) and [STATUS.md](../STATUS.md) for verified capabilitie
 
 ## Scene IO, meshes, and textures
 
-Serde/serde_json implement strict versioned JSON loading; clap implements CLI parsing. Original glam/image versions are unchanged. Scene IO validates named references, resource counts, material ranges, cameras, and composed transforms before rendering. An iterative parent walk detects cycles without unbounded recursion. Instances share an Arc of each indexed mesh. This graph supports static groups now; keyframe evaluation remains M8.
+Serde/serde_json implement strict versioned JSON loading; clap implements CLI parsing. Original glam/image versions are unchanged. Scene IO validates named references, resource counts, material ranges, cameras, and composed transforms before rendering. An iterative parent walk detects cycles without unbounded recursion. Instances share an Arc of each indexed mesh. Optional keyframe tracks compose static TRS with interpolated TRS before parent composition. Per-time builds validate all tracks, reload assets, and rebuild fresh acceleration; [ANIMATION.md](ANIMATION.md) defines quaternion/time/frame behavior and the explicit caching tradeoff.
 
 The focused OBJ loader retains separate position/normal/UV corner indices and resolves negative indices during loading. Triangles intersect with double-sided Möller–Trumbore using f64 intermediates, a relative determinant tolerance, and barycentric edge tolerance 1e-8. Flat normals and interpolated shading normals remain distinct. Missing smooth normals use an area-weighted sum. Each mesh builds a selectable local index over triangle bounds; scene acceleration indexes reusable instances. Both levels share generic traversal and the same input-index tie policy.
 
