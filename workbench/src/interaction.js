@@ -65,7 +65,7 @@ export function benchFraming(aspect) {
     6.4,
     Math.min(
       18,
-      1.4 + 3.7 / (Math.tan(THREE.MathUtils.degToRad(fov / 2)) * aspect),
+      1.4 + 4.15 / (Math.tan(THREE.MathUtils.degToRad(fov / 2)) * aspect),
     ),
   );
   return { fov, z, y: 2.6 + (z - 6.4) * 0.37 };

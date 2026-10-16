@@ -7,7 +7,7 @@
   },
   "checks": {
     "web_tests": {
-      "passed": 14,
+      "passed": 19,
       "failed": 0,
       "command": "npm test --prefix workbench"
     },
@@ -37,13 +37,11 @@
       "2x/3x loupe projection and ring/loose-stone camera retargeting",
       "keyboard alternatives and small-screen bench controls",
       "journal with all three reference images loaded",
-      "PNG download from the animated inspection camera"
-    ],
-    "layout_css_widths_checked": [
-      255,
-      430,
-      672,
-      1280
+      "PNG download from the animated inspection camera",
+      "18 smaller physical rings: six metals by polished/satin/brushed rows",
+      "Brushed titanium physical sample selects metal and finish=92",
+      "Actual-facet diamond top view and emerald loose-stone loupe",
+      "Cached room/lamp reflection probe changes diamond flashes and metal highlights as lamp moves"
     ],
     "horizontal_overflow_at_checked_widths": false,
     "shader_errors_observed": false,
@@ -51,53 +49,83 @@
       "gallery/workbench/workshop.jpg",
       "gallery/workbench/loupe-pickup.jpg",
       "gallery/workbench/loupe.jpg",
-      "gallery/workbench/workshop-live.jpg"
+      "gallery/workbench/workshop-live.jpg",
+      "gallery/workbench/workshop-realism.jpg",
+      "gallery/workbench/diamond-facets.jpg"
     ],
-    "png_export_retained": "output/workshop-photo-check.png",
+    "png_export_retained": "output/workshop-realism-photo.png",
     "pickup_reversal_observed": {
       "before": 0.021,
       "after": 0,
       "note": "UI animation progress decreased after Escape; full reversal invariants also covered by unit tests."
     },
-    "responsive_note": "Actual CSS widths, not requested viewport pixels. The IAB viewport override produced inconsistent capture scaling; it was reset and final screenshots use a fresh 1280x720 normal tab.",
+    "responsive_note": "Realism milestone inspected at normal IAB widths 1034/1035 and height 669. Portrait/square/wide box fit is covered by the strengthened 4.15-unit field test; the earlier milestone additionally inspected the preserved widths above. No new mobile-device FPS claim.",
     "reduced_motion": "Code path disables gaze parallax and candle flicker and shortens pickup duration; preference emulation was not browser-tested.",
     "hover_and_pointer_targets": "Observed physical clicks for diamond, emerald, silver and loupe. Lamp drag changed reach/height; empty canvas does not turn jewelry.",
     "lamp_drag": "Pointer-ray intersection with the head\u2019s z=-1 movement plane preserves grip offset; verified drag changed reach 48\u219282 and height 28\u21928 at the bounded lower limit.",
     "png_export_dimensions": [
-      1280,
-      720
+      1552,
+      1003
     ],
     "live_qa": {
       "url": "https://heathers-little-jeweler.zoeholtz2000.chatgpt.site",
       "viewport": [
-        672,
+        1035,
         669
       ],
       "diamond_box_click": "passed",
-      "animated_loupe_pickup_and_return": "passed",
-      "console_errors": false
-    }
+      "actual_facet_shader_and_live_probe": "passed",
+      "top_view_loupe": "passed",
+      "console_errors_after_final_ready_load": false,
+      "rollout_note": "The first reload immediately after publication observed an old caption and one dynamic-module fetch failure during propagation. A subsequent normal reload loaded the new caption and full scene successfully; final hosted inspection passed."
+    },
+    "previous_layout_css_widths_checked": [
+      255,
+      430,
+      672,
+      1280
+    ],
+    "layout_css_widths_checked": [
+      1034,
+      1035
+    ],
+    "png_export_note": "1035\u00d7669 CSS viewport, capped device pixel ratio 1.5; actual PNG is 1552\u00d71003 pixels."
   },
   "background_assets": {
     "models": 5,
     "license": "CC0-1.0",
     "bytes": 9143007,
-    "maps": "1K diffuse only"
+    "maps": "1K photographed velvet color/normal/roughness/AO, wood/plaster maps, matching original table normal/ARM, two HDR panoramas",
+    "additional_material_files": 14,
+    "additional_material_bytes": 10636300
   },
   "deployment": {
     "project_id": "appgprj_6ad1d1ee181c819186c337d3573bdaea",
-    "source_commit": "fecc88ef3d2a9079b769e43794f31c2d4a29566e",
-    "deployment_id": "appgdep_6ad1e2cb8d50819199a9b1867b8a82f5",
+    "source_commit": "b79d43cc3674679140cb9394a07e79a737b78353",
+    "deployment_id": "appgdep_6ad1ec324d908191b9e7ae44749ee483",
     "status": "succeeded",
     "url": "https://heathers-little-jeweler.zoeholtz2000.chatgpt.site",
     "audience": "owner-private",
-    "browser_handoff": "Authenticated hosted UI verified at the production URL: physical diamond selection, complete loupe pickup/return, no console errors. Local QA additionally covered lamp/metal controls and other layouts."
+    "browser_handoff": "Authenticated new hosted room, physical diamond selection, lamp-probe change and top-view loupe verified. Original owner-private audience preserved."
   },
   "limits": [
     "No measured device FPS benchmark",
     "Tiger eye is an artist-tuned surface model, not measured volume optics",
     "Loupe uses camera projection and a 3D eyepiece, not ray tracing through a designed optical lens",
     "Live browser GPU, Rust CPU, and external Mitsuba outputs are credited separately",
-    "Pickup clearance uses conservative proxies and mounted-gem bounds, not general rigid-body collision physics"
-  ]
+    "Pickup clearance uses conservative proxies and mounted-gem bounds, not general rigid-body collision physics",
+    "Faceted gem external rays sample a room cube probe; no near-field setting reflection, caustics or full scene path tracing",
+    "Alloy colors and dispersion/scattering parameters are artist tuned; not measured gemstone/alloy optics",
+    "Reflection capture refresh is limited to 10 Hz during lamp changes; frame rate has not been benchmarked on mobile"
+  ],
+  "optics": {
+    "diamond_mesh": "Same Zsky Jewel 01 OBJ as Rust panel, CC BY 3.0, 21 facet planes",
+    "emerald_mesh": "Project step mesh repaired to closed convex hull, 42 facet planes",
+    "internal_bounce_limit": 12,
+    "diamond_ior": 2.417,
+    "dispersion": "Three RGB refraction indices, not full spectral integration",
+    "reflection_probe": "256-square half-float cube; cached, max 10 Hz while dirty; main jewelry and loupe excluded; filtered PMREM for metals",
+    "sample_case": "Six artist-tuned metal presets \u00d7 three finish rows = 18 rings",
+    "msaa": "Up to four samples in offscreen target"
+  }
 }

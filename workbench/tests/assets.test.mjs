@@ -57,3 +57,27 @@ test("browser reference images and reused meshes match the recorded Rust/Mitsuba
     );
   }
 });
+
+test("photographed materials and HDR panoramas retain upstream and local checksums", async () => {
+  const root = new URL("../assets/materials/", import.meta.url);
+  const records = JSON.parse(
+    await readFile(new URL("sources.json", root), "utf8"),
+  );
+  assert.equal(records.length, 14);
+  let total = 0;
+  for (const r of records) {
+    assert.equal(r.license, "CC0-1.0");
+    assert.ok(Object.keys(r.authors).length);
+    assert.ok(!r.file.includes("/") && !r.file.includes(".."));
+    assert.ok(r.source.startsWith("https://polyhaven.com/a/"));
+    const data = await readFile(new URL(r.file, root));
+    assert.equal(data.byteLength, r.bytes);
+    assert.equal(createHash("md5").update(data).digest("hex"), r.md5);
+    assert.equal(createHash("sha256").update(data).digest("hex"), r.sha256);
+    total += data.byteLength;
+  }
+  assert.ok(
+    total < 11_000_000,
+    "surface and panorama download budget stays below 11 MB",
+  );
+});

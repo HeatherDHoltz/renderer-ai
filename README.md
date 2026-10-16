@@ -8,7 +8,7 @@ A Rust ray tracer with affine geometry, indexed meshes, SAH acceleration, HDR li
 
 ## Explore the workshop
 
-[The Little Jeweler](workbench/README.md) is a separate interactive browser companion: a candlelit first-person workshop with rotatable jewelry, tiger’s eye/diamond/emerald, gold/silver finishes, a directly draggable lamp, physical felt selection boxes, gentle cursor gaze, and an animated 3D loupe inspection view. Its Three.js GPU materials are distinct from this Rust renderer and the optional Mitsuba reference images.
+[The Little Jeweler](workbench/README.md) is a separate interactive browser companion: a candlelit first-person workshop with rotatable jewelry, tiger’s eye/diamond/emerald, six metals and 18 ring/finish samples, a directly draggable lamp, sculpted scanned-velvet selection boxes, gentle cursor gaze, and an animated 3D loupe inspection view. Diamond/emerald trace internal facet reflections and RGB dispersion; a live room/lamp probe drives jewelry reflections. Its Three.js GPU materials are distinct from this Rust renderer and the optional Mitsuba reference images.
 
 [Open the private hosted preview](https://heathers-little-jeweler.zoeholtz2000.chatgpt.site) (owner’s ChatGPT sign-in required).
 

@@ -1,3 +1,4 @@
+import { METALS } from "./metals.js";
 const $ = (id) => document.getElementById(id);
 const state = {
   gem: "tiger",
@@ -17,6 +18,20 @@ const state = {
 const names = { tiger: "Tiger’s eye", diamond: "Diamond", emerald: "Emerald" };
 const host = $("render-host"),
   viewer = $("viewer");
+const metalChoices = document.querySelector(
+  '[role="group"][aria-label="Metal"]',
+);
+metalChoices.classList.add("metal-options");
+metalChoices.replaceChildren(
+  ...Object.entries(METALS).map(([id, m]) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.metal = id;
+    b.textContent = m.name;
+    b.setAttribute("aria-pressed", String(id === state.metal));
+    return b;
+  }),
+);
 let app,
   failed = false,
   dragging = false;
@@ -74,13 +89,14 @@ function updateLoupe() {
 }
 function updateLabels() {
   $("scene-name").textContent =
-    `${names[state.gem].toUpperCase()}${state.setting === "ring" ? " & " + state.metal.toUpperCase() : " · LOOSE STONE"}`;
+    `${names[state.gem].toUpperCase()}${state.setting === "ring" ? " & " + METALS[state.metal].name.toUpperCase() : " · LOOSE STONE"}`;
   $("light-angle").value = state.angle;
   $("light-height").value = state.height;
   $("light-value").textContent = state.angle + "%";
   $("height-value").textContent = state.height + "%";
+  $("finish").value = state.finish;
   $("finish-value").textContent =
-    state.finish < 28 ? "Polished" : state.finish < 65 ? "Satin" : "Brushed";
+    state.finish < 28 ? "Polished" : state.finish < 70 ? "Satin" : "Brushed";
   $("auto-turn").setAttribute("aria-pressed", String(state.auto));
   viewer.dataset.tool = state.tool;
   viewer.dataset.background = state.background;
@@ -340,6 +356,14 @@ function release(event) {
     if (state.setting === "loose")
       document.querySelector('[data-setting="ring"]').click();
     document.querySelector(`[data-metal="${activate.value}"]`).click();
+    if (activate.finish !== undefined) {
+      state.finish = activate.finish;
+      app.setFinish(state.finish);
+      updateLabels();
+      announce(
+        `${METALS[state.metal].name}, ${state.finish < 28 ? "polished" : state.finish < 70 ? "satin" : "brushed"} selected.`,
+      );
+    }
   }
   if (activate?.kind === "loupe") setTool("loupe");
   hoverAt(event);

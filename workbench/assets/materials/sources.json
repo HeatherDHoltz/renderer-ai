@@ -1,0 +1,188 @@
+[
+  {
+    "asset": "velour_velvet",
+    "source": "https://polyhaven.com/a/velour_velvet",
+    "authors": {
+      "colormass": "Photography",
+      "Rico Cilliers": "Processing"
+    },
+    "license": "CC0-1.0",
+    "file": "velvet-color.jpg",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/velour_velvet/velour_velvet_diff_1k.jpg",
+    "md5": "fa3a7ef3606bf7591b8f8577992e7228",
+    "sha256": "e6e92d808b3456deb892ff17905f3b44717fcfbcbce9fcf03ad7abcabda799df",
+    "bytes": 735556
+  },
+  {
+    "asset": "velour_velvet",
+    "source": "https://polyhaven.com/a/velour_velvet",
+    "authors": {
+      "colormass": "Photography",
+      "Rico Cilliers": "Processing"
+    },
+    "license": "CC0-1.0",
+    "file": "velvet-normal.jpg",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/velour_velvet/velour_velvet_nor_gl_1k.jpg",
+    "md5": "41009a399cb4d45e44636a515cd4c8c8",
+    "sha256": "046c92c48c1cb36656d394addf21dea9582f563479b73f2c0b16f356128e872b",
+    "bytes": 695985
+  },
+  {
+    "asset": "velour_velvet",
+    "source": "https://polyhaven.com/a/velour_velvet",
+    "authors": {
+      "colormass": "Photography",
+      "Rico Cilliers": "Processing"
+    },
+    "license": "CC0-1.0",
+    "file": "velvet-roughness.jpg",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/velour_velvet/velour_velvet_rough_1k.jpg",
+    "md5": "fac679bf7a69501a7402d832667fbc06",
+    "sha256": "82b6f22e9a225af76dc8960dab3ed4a936ad8a8061e9272137c3367af2970952",
+    "bytes": 943960
+  },
+  {
+    "asset": "velour_velvet",
+    "source": "https://polyhaven.com/a/velour_velvet",
+    "authors": {
+      "colormass": "Photography",
+      "Rico Cilliers": "Processing"
+    },
+    "license": "CC0-1.0",
+    "file": "velvet-ao.jpg",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/velour_velvet/velour_velvet_ao_1k.jpg",
+    "md5": "81f7b93bd22a9f31a54ca85ba4345904",
+    "sha256": "6a87649c0cbbd7e3438450fad7991ee29a95209694def84719c62c24713ebe02",
+    "bytes": 717966
+  },
+  {
+    "asset": "grey_plaster_02",
+    "source": "https://polyhaven.com/a/grey_plaster_02",
+    "authors": {
+      "Rob Tuytel": "All"
+    },
+    "license": "CC0-1.0",
+    "file": "plaster-color.jpg",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grey_plaster_02/grey_plaster_02_diff_1k.jpg",
+    "md5": "fe17ee482114c15690c2bc853c572bbc",
+    "sha256": "c455b6513a37908480eedd59f697719649aca97d3c76525718a77d7d600e2d22",
+    "bytes": 772312
+  },
+  {
+    "asset": "grey_plaster_02",
+    "source": "https://polyhaven.com/a/grey_plaster_02",
+    "authors": {
+      "Rob Tuytel": "All"
+    },
+    "license": "CC0-1.0",
+    "file": "plaster-normal.jpg",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grey_plaster_02/grey_plaster_02_nor_gl_1k.jpg",
+    "md5": "48636f9e7c651f6370b2549e0d3eaa4b",
+    "sha256": "f827876a78beebdbfca173ded1cd448117b433a0f9772a7c866bca91cb27884a",
+    "bytes": 636432
+  },
+  {
+    "asset": "grey_plaster_02",
+    "source": "https://polyhaven.com/a/grey_plaster_02",
+    "authors": {
+      "Rob Tuytel": "All"
+    },
+    "license": "CC0-1.0",
+    "file": "plaster-roughness.jpg",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grey_plaster_02/grey_plaster_02_rough_1k.jpg",
+    "md5": "960bdf615f72635752f0d45f48429a33",
+    "sha256": "bc72ae4ba0d4330af80bc140dab4e3d97f850b9e545b36d21ccb9d9ffa5ef420",
+    "bytes": 626062
+  },
+  {
+    "asset": "artist_workshop",
+    "source": "https://polyhaven.com/a/artist_workshop",
+    "authors": {
+      "Oliksiy Yakovlyev": "All"
+    },
+    "license": "CC0-1.0",
+    "file": "hdri-workshop.hdr",
+    "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/artist_workshop_1k.hdr",
+    "md5": "924ec59bb3fc3f939e2d6824204f9118",
+    "sha256": "f6da9025acadb1149c973fe2bef53d55f4e7144285a87ec1a357520fbcad4767",
+    "bytes": 1719663
+  },
+  {
+    "asset": "WoodenTable_03",
+    "source": "https://polyhaven.com/a/WoodenTable_03",
+    "authors": {
+      "Gabriel Radi\u0107": "All"
+    },
+    "license": "CC0-1.0",
+    "file": "table-normal.jpg",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/WoodenTable_03/WoodenTable_03_nor_gl_1k.jpg",
+    "md5": "e1f3bc98701e2023e04693a161a1f19e",
+    "sha256": "354496d5b0f5f41d6b658944b5ac3b759fb11c27231eee1a68f4e6e7d82f2eb3",
+    "bytes": 127455
+  },
+  {
+    "asset": "WoodenTable_03",
+    "source": "https://polyhaven.com/a/WoodenTable_03",
+    "authors": {
+      "Gabriel Radi\u0107": "All"
+    },
+    "license": "CC0-1.0",
+    "file": "table-arm.jpg",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/WoodenTable_03/WoodenTable_03_arm_1k.jpg",
+    "md5": "8660444d93aa788ec5358fe9a7a10476",
+    "sha256": "ef53d9a12a08e09aaff3cb2e5c0d68274c5565e2a332d54e406030da042a28fe",
+    "bytes": 228450
+  },
+  {
+    "asset": "rosewood_veneer_02",
+    "source": "https://polyhaven.com/a/rosewood_veneer_02",
+    "authors": {
+      "Jenelle van Heerden": "All"
+    },
+    "license": "CC0-1.0",
+    "file": "wood-color.jpg",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rosewood_veneer_02/rosewood_veneer_02_diff_1k.jpg",
+    "md5": "385b71d03b466f5dfb3a404011a5db31",
+    "sha256": "f4085bf7554ff14ed8b8a39154dbeef12c12b66f7ceec763963d7be0c7fd6a40",
+    "bytes": 641315
+  },
+  {
+    "asset": "rosewood_veneer_02",
+    "source": "https://polyhaven.com/a/rosewood_veneer_02",
+    "authors": {
+      "Jenelle van Heerden": "All"
+    },
+    "license": "CC0-1.0",
+    "file": "wood-normal.jpg",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rosewood_veneer_02/rosewood_veneer_02_nor_gl_1k.jpg",
+    "md5": "2dba4cda26998300a4b602978847f6ff",
+    "sha256": "3d186abe4523a805172fb8417f46aab34edcd3d8f3546400bc3e567dd099b21e",
+    "bytes": 368723
+  },
+  {
+    "asset": "rosewood_veneer_02",
+    "source": "https://polyhaven.com/a/rosewood_veneer_02",
+    "authors": {
+      "Jenelle van Heerden": "All"
+    },
+    "license": "CC0-1.0",
+    "file": "wood-roughness.jpg",
+    "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rosewood_veneer_02/rosewood_veneer_02_rough_1k.jpg",
+    "md5": "ded24149546afa49fc4a2ca005b480e8",
+    "sha256": "558c1bd6676b6601e907e03e2173cfcb83d2885a201ea09a0377c81ca8f6abfc",
+    "bytes": 511348
+  },
+  {
+    "asset": "forest_slope",
+    "source": "https://polyhaven.com/a/forest_slope",
+    "authors": {
+      "Andreas Mischok": "All"
+    },
+    "license": "CC0-1.0",
+    "file": "window-forest.hdr",
+    "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/forest_slope_1k.hdr",
+    "md5": "d7676fa11b7a6c4cc3333ac6505e08d2",
+    "sha256": "926a6bb81897919b2924f42407162b8d54be91eab2da3fe7fe19daf308cfa09a",
+    "bytes": 1911073
+  }
+]

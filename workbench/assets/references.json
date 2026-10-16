@@ -23,5 +23,14 @@
     "source": "gallery/mitsuba/tigers-eye.png",
     "file": "mitsuba-tigers-eye.png",
     "sha256": "6d368c6346cc30ba85bf6ba4c99251db97a0887616698e12c6f8744db4bbdab5"
+  },
+  {
+    "source": "assets/gems/zsky-jewel-01.obj",
+    "file": "diamond.obj",
+    "sha256": "a3de31c45d49f22231549a6ec195f50b99bb8f857311775ad988d2d2f52bad9f",
+    "author": "Zsky",
+    "url": "https://poly.pizza/m/velVo80s1D",
+    "license": "CC-BY-3.0",
+    "changes": "Unchanged repository OBJ; normalized and flat shaded at runtime, with project-created materials and mounting."
   }
 ]

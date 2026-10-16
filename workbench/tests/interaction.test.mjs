@@ -58,9 +58,8 @@ test("loupe travels in a non-overshooting corridor over and in front of jewelry"
 
 test("the actual loupe body and handle clear all three mounted gem bounds", async () => {
   const { readFile } = await import("node:fs/promises");
-  const { readGemOBJ, normalizeGem, brilliantGeometry } = await import(
-    "../src/geometry.js"
-  );
+  const { readGemOBJ, normalizeGem } = await import("../src/geometry.js");
+  const { convexFacetHull } = await import("../src/gem-optics.js");
   const meshes = {
     tiger: normalizeGem(
       readGemOBJ(
@@ -73,15 +72,25 @@ test("the actual loupe body and handle clear all three mounted gem bounds", asyn
       1.38,
     ),
     emerald: normalizeGem(
-      readGemOBJ(
-        await readFile(
-          new URL("../assets/emerald-step.obj", import.meta.url),
-          "utf8",
+      convexFacetHull(
+        readGemOBJ(
+          await readFile(
+            new URL("../assets/emerald-step.obj", import.meta.url),
+            "utf8",
+          ),
         ),
       ),
       1.22,
     ),
-    diamond: normalizeGem(brilliantGeometry(), 1.24),
+    diamond: normalizeGem(
+      readGemOBJ(
+        await readFile(
+          new URL("../assets/diamond.obj", import.meta.url),
+          "utf8",
+        ),
+      ),
+      1.24,
+    ),
   };
   for (const [name, geometry] of Object.entries(meshes)) {
     const group = new THREE.Group(),
@@ -94,7 +103,7 @@ test("the actual loupe body and handle clear all three mounted gem bounds", asyn
     band.scale.z = 1.2;
     root.add(band);
     const stone = new THREE.Mesh(geometry);
-    stone.position.y = name === "tiger" ? 0.98 : 0.97;
+    stone.position.y = name === "tiger" ? 0.98 : 1.1;
     root.add(stone);
     group.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(group).expandByScalar(0.04);
@@ -157,7 +166,7 @@ test("bench framing keeps the two felt boxes in reach at portrait, square and wi
       (pose.z - 1.4) *
       Math.tan(THREE.MathUtils.degToRad(pose.fov / 2)) *
       aspect;
-    assert.ok(halfWidth >= 3.7 - 1e-10, `horizontal work area at ${aspect}`);
+    assert.ok(halfWidth >= 4.15 - 1e-10, `horizontal work area at ${aspect}`);
     assert.ok(pose.fov >= 46 && pose.fov <= 60);
   }
   for (const aspect of [0, -1, NaN, Infinity])

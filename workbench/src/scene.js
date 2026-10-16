@@ -1,7 +1,6 @@
 import * as THREE from "../vendor/three.module.js";
 import { RectAreaLightUniformsLib } from "../vendor/addons/lights/RectAreaLightUniformsLib.js";
 import {
-  brilliantGeometry,
   readGemOBJ,
   normalizeGem,
   inspectionFieldOfView,
@@ -91,57 +90,9 @@ function tigerMaterial() {
   return material;
 }
 
-function makeEnvironment(renderer) {
-  const room = new THREE.Scene();
-  room.background = new THREE.Color("#6c7267");
-  const wall = new THREE.Mesh(
-    new THREE.BoxGeometry(14, 12, 14),
-    new THREE.MeshBasicMaterial({ color: "#434b40", side: THREE.BackSide }),
-  );
-  room.add(wall);
-  const panels = [
-    [
-      [-4, 4, 2],
-      [2.2, 5, 0.05],
-      [6, 5.6, 4.4],
-    ],
-    [
-      [4, 3, -2],
-      [2.6, 5, 0.05],
-      [3.7, 4.4, 4.9],
-    ],
-    [
-      [0, 5, 0],
-      [5, 0.05, 3],
-      [4, 4, 3.5],
-    ],
-    [
-      [0, 1, 5],
-      [0.4, 5, 0.05],
-      [4, 4, 3.6],
-    ],
-  ];
-  for (const [position, scale, color] of panels) {
-    const panel = new THREE.Mesh(
-      new THREE.BoxGeometry(...scale),
-      new THREE.MeshBasicMaterial({
-        color: new THREE.Color().setRGB(...color),
-      }),
-    );
-    panel.position.set(...position);
-    panel.lookAt(0, 0, 0);
-    room.add(panel);
-  }
-  const generator = new THREE.PMREMGenerator(renderer);
-  const target = generator.fromScene(room, 0.035);
-  generator.dispose();
-  room.traverse((item) => {
-    item.geometry?.dispose();
-    item.material?.dispose();
-  });
-  return target;
-}
-
+import { loadSurfaces } from "./surfaces.js";
+import { makeFacetMaterial, convexFacetHull } from "./gem-optics.js";
+import { applyMetal } from "./metals.js";
 import { buildWorkshop } from "./workshop.js";
 import { makeBenchObjects } from "./bench-objects.js";
 import {
@@ -164,7 +115,7 @@ export async function createWorkbench(host, onFatalError) {
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 0.95;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.transmissionResolutionScale = 0.75;
@@ -177,12 +128,22 @@ export async function createWorkbench(host, onFatalError) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#282b21");
   scene.fog = new THREE.Fog("#282b21", 18, 42);
-  const environment = makeEnvironment(renderer);
-  scene.environment = environment.texture;
+  const surfaces = await loadSurfaces(renderer);
+  scene.environment = surfaces.environment.texture;
   scene.environmentIntensity = 0.6;
+  const reflectionTarget = new THREE.WebGLCubeRenderTarget(256, {
+    type: THREE.HalfFloatType,
+  });
+  const reflectionCamera = new THREE.CubeCamera(0.04, 65, reflectionTarget);
+  const reflectionGenerator = new THREE.PMREMGenerator(renderer);
+  let reflectionFiltered = null,
+    reflectionDirty = true,
+    lastReflection = -Infinity,
+    reflectionRevision = 0;
   const camera = new THREE.PerspectiveCamera(46, 1, 0.025, 70);
   camera.position.set(0, 2.6, 6.4);
   camera.lookAt(0, 0.3, -0.3);
+  camera.layers.enable(1);
   const inspectionCamera = new THREE.PerspectiveCamera(55 / 3, 1, 0.025, 70);
   inspectionCamera.position.set(0, 1.5, 2.7);
   inspectionCamera.lookAt(0, 0.55, 0.2);
@@ -229,7 +190,7 @@ export async function createWorkbench(host, onFatalError) {
   stone.castShadow = true;
   root.add(stone);
   const response = await Promise.all(
-    ["cabochon.obj", "emerald-step.obj"].map(async (name) => {
+    ["cabochon.obj", "emerald-step.obj", "diamond.obj"].map(async (name) => {
       const r = await fetch(new URL(`../assets/${name}`, import.meta.url));
       if (!r.ok) throw new Error("Gemstone could not load");
       return r.text();
@@ -237,38 +198,17 @@ export async function createWorkbench(host, onFatalError) {
   );
   const geometries = {
     tiger: normalizeGem(readGemOBJ(response[0], true), 1.38),
-    emerald: normalizeGem(readGemOBJ(response[1]), 1.22),
-    diamond: normalizeGem(brilliantGeometry(), 1.24),
+    emerald: normalizeGem(convexFacetHull(readGemOBJ(response[1])), 1.22),
+    diamond: normalizeGem(readGemOBJ(response[2]), 1.24),
   };
   const tiger = tigerMaterial();
   const materials = {
     tiger,
-    diamond: new THREE.MeshPhysicalMaterial({
-      color: "#ffffff",
-      metalness: 0,
-      roughness: 0.025,
-      transmission: 1,
-      thickness: 1.15,
-      ior: 2.33,
-      dispersion: 0.32,
-      attenuationColor: "#f2f8ff",
-      attenuationDistance: 6,
-      envMapIntensity: 1.2,
-      clearcoat: 1,
-      clearcoatRoughness: 0.025,
-    }),
-    emerald: new THREE.MeshPhysicalMaterial({
-      color: "#a5e4c7",
-      metalness: 0,
-      roughness: 0.045,
-      transmission: 0.94,
-      thickness: 1.25,
-      ior: 1.57,
-      attenuationColor: "#1a995b",
-      attenuationDistance: 1.2,
-      envMapIntensity: 1,
-      clearcoat: 1,
-      clearcoatRoughness: 0.035,
+    diamond: makeFacetMaterial(geometries.diamond, reflectionTarget.texture),
+    emerald: makeFacetMaterial(geometries.emerald, reflectionTarget.texture, {
+      ior: 1.577,
+      dispersion: 0.006,
+      absorption: [2.0, 0.14, 1.3],
     }),
   };
   const key = new THREE.PointLight("#fff3dc", 75, 17, 2);
@@ -283,11 +223,15 @@ export async function createWorkbench(host, onFatalError) {
   scene.add(key);
   const softbox = new THREE.RectAreaLight("#fff0dc", 7, 3.2, 2.2);
   scene.add(softbox);
-  scene.add(new THREE.HemisphereLight("#e8eee7", "#6d4e31", 1.25));
-  const fill = new THREE.DirectionalLight("#e9efff", 1.25);
+  scene.add(new THREE.HemisphereLight("#e8eee7", "#6d4e31", 0.28));
+  const fill = new THREE.DirectionalLight("#e9efff", 0.28);
   fill.position.set(-3, 4, -2);
   scene.add(fill);
   stone.onBeforeRender = (_r, _s, activeCamera) => {
+    if (stone.material.userData.update) {
+      stone.material.userData.update(stone, activeCamera, key);
+      return;
+    }
     if (stone.material !== tiger) return;
     stone.worldToLocal(
       tiger.userData.fiberUniforms.fiberEye.value.copy(
@@ -306,14 +250,16 @@ export async function createWorkbench(host, onFatalError) {
     tool = "turn",
     auto = false,
     zoom = 3,
-    proximity = 0;
+    proximity = 0,
+    selectedMetal = "gold",
+    finishLevel = 14;
   const neutral = new THREE.Quaternion().setFromEuler(
     new THREE.Euler(0.12, -0.3, 0),
   );
   spin.quaternion.copy(neutral);
   const support = new THREE.Mesh(
     new THREE.CylinderGeometry(0.52, 0.62, 0.15, 64),
-    new THREE.MeshStandardMaterial({ color: "#6d5940", roughness: 0.75 }),
+    surfaces.wood,
   );
   support.position.y = -1.16;
   support.receiveShadow = true;
@@ -362,36 +308,100 @@ export async function createWorkbench(host, onFatalError) {
       );
       stone.position.set(0, 0.98, 0);
     } else {
-      const baseY = 0.97,
-        girdleY = baseY + g.max.y * 0.62;
+      const baseY = 1.1,
+        points = stone.geometry.attributes.position;
+      let maxRadius = 0;
+      for (let i = 0; i < points.count; i++)
+        maxRadius = Math.max(
+          maxRadius,
+          Math.hypot(points.getX(i), points.getZ(i)),
+        );
+      let sum = 0,
+        count = 0;
+      for (let i = 0; i < points.count; i++)
+        if (Math.hypot(points.getX(i), points.getZ(i)) > maxRadius * 0.995) {
+          sum += points.getY(i);
+          count++;
+        }
+      const girdle = sum / count,
+        worldGirdle = baseY + girdle,
+        planes = materials[selectedGem].uniforms.facets.value;
+      function radiusAt(a, y) {
+        const dx = Math.cos(a),
+          dz = Math.sin(a);
+        let r = Infinity;
+        for (const p of planes) {
+          const den = p.x * dx + p.z * dz;
+          if (den > 1e-6) r = Math.min(r, -(p.y * y + p.w) / den);
+        }
+        return r;
+      }
       for (const x of [-1, 1])
         for (const z of [-1, 1]) {
+          const a = Math.atan2(z, x),
+            r = radiusAt(a, girdle),
+            dx = Math.cos(a),
+            dz = Math.sin(a);
+          const curve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(x * 0.55, 0.74, z * 0.035),
+            new THREE.Vector3(
+              x * 0.61,
+              Math.min(1.25, worldGirdle - 0.25),
+              z * 0.19,
+            ),
+            new THREE.Vector3(
+              dx * (r + 0.035),
+              worldGirdle - 0.05,
+              dz * (r + 0.035),
+            ),
+            new THREE.Vector3(
+              dx * (r - 0.04),
+              worldGirdle + 0.06,
+              dz * (r - 0.04),
+            ),
+          ]);
           const prong = new THREE.Mesh(
-            new THREE.CapsuleGeometry(0.035, 0.25, 8, 12),
+            new THREE.TubeGeometry(curve, 32, 0.028, 12, false),
             metal,
-          );
-          prong.position.set(
-            x * g.max.x * 0.72,
-            girdleY - 0.025,
-            z * g.max.z * 0.72,
           );
           prong.castShadow = true;
           mount.add(prong);
+          const tip = new THREE.Mesh(
+            new THREE.SphereGeometry(0.029, 16, 12),
+            metal,
+          );
+          tip.position.copy(curve.getPoint(1));
+          mount.add(tip);
         }
-      const basket = new THREE.Mesh(
-        new THREE.TorusGeometry(0.36, 0.035, 12, 64),
-        metal,
+      const y = girdle - 0.15,
+        basketCurve = new THREE.CatmullRomCurve3(
+          Array.from({ length: 65 }, (_, i) => {
+            const a = (i / 64) * Math.PI * 2,
+              r = radiusAt(a, y) + 0.025;
+            return new THREE.Vector3(
+              Math.cos(a) * r,
+              baseY + y,
+              Math.sin(a) * r,
+            );
+          }),
+          true,
+        );
+      mount.add(
+        new THREE.Mesh(
+          new THREE.TubeGeometry(basketCurve, 96, 0.022, 10, true),
+          metal,
+        ),
       );
-      basket.rotation.x = Math.PI / 2;
-      basket.position.y = 1.02;
-      mount.add(basket);
       stone.position.set(0, baseY, 0);
     }
     setting.visible = selectedSetting === "ring";
     if (selectedSetting === "loose") stone.position.y = 0.25 - g.max.y / 2;
+    spin.traverse((o) => o.layers.set(1));
+    reflectionDirty = true;
     updatePivot();
   }
   function updateLight() {
+    reflectionDirty = true;
     key.position.set(
       THREE.MathUtils.clamp(angle / 100, -1, 1) * 3.2,
       2.1 + THREE.MathUtils.clamp((height - 8) / 77, 0, 1) * 1.7,
@@ -408,11 +418,31 @@ export async function createWorkbench(host, onFatalError) {
   let objects;
   updateMount();
   updateLight();
-  const workshop = await buildWorkshop(scene);
-  objects = makeBenchObjects(scene, geometries, materials);
+  const workshop = await buildWorkshop(scene, surfaces);
+  objects = makeBenchObjects(scene, geometries, materials, surfaces, key);
   objects.setLamp(key.position);
   objects.select("gem", selectedGem);
   objects.select("metal", "gold");
+  function updateReflections(now) {
+    if (!reflectionDirty || now - lastReflection < 100) return;
+    scene.updateMatrixWorld(true);
+    reflectionCamera.position.copy(
+      stone.localToWorld(
+        stone.geometry.boundingBox.getCenter(new THREE.Vector3()),
+      ),
+    );
+    reflectionCamera.update(renderer, scene);
+    reflectionFiltered = reflectionGenerator.fromCubemap(
+      reflectionTarget.texture,
+      reflectionFiltered,
+    );
+    scene.environment = reflectionFiltered.texture;
+    key.shadow.needsUpdate = true;
+    workshop.sun.shadow.needsUpdate = true;
+    reflectionDirty = false;
+    lastReflection = now;
+    host.dataset.reflectionRevision = String(++reflectionRevision);
+  }
   const raycaster = new THREE.Raycaster();
   const lampPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 1);
   const lampGrip = new THREE.Vector3();
@@ -542,6 +572,7 @@ export async function createWorkbench(host, onFatalError) {
   // A light depth-of-field pass: room props soften while the specimen stays crisp.
   const target = new THREE.WebGLRenderTarget(1, 1, {
     type: THREE.HalfFloatType,
+    samples: Math.min(4, renderer.capabilities.maxSamples),
   });
   target.depthTexture = new THREE.DepthTexture(1, 1, THREE.UnsignedIntType);
   const postScene = new THREE.Scene(),
@@ -649,6 +680,7 @@ export async function createWorkbench(host, onFatalError) {
         ),
       ) > 0.001;
     const moving =
+      reflectionDirty ||
       aiming ||
       benchMoving ||
       auto ||
@@ -663,6 +695,7 @@ export async function createWorkbench(host, onFatalError) {
         );
         spin.quaternion.premultiply(q).normalize();
         key.shadow.needsUpdate = true;
+        workshop.sun.shadow.needsUpdate = true;
       }
       const dt = Math.min((now - lastDraw) / 1000, 0.05);
       if (inspection !== inspectionDestination) key.shadow.needsUpdate = true;
@@ -677,6 +710,7 @@ export async function createWorkbench(host, onFatalError) {
       updateCamera(dt);
       objects.animate(dt, hover, !reduced.matches);
       workshop.animate(now / 1000, !reduced.matches);
+      updateReflections(now);
       draw();
       needsFrame = false;
       lastDraw = now;
@@ -688,7 +722,10 @@ export async function createWorkbench(host, onFatalError) {
   }
   function invalidate(shadows = true) {
     needsFrame = true;
-    if (shadows) key.shadow.needsUpdate = true;
+    if (shadows) {
+      key.shadow.needsUpdate = true;
+      workshop.sun.shadow.needsUpdate = true;
+    }
     requestFrame();
   }
   const wake = () => {
@@ -719,13 +756,15 @@ export async function createWorkbench(host, onFatalError) {
       invalidate();
     },
     setMetal(value) {
-      metal.color.set(value === "gold" ? "#d5b374" : "#d6dce1");
-      objects.select("metal", value);
+      selectedMetal = value;
+      applyMetal(metal, value, finishLevel);
+      objects.select("metal", value, finishLevel);
       invalidate();
     },
     setFinish(value) {
-      metal.roughness = 0.065 + 0.005 * value;
-      metal.anisotropy = 0.1 + 0.0075 * value;
+      finishLevel = value;
+      applyMetal(metal, selectedMetal, value);
+      objects.select("metal", selectedMetal, value);
       invalidate();
     },
     setSource(value) {
@@ -740,6 +779,7 @@ export async function createWorkbench(host, onFatalError) {
       invalidate();
     },
     setBackground(value) {
+      reflectionDirty = true;
       workshop.mat.material.color.set(
         value === "cream"
           ? "#b9ad8d"
@@ -798,7 +838,7 @@ export async function createWorkbench(host, onFatalError) {
     },
     reset() {
       spin.quaternion.copy(neutral);
-      proximity = 0;
+      ((proximity = 0), (selectedMetal = "gold"), (finishLevel = 14));
       updatePivot();
       invalidate();
     },
@@ -843,7 +883,10 @@ export async function createWorkbench(host, onFatalError) {
       document.removeEventListener("visibilitychange", wake);
       reduced.removeEventListener("change", wake);
       workshop.dispose();
-      environment.dispose();
+      reflectionTarget.dispose();
+      reflectionFiltered?.dispose();
+      reflectionGenerator.dispose();
+      surfaces.dispose();
       target.dispose();
       postMaterial.dispose();
       for (const material of Object.values(materials)) material.dispose();

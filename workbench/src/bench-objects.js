@@ -1,6 +1,14 @@
 import * as THREE from "../vendor/three.module.js";
+import { velvetInsert } from "./velvet-insert.js";
+import { METALS, FINISHES, metalMaterial } from "./metals.js";
 
-export function makeBenchObjects(scene, geometries, materials) {
+export function makeBenchObjects(
+  scene,
+  geometries,
+  materials,
+  surfaces,
+  light,
+) {
   const group = new THREE.Group();
   group.name = "Touchable bench objects";
   scene.add(group);
@@ -11,32 +19,8 @@ export function makeBenchObjects(scene, geometries, materials) {
     metalness: 0.85,
     roughness: 0.3,
   });
-  const wood = new THREE.MeshStandardMaterial({
-    color: "#35271e",
-    roughness: 0.8,
-  });
-  const dark = new THREE.MeshStandardMaterial({
-    color: "#141b17",
-    roughness: 0.9,
-  });
-  // Repeatable tiny woven relief, generated locally, shared by both felt boxes.
-  const size = 128,
-    pixels = new Uint8Array(size * size);
-  for (let y = 0; y < size; y++)
-    for (let x = 0; x < size; x++) {
-      const noise = ((x * 73 + y * 131 + x * y * 19) % 97) / 97;
-      pixels[y * size + x] = 105 + noise * 50 + Math.sin(x * 2.1 + y) * 14;
-    }
-  const weave = new THREE.DataTexture(pixels, size, size, THREE.RedFormat);
-  weave.wrapS = weave.wrapT = THREE.RepeatWrapping;
-  weave.repeat.set(9, 9);
-  weave.needsUpdate = true;
-  const felt = new THREE.MeshStandardMaterial({
-    color: "#284c40",
-    roughness: 1,
-    bumpMap: weave,
-    bumpScale: 0.012,
-  });
+  const wood = surfaces.wood;
+  const felt = surfaces.velvet;
   function mesh(geo, mat, position, parent = group) {
     const o = new THREE.Mesh(geo, mat);
     o.position.set(...position);
@@ -47,6 +31,32 @@ export function makeBenchObjects(scene, geometries, materials) {
   }
   function box(size, pos, mat, parent) {
     return mesh(new THREE.BoxGeometry(...size), mat, pos, parent);
+  }
+  function bevelBox(size, pos, material, parent = group) {
+    const [w, h, d] = size,
+      b = Math.min(0.035, h * 0.2, w * 0.08, d * 0.08);
+    const shape = new THREE.Shape();
+    shape.moveTo(-w / 2 + b, -d / 2);
+    shape.lineTo(w / 2 - b, -d / 2);
+    shape.quadraticCurveTo(w / 2, -d / 2, w / 2, -d / 2 + b);
+    shape.lineTo(w / 2, d / 2 - b);
+    shape.quadraticCurveTo(w / 2, d / 2, w / 2 - b, d / 2);
+    shape.lineTo(-w / 2 + b, d / 2);
+    shape.quadraticCurveTo(-w / 2, d / 2, -w / 2, d / 2 - b);
+    shape.lineTo(-w / 2, -d / 2 + b);
+    shape.quadraticCurveTo(-w / 2, -d / 2, -w / 2 + b, -d / 2);
+    const geo = new THREE.ExtrudeGeometry(shape, {
+      depth: h,
+      bevelEnabled: true,
+      bevelSize: b * 0.4,
+      bevelThickness: b * 0.4,
+      bevelSegments: 3,
+      curveSegments: 8,
+      steps: 1,
+    });
+    geo.translate(0, 0, -h / 2);
+    geo.rotateX(-Math.PI / 2);
+    return mesh(geo, material, pos, parent);
   }
   function label(text, width, pos, parent = group) {
     const canvas = document.createElement("canvas");
@@ -72,18 +82,23 @@ export function makeBenchObjects(scene, geometries, materials) {
     p.rotation.x = -Math.PI / 2;
     return p;
   }
-  function tray(x, z, width, depth, title) {
+  function tray(x, z, width, depth, title, pockets, ring = false) {
     const t = new THREE.Group();
     t.position.set(x, -1.22, z);
     group.add(t);
-    box([width, 0.18, depth], [0, 0, 0], wood, t);
-    box([width - 0.1, 0.06, depth - 0.1], [0, 0.12, 0], felt, t);
+    bevelBox([width, 0.23, depth], [0, 0, 0], wood, t);
+    mesh(
+      velvetInsert(width - 0.12, depth - 0.12, pockets, ring),
+      felt,
+      [0, 0, 0],
+      t,
+    );
     for (const s of [-1, 1]) {
-      box([width, 0.18, 0.065], [0, 0.14, (s * depth) / 2], brass, t);
-      box([0.065, 0.18, depth], [(s * width) / 2, 0.14, 0], brass, t);
+      bevelBox([width, 0.26, 0.065], [0, 0.12, (s * depth) / 2], wood, t);
+      bevelBox([0.065, 0.26, depth], [(s * width) / 2, 0.12, 0], wood, t);
     }
     // A real open lid gives the box a readable silhouette and a dark velvet back.
-    const lid = box(
+    const lid = bevelBox(
       [width, 0.12, depth * 0.62],
       [0, 0.57, -depth / 2 - 0.2],
       wood,
@@ -92,16 +107,23 @@ export function makeBenchObjects(scene, geometries, materials) {
     lid.rotation.x = 1.12;
     lid.userData.blockPointer = true;
     targets.push(lid);
-    const lining = box(
+    const lining = bevelBox(
       [width - 0.12, 0.025, depth * 0.62 - 0.12],
       [0, 0.07, 0],
       felt,
       lid,
     );
-    label(title, width * 0.8, [0, 0.16, depth * 0.33], t);
+    label(title, width * 0.8, [0, 0.335, depth * 0.36], t);
     return t;
   }
-  const gemTray = tray(-2.35, 0.65, 2.05, 1.6, "THE STONE BOX");
+  const gemPockets = [-0.62, 0, 0.62].map((x) => ({
+    x,
+    z: -0.12,
+    rx: 0.25,
+    rz: 0.36,
+    depth: 0.16,
+  }));
+  const gemTray = tray(-2.35, 0.65, 2.05, 1.6, "THE STONE BOX", gemPockets);
   const names = {
     tiger: "Tiger’s eye",
     diamond: "Diamond",
@@ -109,14 +131,18 @@ export function makeBenchObjects(scene, geometries, materials) {
   };
   for (const [i, id] of ["tiger", "diamond", "emerald"].entries()) {
     const x = (i - 1) * 0.62;
-    if (i < 2) box([0.025, 0.13, 0.9], [x + 0.31, 0.21, -0.15], dark, gemTray);
+
     const g = mesh(geometries[id], materials[id], [x, 0.2, -0.12], gemTray);
-    if (id === "tiger")
-      g.onBeforeRender = (_renderer, _scene, camera) => {
+    g.onBeforeRender = (_r, _s, camera) => {
+      if (g.material.userData.update)
+        g.material.userData.update(g, camera, light);
+      else if (id === "tiger") {
         const u = g.material.userData.fiberUniforms;
         g.worldToLocal(camera.getWorldPosition(u.fiberEye.value));
-        g.worldToLocal(head.getWorldPosition(u.fiberLight.value));
-      };
+        g.worldToLocal(light.getWorldPosition(u.fiberLight.value));
+      }
+    };
+    g.layers.set(1);
     g.scale.setScalar(0.32);
     g.rotation.y = i * 0.4;
     const hit = box(
@@ -132,56 +158,74 @@ export function makeBenchObjects(scene, geometries, materials) {
     };
     targets.push(hit);
     const halo = mesh(
-      new THREE.TorusGeometry(0.225, 0.012, 8, 32),
+      new THREE.TorusGeometry(0.25, 0.006, 8, 48),
       brass,
-      [x, 0.185, -0.12],
+      [x, 0.315, -0.12],
       gemTray,
     );
     halo.rotation.x = Math.PI / 2;
     samples.push({ id, kind: "gem", object: g, baseY: g.position.y, halo });
   }
-  const metalTray = tray(2.55, 1.05, 1.55, 1.5, "THE METAL BOX");
-  for (const [i, id] of ["gold", "silver"].entries()) {
-    const m = new THREE.MeshPhysicalMaterial({
-      color: id === "gold" ? "#d5b374" : "#d6dce1",
-      metalness: 1,
-      roughness: 0.17,
-      clearcoat: 0.4,
-    });
-    const ring = mesh(
-      new THREE.TorusGeometry(0.18, 0.047, 16, 48),
-      m,
-      [(i - 0.5) * 0.64, 0.25, -0.13],
-      metalTray,
-    );
-    ring.rotation.x = -0.8;
-    const hit = box(
-      [0.59, 0.4, 0.9],
-      [(i - 0.5) * 0.64, 0.32, -0.12],
-      new THREE.MeshBasicMaterial({ visible: false }),
-      metalTray,
-    );
-    hit.userData.action = {
-      kind: "metal",
-      value: id,
-      label: `${id === "gold" ? "Gold" : "Silver"} · choose setting`,
-    };
-    targets.push(hit);
-    const halo = mesh(
-      new THREE.TorusGeometry(0.235, 0.012, 8, 32),
-      brass,
-      [(i - 0.5) * 0.64, 0.185, -0.12],
-      metalTray,
-    );
-    halo.rotation.x = Math.PI / 2;
-    samples.push({
-      id,
-      kind: "metal",
-      object: ring,
-      baseY: ring.position.y,
-      halo,
-    });
-  }
+  const ringPockets = [];
+  for (let row = 0; row < 3; row++)
+    for (let col = 0; col < 6; col++)
+      ringPockets.push({
+        x: (col - 2.5) * 0.34,
+        z: (row - 1) * 0.45 - 0.06,
+        rx: 0.13,
+        rz: 0.055,
+        depth: 0.17,
+      });
+  const metalTray = tray(
+    2.9,
+    1.05,
+    2.25,
+    1.75,
+    "THE RING COLLECTION",
+    ringPockets,
+    true,
+  );
+  for (const [row, finish] of FINISHES.entries())
+    for (const [col, id] of Object.keys(METALS).entries()) {
+      const x = (col - 2.5) * 0.34,
+        z = (row - 1) * 0.45 - 0.06;
+      const ring = mesh(
+        new THREE.TorusGeometry(0.12, 0.027, 16, 64),
+        metalMaterial(id, finish.value),
+        [x, 0.34, z],
+        metalTray,
+      );
+      ring.layers.set(1);
+      ring.rotation.x = -0.15;
+      const hit = box(
+        [0.32, 0.42, 0.4],
+        [x, 0.36, z],
+        new THREE.MeshBasicMaterial({ visible: false }),
+        metalTray,
+      );
+      hit.userData.action = {
+        kind: "metal",
+        value: id,
+        finish: finish.value,
+        label: `${METALS[id].name} · ${finish.name.toLowerCase()} · select ring`,
+      };
+      targets.push(hit);
+      const halo = mesh(
+        new THREE.TorusGeometry(0.14, 0.005, 8, 32),
+        brass,
+        [x, 0.312, z],
+        metalTray,
+      );
+      halo.rotation.x = Math.PI / 2;
+      samples.push({
+        id,
+        kind: "metal",
+        finish: finish.value,
+        object: ring,
+        baseY: ring.position.y,
+        halo,
+      });
+    }
 
   // The same world-space loupe rests on the desk, travels, and becomes the eyepiece.
   const loupe = new THREE.Group();
@@ -251,6 +295,7 @@ export function makeBenchObjects(scene, geometries, materials) {
     if (o.isMesh) {
       o.castShadow = false;
       o.receiveShadow = false;
+      o.layers.set(1);
     }
   });
   const restPosition = loupe.position.clone(),
@@ -318,13 +363,25 @@ export function makeBenchObjects(scene, geometries, materials) {
   const bulb = mesh(
     new THREE.SphereGeometry(0.12, 20, 16),
     new THREE.MeshBasicMaterial({
-      color: new THREE.Color(4, 3.3, 2.1),
+      color: new THREE.Color(160, 138, 107),
       toneMapped: false,
     }),
     [0, 0, 0],
     head,
   );
   bulb.castShadow = false;
+  const diffuser = mesh(
+    new THREE.CircleGeometry(0.29, 48),
+    new THREE.MeshBasicMaterial({
+      color: new THREE.Color(80, 69, 54),
+      toneMapped: false,
+      side: THREE.DoubleSide,
+    }),
+    [0, -0.045, 0],
+    head,
+  );
+  diffuser.rotation.x = Math.PI / 2;
+  diffuser.castShadow = false;
   const lampHit = mesh(
     new THREE.SphereGeometry(0.57, 16, 12),
     new THREE.MeshBasicMaterial({ visible: false }),
@@ -366,13 +423,22 @@ export function makeBenchObjects(scene, geometries, materials) {
     restPosition,
     restQuaternion,
     setLamp,
-    select(kind, value) {
+    select(kind, value, finish = 14) {
       for (const s of samples)
-        if (s.kind === kind) s.halo.visible = s.id === value;
+        if (s.kind === kind)
+          s.halo.visible =
+            s.id === value &&
+            (kind !== "metal" ||
+              Math.abs(s.finish - finish) ===
+                Math.min(...FINISHES.map((f) => Math.abs(f.value - finish))));
     },
     animate(time, hover, motion = true) {
       for (const s of samples) {
-        const active = motion && hover?.kind === s.kind && hover.value === s.id;
+        const active =
+          motion &&
+          hover?.kind === s.kind &&
+          hover.value === s.id &&
+          (s.kind !== "metal" || hover.finish === s.finish);
         s.object.position.y = THREE.MathUtils.damp(
           s.object.position.y,
           s.baseY + (active ? 0.07 : 0),
