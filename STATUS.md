@@ -34,10 +34,12 @@ M4 verified: robust finite AABBs, default 12-bin SAH BVH, reference octree, mesh
 
 Measured clean-source release benchmarks at engine commit `04d3221`: 4,096 fixed seeded rays, one warmup, five runs, one thread. On Apple M1 Max/macOS 14.6.1, mesh median ray-query times were 734.619 ms brute force, 2.873 ms BVH, 77.268 ms octree; small-scene medians 0.715/0.615/0.625 ms. All per-ray results and checksums agree. These measure intersection queries, not end-to-end render scaling. Full raw reports, construction costs, and reproducible commands are in `docs/BENCHMARKS.md` and `docs/benchmarks/`. Class source/package checksums remain unchanged.
 
-License choice remains pending after explaining MIT to Heather; do not assign a license without her answer. This does not block renderer development.
+No license was selected. Heather asked what it meant; explained that it controls reuse and left the existing unlicensed state unchanged. License selection is optional and parked; do not repeatedly prompt or assign a license without her explicit choice. This does not block completion of the renderer.
 
-Next: M5 deterministic sample addressing independent of thread/tile/batch order, jittered AA with a center debug mode, rectangular area lights with correct area/geometry/PDF factors and endpoint visibility. Add sampling/estimator tests, multi-spp AA/soft-shadow diagnostic scenes, and inspect comparison images. Then M6 tiled parallel workers and progressive output using exactly the same sample stream.
+M5 verified: stateless sampling, seeded jittered camera AA / center debug mode, independent source dimensions/recursive streams, uniform rectangular emitters, sidedness, solid-angle PDF/geometry factors, and bounded shadow intervals. Six tests cover repeatability, analytic irradiance, area/distance factors, beyond-source blockers, reverse pixel order, prefix batches, and unclamped sample normalization. **71 tests pass** with strict format/Clippy checks. Inspected soft shadows at 1/16/128 spp, constant-power small/large emitters at 128 spp, and center-versus-128-spp AA. Gallery and reproducible commands are in `docs/SAMPLING.md`. Distant procedural checker frequencies still alias without texture prefiltering; no MIP mapping is claimed.
+
+Next: M6 use safe Rayon tile workers, preserve ascending per-pixel floating-point sums across batch partitions, expose thread/tile/progressive settings, write atomic valid previews and progress messages, test odd image sizes and thread/tile/batch equivalence, and measure real full-render scaling on one versus available threads. Do not claim scaling before measuring it.
 
 ## Remaining scope
 
-M5–M10 acceptance criteria in [PLAN.md](PLAN.md) remain pending. No multithreading, progressive rendering, HDR lighting, physical materials, animated keyframes, or procedural generation is claimed yet. The full renderer remains incomplete.
+M6–M10 acceptance criteria in [PLAN.md](PLAN.md) remain pending. No multithreading, progressive rendering, HDR lighting, physical materials, animated keyframes, or procedural generation is claimed yet. The full renderer remains incomplete.

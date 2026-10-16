@@ -15,7 +15,8 @@
   },
   "render": {
     "width": 960,
-    "height": 540
+    "height": 540,
+    "sampling": "center"
   },
   "materials": {
     "floor": {

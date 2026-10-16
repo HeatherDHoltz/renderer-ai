@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "camera": {
+    "position": [
+      5,
+      3.5,
+      8
+    ],
+    "target": [
+      0,
+      1,
+      0
+    ],
+    "fov": 40
+  },
+  "render": {
+    "width": 480,
+    "height": 320,
+    "spp": 64,
+    "sampling": "jittered",
+    "seed": 116
+  },
+  "background": [
+    0.12,
+    0.16,
+    0.22
+  ],
+  "materials": {
+    "floor": {
+      "diffuse": [
+        0.45,
+        0.45,
+        0.45
+      ]
+    },
+    "teal": {
+      "diffuse": [
+        0.025,
+        0.38,
+        0.32
+      ],
+      "specular": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "shininess": 64
+    },
+    "cream": {
+      "diffuse": [
+        0.7,
+        0.55,
+        0.3
+      ],
+      "specular": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "shininess": 64
+    },
+    "orange": {
+      "diffuse": [
+        0.7,
+        0.16,
+        0.04
+      ],
+      "specular": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "shininess": 32
+    }
+  },
+  "geometries": {
+    "plane": {
+      "kind": "plane"
+    },
+    "sphere": {
+      "kind": "sphere"
+    },
+    "cylinder": {
+      "kind": "cylinder"
+    },
+    "cone": {
+      "kind": "cone"
+    }
+  },
+  "objects": [
+    {
+      "name": "floor",
+      "geometry": "plane",
+      "material": "floor"
+    },
+    {
+      "name": "ball",
+      "geometry": "sphere",
+      "material": "cream",
+      "transform": {
+        "translation": [
+          0,
+          1.2,
+          0
+        ],
+        "scale": [
+          1.2,
+          1.2,
+          1.2
+        ]
+      }
+    },
+    {
+      "name": "cylinder",
+      "geometry": "cylinder",
+      "material": "teal",
+      "transform": {
+        "translation": [
+          -2.2,
+          0.9,
+          -0.5
+        ],
+        "scale": [
+          0.6,
+          0.9,
+          0.6
+        ]
+      }
+    },
+    {
+      "name": "cone",
+      "geometry": "cone",
+      "material": "orange",
+      "transform": {
+        "translation": [
+          2.4,
+          0.95,
+          -0.6
+        ],
+        "scale": [
+          0.8,
+          0.95,
+          0.8
+        ]
+      }
+    }
+  ],
+  "lights": [
+    {
+      "kind": "area",
+      "center": [
+        -3,
+        6,
+        3
+      ],
+      "edge_u": [
+        3,
+        0,
+        0
+      ],
+      "edge_v": [
+        0,
+        0,
+        3
+      ],
+      "radiance": [
+        7,
+        6.5,
+        5.5
+      ]
+    },
+    {
+      "kind": "point",
+      "position": [
+        4,
+        3,
+        -2
+      ],
+      "color": [
+        0.08,
+        0.12,
+        0.2
+      ]
+    }
+  ]
+}

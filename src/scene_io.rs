@@ -78,6 +78,7 @@ pub struct RenderSettings {
     pub exposure: f32,
     pub tone_map: String,
     pub accel: crate::accel::AccelKind,
+    pub sampling: crate::sampling::PixelSampling,
 }
 impl Default for RenderSettings {
     fn default() -> Self {
@@ -92,6 +93,7 @@ impl Default for RenderSettings {
             exposure: 0.0,
             tone_map: "reinhard".into(),
             accel: crate::accel::AccelKind::Bvh,
+            sampling: crate::sampling::PixelSampling::Jittered,
         }
     }
 }
@@ -105,8 +107,10 @@ impl RenderSettings {
         {
             return Err("render dimensions must be 1..8192 and at most 16 megapixels".into());
         }
-        if self.spp != 1 {
-            return Err("only spp=1 is implemented before the sampling milestone".into());
+        if !(1..=16384).contains(&self.spp)
+            || u64::from(self.width) * u64::from(self.height) * u64::from(self.spp) > 1_073_741_824
+        {
+            return Err("spp must be 1..16384 and total pixel samples at most 2^30".into());
         }
         if self.integrator != "whitted" {
             return Err("integrator must be whitted".into());
@@ -241,7 +245,18 @@ impl TransformDef {
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum LightDef {
-    Point { position: [f32; 3], color: [f32; 3] },
+    Point {
+        position: [f32; 3],
+        color: [f32; 3],
+    },
+    Area {
+        center: [f32; 3],
+        edge_u: [f32; 3],
+        edge_v: [f32; 3],
+        radiance: [f32; 3],
+        #[serde(default)]
+        two_sided: bool,
+    },
 }
 
 pub struct LoadedScene {
@@ -260,14 +275,7 @@ pub struct BuildTimings {
 }
 impl LoadedScene {
     pub fn render(&self) -> Result<LinearFilm, String> {
-        crate::render::render_whitted(
-            &self.camera,
-            &self.scene,
-            self.render.width,
-            self.render.height,
-            self.background,
-            self.render.whitted()?,
-        )
+        crate::render::render_sampled(&self.camera, &self.scene, self.background, &self.render)
     }
 }
 
@@ -503,6 +511,19 @@ impl SceneFile {
         }
         for light in &self.lights {
             match light {
+                LightDef::Area {
+                    center,
+                    edge_u,
+                    edge_v,
+                    radiance,
+                    two_sided,
+                } => scene.area_lights.push(crate::light::RectLight::new(
+                    (*center).into(),
+                    (*edge_u).into(),
+                    (*edge_v).into(),
+                    color(*radiance, "area radiance")?,
+                    *two_sided,
+                )?),
                 LightDef::Point { position, color: c } => {
                     let position = Vec3::from_array(*position);
                     if !position.is_finite() {

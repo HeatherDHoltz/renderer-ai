@@ -9,8 +9,8 @@ Acceptance criteria and full scope: [implementation handoff](IMPLEMENTATION_HAND
 | M2 Whitted/glass | verified | Reflection/refraction/Fresnel/TIR, centralized offsets, recursion limits; transport tests and inspected images |
 | M3 Scenes/meshes/textures | verified | Validated scene files and CLI, indexed OBJ, normals/UVs/textures, relative assets and useful errors |
 | M4 Acceleration | verified | AABB, binned-SAH BVH, reference octree, differential tests and real benchmark evidence |
-| M5 Sampling/area lights | active | Deterministic sampling and correct area-light estimator; AA/penumbra comparisons |
-| M6 Parallel/progressive | pending | Tiled workers, configurable threads, preview batches; thread/tile/batch equivalence |
+| M5 Sampling/area lights | verified | Deterministic sampling and correct area-light estimator; AA/penumbra comparisons |
+| M6 Parallel/progressive | active | Tiled workers, configurable threads, preview batches; thread/tile/batch equivalence |
 | M7 HDR/physical materials | pending | HDR IO/environment importance sampling, GGX/Smith/Schlick, dielectric transport, color/BRDF tests and studio images |
 | M8 Hierarchy/animation | pending | Cycle-checked graph, TRS/quaternion tracks, fresh acceleration at each frame; first/middle/last inspection |
 | M9 Procedural/AI authoring | pending | Seeded generator, bounded branching L-system, validated scene-authoring workflow |

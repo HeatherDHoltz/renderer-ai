@@ -70,6 +70,15 @@ pub fn shade_pixel(hit: &Hit, view_ray: &Ray, scene: &Scene) -> Vec3 {
 }
 
 pub fn shade_linear(hit: &Hit, view_ray: &Ray, scene: &Scene) -> Vec3 {
+    shade_sampled(hit, view_ray, scene, crate::sampling::SampleKey::default())
+}
+
+pub fn shade_sampled(
+    hit: &Hit,
+    view_ray: &Ray,
+    scene: &Scene,
+    key: crate::sampling::SampleKey,
+) -> Vec3 {
     let diffuse_color = hit.material.diffuse
         * hit
             .material
@@ -104,6 +113,26 @@ pub fn shade_linear(hit: &Hit, view_ray: &Ray, scene: &Scene) -> Vec3 {
         let specular_color = light.color * hit.material.specular * specular;
         color += diffuse_color + specular_color;
     }
+    for (id, light) in scene.area_lights.iter().enumerate() {
+        let uv = glam::Vec2::new(key.value(2 + 2 * id as u64), key.value(3 + 2 * id as u64));
+        let Some(sample) = light.sample(hit.point, uv) else {
+            continue;
+        };
+        let cosine = normal.dot(sample.direction).max(0.0);
+        if cosine == 0.0 {
+            continue;
+        }
+        let origin =
+            crate::integrator::offset_origin(hit.point, hit.outward_normal, sample.direction);
+        let to_sample = sample.position - origin;
+        let ray = Ray::new(origin, to_sample.normalize());
+        if scene.occluded(&ray, 0.0, to_sample.length().next_down()) {
+            continue;
+        }
+        let halfway = (view + sample.direction).normalize_or_zero();
+        let specular = normal.dot(halfway).max(0.0).powf(hit.material.shininess);
+        color += sample.weight * (diffuse_color * cosine + hit.material.specular * specular);
+    }
     color
 }
 
@@ -135,6 +164,7 @@ mod tests {
                 color: Vec3::ONE,
             }],
             textures: vec![],
+            area_lights: vec![],
             acceleration: None,
         }
     }

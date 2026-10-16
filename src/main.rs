@@ -59,6 +59,12 @@ enum Command {
         depth: Option<u32>,
         #[arg(long, value_enum)]
         accel: Option<renderer_project::accel::AccelKind>,
+        #[arg(long)]
+        spp: Option<u32>,
+        #[arg(long)]
+        seed: Option<u64>,
+        #[arg(long, value_enum)]
+        sampling: Option<renderer_project::sampling::PixelSampling>,
         #[arg(long, allow_hyphen_values = true)]
         exposure: Option<f32>,
     },
@@ -105,10 +111,11 @@ fn run() -> Result<(), Box<dyn Error>> {
             let file = SceneFile::load(&scene)?;
             let loaded = file.build(scene.parent().unwrap_or(Path::new(".")))?;
             println!(
-                "Valid v{} scene: {} instances, {} point lights, {} textures; {}x{}",
+                "Valid v{} scene: {} instances, {} point lights, {} rectangular lights, {} textures; {}x{}",
                 file.version,
                 loaded.scene.shapes.len(),
                 loaded.scene.lights.len(),
+                loaded.scene.area_lights.len(),
                 loaded.scene.textures.len(),
                 loaded.render.width,
                 loaded.render.height
@@ -123,6 +130,9 @@ fn run() -> Result<(), Box<dyn Error>> {
             depth,
             exposure,
             accel,
+            spp,
+            seed,
+            sampling,
         } => {
             let start = Instant::now();
             let mut file = SceneFile::load(&scene)?;
@@ -140,6 +150,15 @@ fn run() -> Result<(), Box<dyn Error>> {
             }
             if let Some(v) = accel {
                 file.render.accel = v;
+            }
+            if let Some(v) = spp {
+                file.render.spp = v;
+            }
+            if let Some(v) = seed {
+                file.render.seed = v;
+            }
+            if let Some(v) = sampling {
+                file.render.sampling = v;
             }
             let loaded = file.build(scene.parent().unwrap_or(Path::new(".")))?;
             let load_time = start.elapsed();
@@ -198,6 +217,7 @@ fn smoke(width: u32, height: u32, output: PathBuf) -> Result<(), Box<dyn Error>>
             color: Vec3::ONE,
         }],
         textures: vec![],
+        area_lights: vec![],
         acceleration: None,
     };
     let camera = Camera::new(

@@ -1,0 +1,265 @@
+{
+  "version": 1,
+  "camera": {
+    "position": [
+      4,
+      3,
+      10
+    ],
+    "target": [
+      0,
+      1,
+      0
+    ],
+    "fov": 38
+  },
+  "render": {
+    "width": 480,
+    "height": 270,
+    "sampling": "jittered",
+    "spp": 64
+  },
+  "materials": {
+    "floor": {
+      "diffuse": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "texture": "grid"
+    },
+    "sphere": {
+      "diffuse": [
+        0.03,
+        0.4,
+        0.33
+      ],
+      "specular": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "shininess": 64
+    },
+    "box": {
+      "diffuse": [
+        0.7,
+        0.17,
+        0.06
+      ],
+      "specular": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "shininess": 64
+    },
+    "cylinder": {
+      "diffuse": [
+        0.12,
+        0.27,
+        0.65
+      ],
+      "specular": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "shininess": 64
+    },
+    "cone": {
+      "diffuse": [
+        0.75,
+        0.45,
+        0.06
+      ],
+      "specular": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "shininess": 64
+    }
+  },
+  "textures": {
+    "grid": {
+      "kind": "checker",
+      "a": [
+        0.7,
+        0.7,
+        0.7
+      ],
+      "b": [
+        0.3,
+        0.32,
+        0.36
+      ],
+      "scale": [
+        1,
+        1
+      ]
+    }
+  },
+  "geometries": {
+    "plane": {
+      "kind": "plane"
+    },
+    "sphere": {
+      "kind": "sphere"
+    },
+    "box": {
+      "kind": "box"
+    },
+    "cylinder": {
+      "kind": "cylinder"
+    },
+    "cone": {
+      "kind": "cone"
+    }
+  },
+  "objects": [
+    {
+      "name": "floor",
+      "geometry": "plane",
+      "material": "floor"
+    },
+    {
+      "name": "sphere",
+      "geometry": "sphere",
+      "material": "sphere",
+      "transform": {
+        "translation": [
+          -4,
+          1.3,
+          0
+        ],
+        "scale": [
+          0.7,
+          1.3,
+          0.7
+        ],
+        "rotation_degrees": [
+          0,
+          0,
+          -14
+        ]
+      }
+    },
+    {
+      "name": "box",
+      "geometry": "box",
+      "material": "box",
+      "transform": {
+        "translation": [
+          -1.5,
+          1,
+          0
+        ],
+        "scale": [
+          0.8,
+          0.8,
+          0.8
+        ],
+        "rotation_degrees": [
+          0,
+          0,
+          17
+        ]
+      }
+    },
+    {
+      "name": "cylinder",
+      "geometry": "cylinder",
+      "material": "cylinder",
+      "transform": {
+        "translation": [
+          1,
+          1,
+          0
+        ],
+        "scale": [
+          0.7,
+          1,
+          0.7
+        ],
+        "rotation_degrees": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "cone",
+      "geometry": "cone",
+      "material": "cone",
+      "transform": {
+        "translation": [
+          3.5,
+          1.2,
+          0
+        ],
+        "scale": [
+          0.9,
+          1.2,
+          0.9
+        ],
+        "rotation_degrees": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "thin-edge",
+      "geometry": "box",
+      "material": "cone",
+      "transform": {
+        "translation": [
+          0,
+          1.5,
+          1
+        ],
+        "scale": [
+          0.025,
+          1.5,
+          0.025
+        ],
+        "rotation_degrees": [
+          0,
+          0,
+          25
+        ]
+      }
+    }
+  ],
+  "lights": [
+    {
+      "kind": "point",
+      "position": [
+        -3,
+        7,
+        5
+      ],
+      "color": [
+        1.2,
+        1.1,
+        0.95
+      ]
+    },
+    {
+      "kind": "point",
+      "position": [
+        5,
+        5,
+        -2
+      ],
+      "color": [
+        0.2,
+        0.3,
+        0.5
+      ]
+    }
+  ]
+}

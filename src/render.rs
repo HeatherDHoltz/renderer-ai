@@ -1,5 +1,69 @@
 use crate::{camera::Camera, film::Film, material::shade_pixel, scene::Scene};
 
+pub fn render_sampled(
+    camera: &Camera,
+    scene: &Scene,
+    background: glam::Vec3,
+    settings: &crate::scene_io::RenderSettings,
+) -> Result<crate::film::LinearFilm, String> {
+    settings.validate()?;
+    let mut film = crate::film::LinearFilm::new(settings.width, settings.height)?;
+    render_range(
+        camera,
+        scene,
+        background,
+        settings,
+        &mut film,
+        0..settings.spp,
+    )?;
+    Ok(film)
+}
+
+/// Append exactly this sample prefix range to every pixel in ascending order.
+pub fn render_range(
+    camera: &Camera,
+    scene: &Scene,
+    background: glam::Vec3,
+    settings: &crate::scene_io::RenderSettings,
+    film: &mut crate::film::LinearFilm,
+    range: std::ops::Range<u32>,
+) -> Result<(), String> {
+    settings.validate()?;
+    if film.width != settings.width
+        || film.height != settings.height
+        || range.start > range.end
+        || range.end > settings.spp
+    {
+        return Err("sample range or film dimensions do not match settings".into());
+    }
+    for y in 0..settings.height {
+        for x in 0..settings.width {
+            if film.sample_count(x, y) != range.start {
+                return Err("sample batch must continue the existing film prefix".into());
+            }
+        }
+    }
+    let integrator = settings.whitted()?;
+    for y in 0..settings.height {
+        for x in 0..settings.width {
+            for sample in range.clone() {
+                let key = crate::sampling::SampleKey::new(
+                    settings.seed,
+                    u64::from(y) * u64::from(settings.width) + u64::from(x),
+                    sample,
+                );
+                let [dx, dy] = key.pixel_offset(settings.sampling);
+                let ray = camera.ray(
+                    (x as f32 + dx) / settings.width as f32,
+                    1.0 - (y as f32 + dy) / settings.height as f32,
+                );
+                film.add_sample(x, y, integrator.trace_sampled(&ray, scene, background, key))?;
+            }
+        }
+    }
+    Ok(())
+}
+
 pub fn render_linear(
     camera: &Camera,
     scene: &Scene,
@@ -90,6 +154,7 @@ mod tests {
             shapes: vec![],
             lights: vec![],
             textures: vec![],
+            area_lights: vec![],
             acceleration: None,
         };
         let film = render(&camera, &scene, 2, 2, 0.001, 100.0, [80, 120, 200]);
@@ -111,6 +176,7 @@ mod tests {
             ))],
             lights: vec![],
             textures: vec![],
+            area_lights: vec![],
             acceleration: None,
         };
         let film = render(&camera, &scene, 3, 3, 0.001, 100.0, [25, 30, 40]);
@@ -132,6 +198,7 @@ mod tests {
             ],
             lights: vec![],
             textures: vec![],
+            area_lights: vec![],
             acceleration: None,
         };
         assert_eq!(

@@ -24,11 +24,11 @@ All colors are linear RGB unless explicitly decoded from a color PNG texture. Po
 
 Camera fields: `kind` is `perspective` (default) or `orthographic`; `position` defaults to [4,3,7], `target` to [0,1,0], and `up` to [0,1,0]. Perspective vertical `fov` defaults to 40 degrees and must be in (0,179). Orthographic `height` defaults to 5 and must be positive. Aspect follows output dimensions. Eye and target must differ; up cannot be zero or parallel to view.
 
-Render defaults: `width` 640, `height` 480, `spp` 1, `seed` 116, `integrator` `whitted`, `max_depth` 8, `min_throughput` 0.0001, `exposure` 0 stops, `tone_map` `reinhard`, `accel` `bvh`. The other tone map is `linear`. Depth is 0..16, throughput is [0,1], and exposure is [-32,32]. Dimensions are 1..8192 and at most 16 megapixels. Only `spp=1` is currently supported: one center camera sample. `seed` is reserved for M5 and does not affect this deterministic center sample. Unsupported sampling/integrators fail instead of being silently ignored.
+Render defaults: `width` 640, `height` 480, `spp` 1, `seed` 116, `integrator` `whitted`, `max_depth` 8, `min_throughput` 0.0001, `exposure` 0 stops, `tone_map` `reinhard`, `accel` `bvh`. The other tone map is `linear`. Depth is 0..16, throughput is [0,1], and exposure is [-32,32]. Dimensions are 1..8192 and at most 16 megapixels. `sampling` is `jittered` (default) or `center`. Samples are 1..16,384 spp with at most 2^30 total pixel samples. The seed controls stateless per-pixel/per-sample streams, including rectangular light sampling. Existing one-sample examples explicitly select center.
 
 `accel` selects `none` (brute force), `bvh` (12-bin SAH, default), or `octree` (reference, parent straddlers). Both mesh triangles and scene instances use the selected backend.
 
-CLI `render` overrides: `--width`, `--height`, `--depth`, `--exposure`, `--accel`, `--output`. All overrides pass validation. `validate` also loads all defined mesh and texture assets. `render` prints load, render, and output timings; these single-run diagnostics are not a benchmark report.
+CLI `render` overrides: `--width`, `--height`, `--depth`, `--exposure`, `--accel`, `--spp`, `--seed`, `--sampling`, `--output`. All overrides pass validation. `validate` also loads all defined mesh and texture assets. `render` prints load, render, and output timings; these single-run diagnostics are not a benchmark report.
 
 ## Geometry, instances, and groups
 
@@ -46,7 +46,9 @@ Checker texture: `{"kind":"checker","a":[1,1,1],"b":[0.1,0.1,0.1],"scale":[4,4]}
 
 Color image texture: `{"kind":"image","path":"../assets/uv-grid.png","filter":"bilinear","wrap":"repeat"}`. PNG RGB is decoded through the sRGB transfer into linear color. `filter` is `nearest` or `bilinear` (default); `wrap` is `repeat` (default) or `clamp`. UV v=1 samples the top row, matching OBJ's usual bottom-origin UVs. Bilinear filtering uses texel centers and wraps/clamps neighbors consistently. Alpha is ignored; only base color is supported. No scalar maps, MTL import, normal maps, or anisotropic filtering are claimed.
 
-Point light: `{"kind":"point","position":[-3,7,5],"color":[1.2,1.1,0.95]}`. Color is an educational irradiance multiplier without inverse-square falloff. Glass blocks shadow rays. Background and light RGB may exceed one. Area lights/environment maps are not implemented yet.
+Point light: `{"kind":"point","position":[-3,7,5],"color":[1.2,1.1,0.95]}`. Color is an educational irradiance multiplier without inverse-square falloff. Glass blocks shadow rays. Background and light RGB may exceed one. Rectangular lights are supported; environment maps are pending.
+
+Area light: `{"kind":"area","center":[-3,6,3],"edge_u":[3,0,0],"edge_v":[0,0,3],"radiance":[7,6.5,5.5],"two_sided":false}`. Full spans define the rectangle and cross-product normal. One sample per source is drawn at each shaded vertex per camera sample. Emitted radiance remains constant as area changes; set radiance inversely with area to compare fixed power. See [SAMPLING.md](SAMPLING.md) for PDFs, units/conventions, sample counts, and inspected comparisons.
 
 ## OBJ support and resource limits
 

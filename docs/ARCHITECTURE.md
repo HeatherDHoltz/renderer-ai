@@ -18,7 +18,7 @@ The current core is a library used by a CLI and a preserved `legacy` example. Ge
 
 Intersections are double-sided and intervals include both endpoints. Box/cap boundaries use a 1e-6 local tolerance. Analytic normals use inverse transpose even with negative scale; outward orientation follows the implicit solid, independent of triangle winding. The cone apex has no unique surface normal and uses +Y. Stable quadratic roots use f64 intermediate arithmetic and explicitly handle linear cone equations. No heap allocation occurs inside primitive queries.
 
-`examples/shapes.rs` demonstrates all five shapes, including a tilted nonuniform ellipsoid, in both camera types. It writes 960×540 renders with one center sample per pixel. Aliasing is expected until M5.
+`examples/shapes.rs` demonstrates all five shapes, including a tilted nonuniform ellipsoid, in both camera types. It writes 960×540 renders with one center sample per pixel. These preserved diagnostic examples use center sampling; JSON scene renders can use jittered AA.
 
 Implementation conventions: right-handed +Y-up world, camera local -Z, column-vector multiplication, object-to-world `T * R * S`. Finite bounds and immutable thread-safe scene data are the planned acceleration/parallel boundary.
 
@@ -51,3 +51,7 @@ The reference octree splits root axes at their midpoint into eight cells, retain
 Scene geometry must remain unchanged after `build_accel`; rebuild after changing transforms or objects. Scene-file loading always builds fresh mesh and scene indices. Manual library scenes default to brute force until built explicitly. Public geometry vectors exist for now; callers must rebuild after edits.
 
 The benchmark CLI validates every ray's hit/identity/distance and occlusion against brute force before timing. Its ray-query loop excludes shading, recursive bounces, image output, and counter overhead. Repeated warm timings are separate from scene JSON parse, asset load, and acceleration construction. Full renderer/thread-scaling benchmarks remain M6; a ray-query speedup is not an end-to-end render speedup.
+
+## Sampling and source integration
+
+`SampleKey` hashes seed/pixel/sample/dimension/recursive stream without shared mutable state. Sequential sample indices preserve prefixes as spp or batch partitions change. `render_range` validates film prefixes and appends linear samples in ascending order. Rectangular source sampling supplies the correct area-to-solid-angle conversion; legacy empirical shading stays distinct from future physical BRDF evaluation. See [SAMPLING.md](SAMPLING.md) for equations, sidedness, source-power policy, and visual evidence.

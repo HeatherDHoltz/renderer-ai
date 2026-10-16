@@ -76,6 +76,7 @@ fn main() {
         shapes,
         lights,
         textures: vec![],
+        area_lights: vec![],
         acceleration: None,
     };
     let camera1 = Camera::new(Vec3::new(0.0, 4.0, 10.0), target, Vec3::Y, aspect, 45.0);
@@ -141,6 +142,7 @@ fn main() {
         shapes,
         lights,
         textures: vec![],
+        area_lights: vec![],
         acceleration: None,
     };
     let camera2 = Camera::new(
@@ -213,6 +215,7 @@ fn main() {
         shapes,
         lights,
         textures: vec![],
+        area_lights: vec![],
         acceleration: None,
     };
     let camera3 = Camera::new(
@@ -260,6 +263,7 @@ fn main() {
         shapes,
         lights,
         textures: vec![],
+        area_lights: vec![],
         acceleration: None,
     };
     let camera4 = Camera::new(
@@ -317,6 +321,7 @@ fn main() {
         shapes,
         lights,
         textures: vec![],
+        area_lights: vec![],
         acceleration: None,
     };
     let film = render::render(

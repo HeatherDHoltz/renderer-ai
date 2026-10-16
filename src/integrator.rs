@@ -1,5 +1,5 @@
 //! Educational Whitted recursion, kept separate from future physical shading.
-use crate::{material::shade_linear, ray::Ray, scene::Scene};
+use crate::{material::shade_sampled, ray::Ray, sampling::SampleKey, scene::Scene};
 use glam::Vec3;
 
 pub fn reflect(incident: Vec3, normal: Vec3) -> Vec3 {
@@ -69,7 +69,16 @@ impl Whitted {
         })
     }
     pub fn trace(&self, ray: &Ray, scene: &Scene, background: Vec3) -> Vec3 {
-        self.trace_recursive(ray, scene, background, 0, Vec3::ONE)
+        self.trace_sampled(ray, scene, background, SampleKey::default())
+    }
+    pub fn trace_sampled(
+        &self,
+        ray: &Ray,
+        scene: &Scene,
+        background: Vec3,
+        key: SampleKey,
+    ) -> Vec3 {
+        self.trace_recursive(ray, scene, background, 0, Vec3::ONE, key)
     }
     fn trace_recursive(
         &self,
@@ -78,11 +87,12 @@ impl Whitted {
         background: Vec3,
         depth: u32,
         throughput: Vec3,
+        key: SampleKey,
     ) -> Vec3 {
         let Some(hit) = scene.nearest_hit(ray, 0.0, f32::INFINITY) else {
             return background;
         };
-        let mut color = shade_linear(&hit, ray, scene);
+        let mut color = shade_sampled(&hit, ray, scene, key);
         if depth >= self.max_depth {
             return color;
         }
@@ -119,6 +129,7 @@ impl Whitted {
                     background,
                     depth + 1,
                     throughput * reflection_weight,
+                    key.fork(0),
                 );
         }
         if let Some(direction) = transmitted
@@ -132,6 +143,7 @@ impl Whitted {
                     background,
                     depth + 1,
                     throughput * transmission_weight,
+                    key.fork(1),
                 );
         }
         color

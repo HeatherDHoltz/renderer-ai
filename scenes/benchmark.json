@@ -16,7 +16,8 @@
   "render": {
     "width": 384,
     "height": 256,
-    "seed": 116
+    "seed": 116,
+    "sampling": "center"
   },
   "materials": {
     "wave": {

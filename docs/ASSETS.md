@@ -7,6 +7,8 @@
 - `assets/uv-grid.png`: generated 64×32 color atlas with four colored quadrants and grid lines; no external art.
 - `scenes/mesh.json` reuses the sphere geometry twice with flat/smooth normals; `gallery/mesh.png` was rendered with the documented CLI command and default 640×420 settings.
 - `assets/benchmark-grid.obj` and `scenes/benchmark.json`: deterministic 64×64 sinusoidal grid, 4,225 vertices / 8,192 triangles, recreated by `python3 scripts/generate_benchmark.py`. `gallery/wave.png` is the inspected default BVH render.
+- `gallery/aa-center.png` / `aa-128.png`: analytic/checker AA diagnostics at 480×270, center 1 spp versus seeded jittered 128 spp.
+- `gallery/soft-1.png`, `soft-shadows.png`, and `soft-small.png`: inspected 320×224 rectangular-light diagnostics, generated from the included soft-shadow scenes; exact commands in SAMPLING.md.
 - Course slides, handouts, syllabus, and class submission files are not redistributed here.
 
 No license has been assigned to project-authored files or images. Dependency licenses remain those declared by their respective packages.

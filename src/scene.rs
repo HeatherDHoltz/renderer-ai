@@ -13,6 +13,7 @@ pub struct PointLight {
 pub struct Scene {
     pub shapes: Vec<Box<dyn Shape>>,
     pub lights: Vec<PointLight>,
+    pub area_lights: Vec<crate::light::RectLight>,
     pub textures: Vec<crate::texture::Texture>,
     pub acceleration: Option<crate::accel::Acceleration>,
 }
@@ -128,6 +129,7 @@ mod tests {
             lights: vec![],
             shapes: vec![],
             textures: vec![],
+            area_lights: vec![],
             acceleration: None,
         };
         let ray = Ray::new(Vec3::ZERO, -Vec3::Z);
@@ -147,6 +149,7 @@ mod tests {
                 Box::new(Plane::new(-Vec3::Y, Vec3::Y, material(Vec3::Y))),
             ],
             textures: vec![],
+            area_lights: vec![],
             acceleration: None,
         };
         let ray = Ray::new(Vec3::new(0.0, 0.0, 5.0), -Vec3::Z);
@@ -162,6 +165,7 @@ mod tests {
                 Box::new(Sphere::new(2.0 * Vec3::Z, 1.0, material(Vec3::Y))),
             ],
             textures: vec![],
+            area_lights: vec![],
             acceleration: None,
         };
         let ray = Ray::new(5.0 * Vec3::Z, -Vec3::Z);
@@ -184,6 +188,7 @@ mod tests {
                 Box::new(Sphere::new(2.0 * Vec3::Y, 1.0, material(Vec3::X))),
             ],
             textures: vec![],
+            area_lights: vec![],
             acceleration: None,
         };
         let above_sphere = Ray::new(5.0 * Vec3::Y, -Vec3::Y);
@@ -206,6 +211,7 @@ mod tests {
                 Box::new(Plane::new(Vec3::ZERO, Vec3::Y, material(Vec3::Y))),
             ],
             textures: vec![],
+            area_lights: vec![],
             acceleration: None,
         };
         let ray = Ray::new(5.0 * Vec3::Y, -Vec3::Y);

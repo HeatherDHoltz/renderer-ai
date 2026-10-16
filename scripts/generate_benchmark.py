@@ -21,7 +21,7 @@ for j in range(CELLS):
 scene = {
     "version": 1,
     "camera": {"position": [9, 7, 11], "target": [0, 0, 0], "fov": 45},
-    "render": {"width": 384, "height": 256, "seed": 116},
+    "render": {"width": 384, "height": 256, "seed": 116, "sampling": "center"},
     "materials": {"wave": {"diffuse": [0.03, 0.4, 0.35], "specular": [0.3] * 3}},
     "geometries": {"wave": {"kind": "mesh", "path": "../assets/benchmark-grid.obj"}},
     "objects": [{"name": "wave", "geometry": "wave", "material": "wave", "smooth": True}],
