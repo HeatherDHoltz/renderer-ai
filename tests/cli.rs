@@ -33,6 +33,38 @@ fn cli_validates_assets_and_renders_from_another_working_directory() {
         String::from_utf8_lossy(&render.stderr)
     );
     assert_eq!(image::image_dimensions(&output).unwrap(), (8, 6));
+    let progressive = temp.join("progressive.png");
+    let preview = Command::new(binary)
+        .current_dir(&temp)
+        .arg("render")
+        .arg(&scene)
+        .args([
+            "--width",
+            "8",
+            "--height",
+            "6",
+            "--spp",
+            "3",
+            "--threads",
+            "2",
+            "--tile-size",
+            "5",
+            "--progressive",
+            "--preview-every",
+            "2",
+            "--output",
+        ])
+        .arg(&progressive)
+        .output()
+        .unwrap();
+    assert!(
+        preview.status.success(),
+        "{}",
+        String::from_utf8_lossy(&preview.stderr)
+    );
+    assert!(String::from_utf8_lossy(&preview.stderr).contains("Preview 2/3"));
+    assert!(String::from_utf8_lossy(&preview.stderr).contains("Preview 3/3"));
+    assert_eq!(image::image_dimensions(&progressive).unwrap(), (8, 6));
     let invalid = Command::new(binary)
         .arg("render")
         .arg(&scene)

@@ -1,14 +1,137 @@
 use crate::{camera::Camera, film::Film, material::shade_pixel, scene::Scene};
 
+pub struct TiledRenderer {
+    pool: rayon::ThreadPool,
+}
+struct Tile {
+    x: u32,
+    y: u32,
+    width: u32,
+    height: u32,
+    sums: Vec<glam::Vec3>,
+}
+impl TiledRenderer {
+    pub fn new(settings: &crate::scene_io::RenderSettings) -> Result<Self, String> {
+        settings.validate()?;
+        let threads = if settings.threads == 0 {
+            std::thread::available_parallelism().map_or(1, |n| n.get())
+        } else {
+            settings.threads
+        };
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(threads)
+            .thread_name(|i| format!("render-{i}"))
+            .build()
+            .map_err(|e| format!("cannot create render workers: {e}"))?;
+        Ok(Self { pool })
+    }
+    pub fn thread_count(&self) -> usize {
+        self.pool.current_num_threads()
+    }
+    pub fn render_range(
+        &self,
+        camera: &Camera,
+        scene: &Scene,
+        background: glam::Vec3,
+        settings: &crate::scene_io::RenderSettings,
+        film: &mut crate::film::LinearFilm,
+        range: std::ops::Range<u32>,
+    ) -> Result<(), String> {
+        use rayon::prelude::*;
+        settings.validate()?;
+        if film.width != settings.width
+            || film.height != settings.height
+            || range.start > range.end
+            || range.end > settings.spp
+        {
+            return Err("sample range or film dimensions do not match settings".into());
+        }
+        for y in 0..settings.height {
+            for x in 0..settings.width {
+                if film.sample_count(x, y) != range.start {
+                    return Err("sample batch must continue the existing film prefix".into());
+                }
+            }
+        }
+        if range.is_empty() {
+            return Ok(());
+        }
+        let integrator = settings.whitted()?;
+        let cols = settings.width.div_ceil(settings.tile_size);
+        let rows = settings.height.div_ceil(settings.tile_size);
+        let base = &*film;
+        let tiles: Vec<Tile> = self.pool.install(|| {
+            (0..cols * rows)
+                .into_par_iter()
+                .map(|index| -> Result<Tile, String> {
+                    let x0 = (index % cols) * settings.tile_size;
+                    let y0 = (index / cols) * settings.tile_size;
+                    let width = settings.tile_size.min(settings.width - x0);
+                    let height = settings.tile_size.min(settings.height - y0);
+                    let mut sums = Vec::with_capacity((width * height) as usize);
+                    for y in y0..y0 + height {
+                        for x in x0..x0 + width {
+                            let (mut sum, _) = base.accumulation(x, y);
+                            for sample in range.clone() {
+                                let key = crate::sampling::SampleKey::new(
+                                    settings.seed,
+                                    u64::from(y) * u64::from(settings.width) + u64::from(x),
+                                    sample,
+                                );
+                                let [dx, dy] = key.pixel_offset(settings.sampling);
+                                let ray = camera.ray(
+                                    (x as f32 + dx) / settings.width as f32,
+                                    1.0 - (y as f32 + dy) / settings.height as f32,
+                                );
+                                let color = integrator.trace_sampled(&ray, scene, background, key);
+                                if !color.is_finite() || color.min_element() < 0.0 {
+                                    return Err(format!(
+                                        "invalid radiance at pixel ({x},{y}), sample {sample}"
+                                    ));
+                                }
+                                sum += color;
+                            }
+                            if !sum.is_finite() {
+                                return Err(format!("radiance accumulation overflow at ({x},{y})"));
+                            }
+                            sums.push(sum);
+                        }
+                    }
+                    Ok(Tile {
+                        x: x0,
+                        y: y0,
+                        width,
+                        height,
+                        sums,
+                    })
+                })
+                .collect::<Result<Vec<_>, _>>()
+        })?;
+        for tile in tiles {
+            for y in 0..tile.height {
+                for x in 0..tile.width {
+                    film.set_accumulation(
+                        tile.x + x,
+                        tile.y + y,
+                        tile.sums[(y * tile.width + x) as usize],
+                        range.end,
+                    )?;
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
 pub fn render_sampled(
     camera: &Camera,
     scene: &Scene,
     background: glam::Vec3,
     settings: &crate::scene_io::RenderSettings,
 ) -> Result<crate::film::LinearFilm, String> {
-    settings.validate()?;
+    let engine = TiledRenderer::new(settings)?;
     let mut film = crate::film::LinearFilm::new(settings.width, settings.height)?;
-    render_range(
+    engine.render_range(
         camera,
         scene,
         background,
@@ -19,7 +142,6 @@ pub fn render_sampled(
     Ok(film)
 }
 
-/// Append exactly this sample prefix range to every pixel in ascending order.
 pub fn render_range(
     camera: &Camera,
     scene: &Scene,
@@ -28,39 +150,51 @@ pub fn render_range(
     film: &mut crate::film::LinearFilm,
     range: std::ops::Range<u32>,
 ) -> Result<(), String> {
-    settings.validate()?;
-    if film.width != settings.width
-        || film.height != settings.height
-        || range.start > range.end
-        || range.end > settings.spp
-    {
-        return Err("sample range or film dimensions do not match settings".into());
+    TiledRenderer::new(settings)?.render_range(camera, scene, background, settings, film, range)
+}
+
+pub fn render_progressive(
+    camera: &Camera,
+    scene: &Scene,
+    background: glam::Vec3,
+    settings: &crate::scene_io::RenderSettings,
+    mut preview: impl FnMut(&crate::film::LinearFilm, u32) -> Result<(), String>,
+) -> Result<crate::film::LinearFilm, String> {
+    let engine = TiledRenderer::new(settings)?;
+    let mut film = crate::film::LinearFilm::new(settings.width, settings.height)?;
+    let mut start = 0;
+    while start < settings.spp {
+        let end = start
+            .saturating_add(settings.preview_every)
+            .min(settings.spp);
+        engine.render_range(camera, scene, background, settings, &mut film, start..end)?;
+        preview(&film, end)?;
+        start = end;
     }
-    for y in 0..settings.height {
-        for x in 0..settings.width {
-            if film.sample_count(x, y) != range.start {
-                return Err("sample batch must continue the existing film prefix".into());
-            }
-        }
+    Ok(film)
+}
+
+/// Write a complete PNG to a temporary sibling then atomically replace the preview.
+pub fn save_preview(
+    film: &crate::film::LinearFilm,
+    settings: &crate::scene_io::RenderSettings,
+    path: &std::path::Path,
+) -> Result<(), String> {
+    if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
-    let integrator = settings.whitted()?;
-    for y in 0..settings.height {
-        for x in 0..settings.width {
-            for sample in range.clone() {
-                let key = crate::sampling::SampleKey::new(
-                    settings.seed,
-                    u64::from(y) * u64::from(settings.width) + u64::from(x),
-                    sample,
-                );
-                let [dx, dy] = key.pixel_offset(settings.sampling);
-                let ray = camera.ray(
-                    (x as f32 + dx) / settings.width as f32,
-                    1.0 - (y as f32 + dy) / settings.height as f32,
-                );
-                film.add_sample(x, y, integrator.trace_sampled(&ray, scene, background, key))?;
-            }
-        }
-    }
+    let name = path
+        .file_name()
+        .ok_or("output needs a filename")?
+        .to_string_lossy();
+    static NEXT_PREVIEW: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let id = NEXT_PREVIEW.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let temporary = path.with_file_name(format!(".{name}.{}.{id}.partial.png", std::process::id()));
+    film.display(settings.exposure, settings.tone()?)?
+        .save_with_format(&temporary, image::ImageFormat::Png)
+        .map_err(|e| e.to_string())?;
+    std::fs::rename(&temporary, path)
+        .map_err(|e| format!("cannot replace preview {}: {e}", path.display()))?;
     Ok(())
 }
 

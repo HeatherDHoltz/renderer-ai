@@ -60,6 +60,134 @@ fn hash(bytes: &[u8]) -> u64 {
         (h ^ u64::from(*b)).wrapping_mul(0x100000001b3)
     })
 }
+
+#[derive(Serialize)]
+pub struct RenderBenchmarkReport {
+    pub source_commit: String,
+    pub tracked_source_dirty: bool,
+    pub rustc: String,
+    pub cpu: String,
+    pub machine: String,
+    pub os: String,
+    pub logical_cpus: usize,
+    pub scene: String,
+    pub instance_count: usize,
+    pub instanced_triangle_count: usize,
+    pub scene_fnv1a64: String,
+    pub settings: crate::scene_io::RenderSettings,
+    pub warmups: usize,
+    pub runs: usize,
+    pub workload: String,
+    pub thread_results: Vec<RenderThreadResult>,
+}
+#[derive(Serialize)]
+pub struct RenderThreadResult {
+    pub requested_threads: usize,
+    pub actual_threads: usize,
+    pub seconds: Vec<f64>,
+    pub median_seconds: f64,
+    pub min_seconds: f64,
+    pub max_seconds: f64,
+    pub film_fnv1a64: String,
+}
+
+fn film_hash(film: &crate::film::LinearFilm) -> u64 {
+    let mut value = 0xcbf29ce484222325_u64;
+    for y in 0..film.height {
+        for x in 0..film.width {
+            for component in film.pixel(x, y).to_array() {
+                for byte in component.to_bits().to_le_bytes() {
+                    value = (value ^ u64::from(byte)).wrapping_mul(0x100000001b3);
+                }
+            }
+        }
+    }
+    value
+}
+
+pub fn render_run(
+    path: &Path,
+    threads: &[usize],
+    runs: usize,
+    warmups: usize,
+) -> Result<RenderBenchmarkReport, String> {
+    if cfg!(debug_assertions) {
+        return Err("render benchmark requires a release build".into());
+    }
+    if threads.is_empty()
+        || threads.len() > 8
+        || threads.iter().any(|n| *n > 256)
+        || !(3..=20).contains(&runs)
+        || !(1..=5).contains(&warmups)
+    {
+        return Err(
+            "benchmark needs 1..8 thread choices in 0..256, 3..20 runs, 1..5 warmups".into(),
+        );
+    }
+    let mut file = SceneFile::load(path)?;
+    file.render.progressive = false;
+    let loaded = file.build(path.parent().unwrap_or(Path::new(".")))?;
+    let cpus = std::thread::available_parallelism().map_or(1, |n| n.get());
+    let mut baseline_settings = loaded.render.clone();
+    baseline_settings.threads = 1;
+    let expected = film_hash(&crate::render::render_sampled(
+        &loaded.camera,
+        &loaded.scene,
+        loaded.background,
+        &baseline_settings,
+    )?);
+    let mut report=RenderBenchmarkReport {source_commit:command("git",&["rev-parse","HEAD"]),tracked_source_dirty:!command("git",&["diff","--name-only","HEAD"]).is_empty(),rustc:command("rustc",&["--version"]),cpu:command("sysctl",&["-n","machdep.cpu.brand_string"]),machine:command("sysctl",&["-n","hw.model"]),os:command("sw_vers",&["-productVersion"]),logical_cpus:cpus,scene:path.display().to_string(),instance_count:loaded.scene.shapes.len(),instanced_triangle_count:loaded.scene.shapes.iter().map(|s|s.triangle_count()).sum(),scene_fnv1a64:format!("{:016x}",hash(&std::fs::read(path).map_err(|e|e.to_string())?)),settings:loaded.render.clone(),warmups,runs,workload:"Release render_sampled wall time including worker-pool creation, linear film allocation, all camera/lighting/recursive work, tiled scheduling, and merge. Scene/asset/acceleration loading, hash verification, tone mapping, PNG writes, and progressive previews are excluded. Exact linear-film hashes checked against one-thread reference on every run.".into(),thread_results:vec![]};
+    for &requested_threads in threads {
+        let mut settings = loaded.render.clone();
+        settings.threads = requested_threads;
+        for _ in 0..warmups {
+            let film = crate::render::render_sampled(
+                &loaded.camera,
+                &loaded.scene,
+                loaded.background,
+                &settings,
+            )?;
+            if film_hash(&film) != expected {
+                return Err("thread warmup differs from one-thread film".into());
+            }
+        }
+        let mut seconds = vec![];
+        for _ in 0..runs {
+            let start = Instant::now();
+            let film = crate::render::render_sampled(
+                &loaded.camera,
+                &loaded.scene,
+                loaded.background,
+                &settings,
+            )?;
+            seconds.push(start.elapsed().as_secs_f64());
+            if film_hash(&film) != expected {
+                return Err("thread render differs from one-thread film".into());
+            }
+        }
+        let mut sorted = seconds.clone();
+        sorted.sort_by(f64::total_cmp);
+        let median = if runs.is_multiple_of(2) {
+            (sorted[runs / 2 - 1] + sorted[runs / 2]) * 0.5
+        } else {
+            sorted[runs / 2]
+        };
+        report.thread_results.push(RenderThreadResult {
+            requested_threads,
+            actual_threads: if requested_threads == 0 {
+                cpus
+            } else {
+                requested_threads
+            },
+            seconds,
+            median_seconds: median,
+            min_seconds: sorted[0],
+            max_seconds: sorted[runs - 1],
+            film_fnv1a64: format!("{expected:016x}"),
+        });
+    }
+    Ok(report)
+}
 fn random(seed: &mut u64) -> f32 {
     *seed = seed.wrapping_add(0x9e3779b97f4a7c15);
     let mut x = *seed;

@@ -23,6 +23,18 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Command {
+    /// Measure full-render thread scaling with exact linear-film verification.
+    BenchmarkRender {
+        scene: PathBuf,
+        #[arg(long, default_value = "output/render-benchmark.json")]
+        output: PathBuf,
+        #[arg(long, value_delimiter = ',', default_value = "1,2,4,0")]
+        threads: Vec<usize>,
+        #[arg(long, default_value_t = 5)]
+        runs: usize,
+        #[arg(long, default_value_t = 1)]
+        warmups: usize,
+    },
     /// Compare verified brute-force, BVH, and octree ray-query workloads (release only).
     Benchmark {
         scene: PathBuf,
@@ -65,6 +77,16 @@ enum Command {
         seed: Option<u64>,
         #[arg(long, value_enum)]
         sampling: Option<renderer_project::sampling::PixelSampling>,
+        #[arg(long)]
+        threads: Option<usize>,
+        #[arg(long)]
+        tile_size: Option<u32>,
+        #[arg(long)]
+        progressive: bool,
+        #[arg(long, conflicts_with = "progressive")]
+        no_progressive: bool,
+        #[arg(long)]
+        preview_every: Option<u32>,
         #[arg(long, allow_hyphen_values = true)]
         exposure: Option<f32>,
     },
@@ -77,6 +99,27 @@ fn main() {
 }
 fn run() -> Result<(), Box<dyn Error>> {
     match Cli::parse().command {
+        Command::BenchmarkRender {
+            scene,
+            output,
+            threads,
+            runs,
+            warmups,
+        } => {
+            let report = renderer_project::benchmark::render_run(&scene, &threads, runs, warmups)?;
+            if let Some(parent) = output.parent().filter(|p| !p.as_os_str().is_empty()) {
+                std::fs::create_dir_all(parent)?;
+            }
+            std::fs::write(&output, serde_json::to_string_pretty(&report)?)?;
+            for row in &report.thread_results {
+                println!(
+                    "{} workers: median {:.3}s, range {:.3}..{:.3}s",
+                    row.actual_threads, row.median_seconds, row.min_seconds, row.max_seconds
+                );
+            }
+            println!("Saved verified full-render timings -> {}", output.display());
+            Ok(())
+        }
         Command::Benchmark {
             scene,
             output,
@@ -133,6 +176,11 @@ fn run() -> Result<(), Box<dyn Error>> {
             spp,
             seed,
             sampling,
+            threads,
+            tile_size,
+            progressive,
+            no_progressive,
+            preview_every,
         } => {
             let start = Instant::now();
             let mut file = SceneFile::load(&scene)?;
@@ -160,26 +208,78 @@ fn run() -> Result<(), Box<dyn Error>> {
             if let Some(v) = sampling {
                 file.render.sampling = v;
             }
+            if let Some(v) = threads {
+                file.render.threads = v;
+            }
+            if let Some(v) = tile_size {
+                file.render.tile_size = v;
+            }
+            if progressive {
+                file.render.progressive = true;
+            }
+            if no_progressive {
+                file.render.progressive = false;
+            }
+            if let Some(v) = preview_every {
+                file.render.preview_every = v;
+            }
             let loaded = file.build(scene.parent().unwrap_or(Path::new(".")))?;
             let load_time = start.elapsed();
-            let start = Instant::now();
-            let film = loaded.render()?;
-            let render_time = start.elapsed();
-            if let Some(parent) = output.parent().filter(|p| !p.as_os_str().is_empty()) {
-                std::fs::create_dir_all(parent)?;
+            if !output
+                .extension()
+                .is_some_and(|e| e.eq_ignore_ascii_case("png"))
+            {
+                return Err("output must be a .png path".into());
             }
+            let workers = if loaded.render.threads == 0 {
+                std::thread::available_parallelism().map_or(1, |n| n.get())
+            } else {
+                loaded.render.threads
+            };
+            eprintln!(
+                "Rendering {}x{}, {} spp, {workers} workers, {}px tiles",
+                loaded.render.width,
+                loaded.render.height,
+                loaded.render.spp,
+                loaded.render.tile_size
+            );
             let start = Instant::now();
-            film.display(loaded.render.exposure, loaded.render.tone()?)?
-                .save(&output)?;
+            let mut write_time = std::time::Duration::ZERO;
+            if loaded.render.progressive {
+                render::render_progressive(
+                    &loaded.camera,
+                    &loaded.scene,
+                    loaded.background,
+                    &loaded.render,
+                    |film, samples| {
+                        let write_start = Instant::now();
+                        render::save_preview(film, &loaded.render, &output)?;
+                        write_time += write_start.elapsed();
+                        eprintln!(
+                            "Preview {samples}/{} spp -> {} ({:.2}s elapsed)",
+                            loaded.render.spp,
+                            output.display(),
+                            start.elapsed().as_secs_f64()
+                        );
+                        Ok(())
+                    },
+                )?;
+            } else {
+                let film = loaded.render()?;
+                let write_start = Instant::now();
+                render::save_preview(&film, &loaded.render, &output)?;
+                write_time = write_start.elapsed();
+            }
+            let render_time = start.elapsed().saturating_sub(write_time);
             println!(
-                "Rendered {}x{} at {} spp -> {} (load {:.3}s, render {:.3}s, write {:.3}s)",
+                "Rendered {}x{} at {} spp -> {} (load {:.3}s, render {:.3}s, write {:.3}s, {workers} workers)",
                 loaded.render.width,
                 loaded.render.height,
                 loaded.render.spp,
                 output.display(),
                 load_time.as_secs_f64(),
                 render_time.as_secs_f64(),
-                start.elapsed().as_secs_f64()
+                write_time.as_secs_f64()
             );
             Ok(())
         }

@@ -79,6 +79,10 @@ pub struct RenderSettings {
     pub tone_map: String,
     pub accel: crate::accel::AccelKind,
     pub sampling: crate::sampling::PixelSampling,
+    pub threads: usize,
+    pub tile_size: u32,
+    pub progressive: bool,
+    pub preview_every: u32,
 }
 impl Default for RenderSettings {
     fn default() -> Self {
@@ -94,11 +98,24 @@ impl Default for RenderSettings {
             tone_map: "reinhard".into(),
             accel: crate::accel::AccelKind::Bvh,
             sampling: crate::sampling::PixelSampling::Jittered,
+            threads: 0,
+            tile_size: 16,
+            progressive: false,
+            preview_every: 8,
         }
     }
 }
 impl RenderSettings {
     pub fn validate(&self) -> Result<(), String> {
+        if self.threads > 256
+            || !(4..=256).contains(&self.tile_size)
+            || self.preview_every == 0
+            || self.preview_every > 16384
+        {
+            return Err(
+                "threads must be 0..256 (0=auto), tile_size 4..256, preview_every 1..16384".into(),
+            );
+        }
         if self.width == 0
             || self.height == 0
             || self.width > 8192

@@ -55,3 +55,7 @@ The benchmark CLI validates every ray's hit/identity/distance and occlusion agai
 ## Sampling and source integration
 
 `SampleKey` hashes seed/pixel/sample/dimension/recursive stream without shared mutable state. Sequential sample indices preserve prefixes as spp or batch partitions change. `render_range` validates film prefixes and appends linear samples in ascending order. Rectangular source sampling supplies the correct area-to-solid-angle conversion; legacy empirical shading stays distinct from future physical BRDF evaluation. See [SAMPLING.md](SAMPLING.md) for equations, sidedness, source-power policy, and visual evidence.
+
+## Tiled execution and previews
+
+A dedicated Rayon pool renders exclusive tile buffers from immutable film-prefix sums. Per-pixel floating-point additions keep the same sample order across worker counts, tiles, and progressive batches; completed buffers commit after successful batch evaluation. The renderer validates nonfinite/negative radiance with pixel/sample diagnostics. Progressive callbacks receive complete uniform prefixes; CLI PNG replacement uses a temporary sibling and atomic rename. Details and exercised commands are in [PARALLEL.md](PARALLEL.md).

@@ -24,6 +24,25 @@ pub struct LinearFilm {
 }
 
 impl LinearFilm {
+    pub(crate) fn accumulation(&self, x: u32, y: u32) -> (Vec3, u32) {
+        let i = (y * self.width + x) as usize;
+        (self.sums[i], self.counts[i])
+    }
+    pub(crate) fn set_accumulation(
+        &mut self,
+        x: u32,
+        y: u32,
+        sum: Vec3,
+        count: u32,
+    ) -> Result<(), String> {
+        if !sum.is_finite() || sum.min_element() < 0.0 || count == 0 {
+            return Err("invalid tile radiance accumulation".into());
+        }
+        let i = (y * self.width + x) as usize;
+        self.sums[i] = sum;
+        self.counts[i] = count;
+        Ok(())
+    }
     pub fn new(width: u32, height: u32) -> Result<Self, String> {
         if width == 0
             || height == 0

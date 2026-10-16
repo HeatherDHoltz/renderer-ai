@@ -41,4 +41,4 @@ cargo run --release --locked -- render scenes/soft_shadows.json --width 320 --he
 cargo run --release --locked -- render scenes/soft_shadows_small.json --width 320 --height 224 --spp 128 --output output/soft-small.png
 ```
 
-The sample stream is tested in forward/reverse pixel order and in full versus split sample batches. These tests establish deterministic addressing before parallel execution; multithread/tile/progressive output verification belongs to M6.
+The sample stream is tested in forward/reverse pixel order and in full versus split sample batches. Thread/tile/progressive tests now also verify the same sample stream and exact same-build linear sums; see [PARALLEL.md](PARALLEL.md).
