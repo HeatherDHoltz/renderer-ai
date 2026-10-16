@@ -237,7 +237,13 @@
       "Reduced-motion branch reviewed in code, preference not emulated in browser."
     ],
     "publication": {
-      "status": "pending"
+      "source_sha": "6b9e8aba4a83747a15b768630aad2bd4504007d6",
+      "deployment_id": "appgdep_6ad282d29c348191ba2a6735cce23243",
+      "version_id": "appgprj_6ad1d1ee181c819186c337d3573bdaea~appgver_b62f533973bc8191b49314ff79a38aee",
+      "status": "succeeded",
+      "url": "https://heathers-little-jeweler.zoeholtz2000.chatgpt.site",
+      "audience": "Existing owner-private access preserved; selected account confirmed owner with only that owner allowed before edits.",
+      "hosted_verification": "Native deployment succeeded. Browser reached the normal ChatGPT sign-in page; continuing redirected to the account login form. No new hosted interaction/graphics QA is claimed. Canonical site left open for Heather; all scene/interaction screenshots are from the verified local build."
     }
   }
 }
