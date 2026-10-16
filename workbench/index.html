@@ -336,40 +336,50 @@
               </button>
             </div>
             <label class="range-label" for="light-angle"
-              >Light position <output id="light-value">48%</output></label
+              >Light position <output id="light-value">-20%</output></label
             ><input
               type="range"
               min="-100"
               max="100"
               step="1"
-              value="45"
+              value="-20"
               id="light-angle"
             /><label class="range-label" for="light-height"
-              >Light height <output id="height-value">28%</output></label
+              >Light height <output id="height-value">65%</output></label
             ><input
               type="range"
               min="8"
               max="85"
               step="1"
-              value="45"
+              value="65"
               id="light-height"
             />
+            <div class="segmented">
+              <button
+                type="button"
+                id="toggle-caustics"
+                class="selected"
+                aria-pressed="true"
+              >
+                Refracted light on the bench
+              </button>
+            </div>
             <div class="background-row">
               <span>Bench mat</span>
               <div role="group" aria-label="Inspection background">
                 <button
                   type="button"
-                  class="card-swatch green selected"
+                  class="card-swatch green"
                   data-background="green"
                   aria-label="Green felt bench mat"
-                  aria-pressed="true"
+                  aria-pressed="false"
                 ></button
                 ><button
                   type="button"
-                  class="card-swatch cream"
+                  class="card-swatch cream selected"
                   data-background="cream"
                   aria-label="Ivory bench mat"
-                  aria-pressed="false"
+                  aria-pressed="true"
                 ></button
                 ><button
                   type="button"
@@ -467,15 +477,19 @@
           reflection through their actual facets, with RGB dispersion and
           absorption. A live reflection probe captures the room; finite
           examination lights are also traced directly for the jewelry. Room
-          reflections remain an environment-based approximation without caustics
-          or full scene path tracing. The seated view follows the cursor within
-          a small limit while the jewelry turns independently. The loupe lifts
-          from the bench along a clear path before the camera leans into its 3D
-          brass eyepiece. Its magnification comes from the camera projection,
-          rather than a full optical lens simulation. These are real-time
-          approximations. Ruby and sapphire use three-channel fits to published
-          absorption measurements; the other color presets are appearance
-          studies.
+          reflections remain an environment-based approximation. A light-side
+          photon pass traces the selected faceted gem onto the flat bench,
+          including RGB dispersion, absorption and internal reflection. It uses
+          fewer samples during movement, refines when still, and can be disabled
+          in Bench controls. Ring/prop occlusion along these bent paths and full
+          scene path tracing are not simulated. The seated view follows the
+          cursor within a small limit while the jewelry turns independently. The
+          loupe lifts from the bench along a clear path before the camera leans
+          into its 3D brass eyepiece. Its magnification comes from the camera
+          projection, rather than a full optical lens simulation. These are
+          real-time approximations. Ruby and sapphire use three-channel fits to
+          published absorption measurements; the other color presets are
+          appearance studies.
         </p>
         <p>
           The circa-1905 study is project-modeled in Blender, with Cycles-baked

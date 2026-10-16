@@ -7,12 +7,13 @@ const state = {
   metal: "gold",
   setting: "ring",
   finish: 14,
-  angle: 48,
-  height: 28,
+  angle: -20,
+  height: 65,
   source: "penlight",
-  background: "green",
+  background: "cream",
   tool: "turn",
   auto: false,
+  caustics: true,
   zoom: 2,
   loupeX: 0.5,
   loupeY: 0.35,
@@ -237,6 +238,13 @@ for (const button of document.querySelectorAll("[data-background]"))
     app?.setBackground(state.background);
     updateLabels();
   });
+$("toggle-caustics").addEventListener("click", () => {
+  state.caustics = !state.caustics;
+  $("toggle-caustics").setAttribute("aria-pressed", String(state.caustics));
+  $("toggle-caustics").classList.toggle("selected", state.caustics);
+  app?.setCaustics(state.caustics);
+  announce(`Refracted light on the bench ${state.caustics ? "on" : "off"}.`);
+});
 for (const button of document.querySelectorAll("[data-tool]"))
   button.addEventListener("click", () => setTool(button.dataset.tool));
 $("finish").addEventListener("input", (event) => {

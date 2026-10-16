@@ -34,3 +34,6 @@ Contemporary atelier extension (October 16): Blender/Cycles static-lighting bake
 
 
 After-hours study revision (October 16): dark period-inspired Blender room/fireplace, credited Met landscape, fixture-free movable light and directly intersected finite gem-light apertures are locally verified with 29 web tests, 98 Rust tests, actual desktop/portrait scene inspection and unchanged class hashes. Same owner-private Site publication succeeded; browser handoff requires ChatGPT sign-in. Local scene/interaction evidence, publication IDs and approximation limits are in the study_revision record in docs/workbench-verification.json.
+
+
+Brighter gemstone viewing / caustic extension (October 16): neutral fill and ivory bench, bounded GPU RGB photon tracing onto the bench, cached refinement and an optional toggle are locally verified. 31 web tests / 98 Rust tests and strict checks pass. Warmed pass costs, actual images and the flat-receiver/occlusion limits are in docs/workbench-verification.json. Same owner-private Site publication pending.

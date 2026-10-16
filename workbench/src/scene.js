@@ -102,6 +102,7 @@ import { cutGeometry } from "./cuts.js";
 import { applyMetal } from "./metals.js";
 import { specimenEnvironment } from "./reflections.js";
 import { buildWorkshop } from "./workshop.js";
+import { createCaustics } from "./caustics.js";
 import { makeBenchObjects } from "./bench-objects.js";
 import {
   ease,
@@ -124,9 +125,9 @@ export async function createWorkbench(host, onFatalError) {
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.9;
+  renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.transmissionResolutionScale = 0.75;
   host.append(renderer.domElement);
   renderer.domElement.setAttribute("aria-hidden", "true");
@@ -139,7 +140,7 @@ export async function createWorkbench(host, onFatalError) {
   scene.fog = new THREE.Fog("#120d0a", 32, 65);
   const surfaces = await loadSurfaces(renderer);
   scene.environment = surfaces.environment.texture;
-  scene.environmentIntensity = 0.22;
+  scene.environmentIntensity = 0.55;
   const reflectionTarget = new THREE.WebGLCubeRenderTarget(256, {
     type: THREE.HalfFloatType,
   });
@@ -216,7 +217,7 @@ export async function createWorkbench(host, onFatalError) {
         reflectionTarget.texture,
         gem,
       );
-  const key = new THREE.PointLight("#fffaf0", 120, 17, 2);
+  const key = new THREE.PointLight("#fffefe", 100, 17, 2);
   key.castShadow = true;
   key.shadow.mapSize.set(512, 512);
   key.shadow.bias = -0.0002;
@@ -226,16 +227,18 @@ export async function createWorkbench(host, onFatalError) {
   key.shadow.autoUpdate = false;
   key.shadow.needsUpdate = true;
   scene.add(key);
-  const softbox = new THREE.RectAreaLight("#fffaf0", 12, 2.2, 1.7);
-  scene.add(softbox);
-  scene.add(new THREE.HemisphereLight("#b9c5d5", "#402214", 0.07));
-  const fill = new THREE.DirectionalLight("#cad6ed", 0.1);
+  scene.add(new THREE.HemisphereLight("#e7ecf5", "#665549", 0.28));
+  const fill = new THREE.DirectionalLight("#f5f7ff", 0.32);
   fill.position.set(-3, 4, -2);
   scene.add(fill);
-  const benchBounce = new THREE.RectAreaLight("#ffe8c9", 0.32, 7, 4);
+  const benchBounce = new THREE.RectAreaLight("#fffaf4", 1.2, 7, 4);
   benchBounce.position.set(0, 2.0, 5);
   benchBounce.lookAt(0, -0.3, 0);
   scene.add(benchBounce);
+  const collectionFill = new THREE.RectAreaLight("#ffffff", 4, 7, 5);
+  collectionFill.position.set(0, 5.5, 0.5);
+  collectionFill.lookAt(0, -1, 0);
+  scene.add(collectionFill);
   stone.onBeforeRender = (_r, _s, activeCamera) => {
     if (stone.material.userData.update) {
       stone.material.userData.update(stone, activeCamera, key);
@@ -424,16 +427,16 @@ export async function createWorkbench(host, onFatalError) {
     key.position.set(
       THREE.MathUtils.clamp(angle / 100, -1, 1) * 3.2,
       2.1 + THREE.MathUtils.clamp((height - 8) / 77, 0, 1) * 1.7,
-      2.2,
+      1.2,
     );
     bindExaminationLights(
       Object.values(materials),
       examinationLights(key.position, source === "softbox"),
     );
-    softbox.position.copy(key.position);
-    softbox.lookAt(0, 0.7, 0);
-    key.intensity = source === "penlight" ? 120 : 0;
-    softbox.intensity = source === "softbox" ? 12 : 0;
+    // Both modes retain geometric direct visibility. A shadowless rectangle
+    // plus refracted photons would count the intercepted energy twice.
+    key.intensity = source === "penlight" ? 100 : 65;
+    key.shadow.radius = source === "softbox" ? 3 : 1;
     tiger.userData.fiberUniforms.fiberSoftness.value =
       source === "softbox" ? 0.11 : 0.014;
   }
@@ -441,6 +444,7 @@ export async function createWorkbench(host, onFatalError) {
   updateMount();
   updateLight();
   const workshop = await buildWorkshop(scene, surfaces);
+  const caustics = createCaustics(renderer, workshop.causticReceivers, host);
   objects = makeBenchObjects(scene, geometries, materials, surfaces, key);
   objects.select("gem", selectedGem);
   objects.select("metal", "gold");
@@ -469,7 +473,7 @@ export async function createWorkbench(host, onFatalError) {
     host.dataset.reflectionRevision = String(++reflectionRevision);
   }
   const raycaster = new THREE.Raycaster();
-  const lampPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2.2);
+  const lampPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -1.2);
   const lampGrip = new THREE.Vector3();
   function lampPoint(x, y) {
     camera.updateMatrixWorld(true);
@@ -798,12 +802,13 @@ export async function createWorkbench(host, onFatalError) {
         key.shadow.needsUpdate = true;
       }
       workshop.animate(now / 1000, !reduced.matches);
+      caustics.update(stone, key, source === "softbox", now);
       updateReflections(now);
       draw();
       needsFrame = false;
       lastDraw = now;
     }
-    if (moving) requestFrame();
+    if (moving || caustics.settling) requestFrame();
   }
   function requestFrame() {
     if (!scheduled && !stopped) scheduled = requestAnimationFrame(frame);
@@ -860,6 +865,11 @@ export async function createWorkbench(host, onFatalError) {
       updateLight();
       invalidate();
     },
+    setCaustics(value) {
+      caustics.setEnabled(value);
+      reflectionDirty = true;
+      invalidate();
+    },
     setLight(a, h) {
       angle = a;
       height = h;
@@ -870,7 +880,7 @@ export async function createWorkbench(host, onFatalError) {
       reflectionDirty = true;
       workshop.mat.material.color.set(
         value === "cream"
-          ? "#b9ad8d"
+          ? "#aaa89c"
           : value === "charcoal"
             ? "#242923"
             : "#31423a",
@@ -980,6 +990,7 @@ export async function createWorkbench(host, onFatalError) {
       document.removeEventListener("visibilitychange", wake);
       reduced.removeEventListener("change", wake);
       workshop.dispose();
+      caustics.dispose();
       reflectionTarget.dispose();
       reflectionFiltered?.dispose();
       reflectionGenerator.dispose();

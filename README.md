@@ -8,11 +8,11 @@ A Rust ray tracer with affine geometry, indexed meshes, SAH acceleration, HDR li
 
 ## Explore the workshop
 
-[The Little Jeweler](workbench/README.md) is a separate interactive browser companion: an early-1900s-inspired first-person study with Blender/Cycles-baked room lighting, 12 gemstones, six metals and 18 finish samples, a movable examination light without a visible fixture, two-layer velvet cases that unfold for inspection, gentle cursor gaze, and an animated 3D loupe. Live gem cuts trace internal facet reflections and RGB dispersion; a room probe and directly intersected finite light apertures drive jewelry reflections. Ruby and sapphire colors are fitted to published GIA absorption data; other colors are documented appearance studies. Its Three.js GPU materials are distinct from this Rust renderer and the optional Mitsuba reference images.
+[The Little Jeweler](workbench/README.md) is a separate interactive browser companion: an early-1900s-inspired first-person study with Blender/Cycles-baked room lighting, 12 gemstones, six metals and 18 finish samples, a movable examination light without a visible fixture, two-layer velvet cases that unfold for inspection, gentle cursor gaze, and an animated 3D loupe. Live gem cuts trace internal facet reflections and RGB dispersion; a room probe and directly intersected finite light apertures drive jewelry reflections, while an optional GPU photon pass adds refracted RGB light to the bench. Ruby and sapphire colors are fitted to published GIA absorption data; other colors are documented appearance studies. Its Three.js GPU materials are distinct from this Rust renderer and the optional Mitsuba reference images.
 
 [Open the private hosted preview](https://heathers-little-jeweler.zoeholtz2000.chatgpt.site) (owner’s ChatGPT sign-in required).
 
-![The Little Jeweler’s dark paneled study and rotatable diamond ring](gallery/workbench/study.jpg)
+![The Little Jeweler’s dark paneled study and rotatable diamond ring](gallery/workbench/study-bright.jpg)
 
 With Node.js 20 or newer, run `npm run dev --prefix workbench` and open `http://127.0.0.1:4173/`. No npm installation, API keys, or asset downloads are needed. Click gems and metals in their felt boxes, drag the jewelry, select Move light and sweep its illumination, and click the loupe to lift it. Bench controls provide keyboard-accessible alternatives.
 

@@ -18,12 +18,14 @@ export async function buildWorkshop(scene, surfaces) {
   irradiance.channel = 0;
   irradiance.mapping = THREE.UVMapping;
   const workshop = asset.scene;
+  const roomMaterials = new Set();
   workshop.name = "Edwardian jeweler’s study — Cycles baked lighting";
   workshop.traverse((o) => {
     if (!o.isMesh) return;
+    roomMaterials.add(o.material);
     o.material.lightMap = irradiance;
-    o.material.lightMapIntensity = 1.0;
-    o.material.envMapIntensity = 0.06;
+    o.material.lightMapIntensity = 2.1;
+    o.material.envMapIntensity = 0.16;
     o.material.roughness = 0.56;
     o.material.side = THREE.DoubleSide;
     o.castShadow = true;
@@ -43,7 +45,7 @@ export async function buildWorkshop(scene, surfaces) {
     new THREE.SphereGeometry(32, 48, 24),
     new THREE.MeshBasicMaterial({
       map: surfaces.forest,
-      color: new THREE.Color(0.035, 0.055, 0.09),
+      color: new THREE.Color(0.1, 0.14, 0.21),
       side: THREE.BackSide,
       fog: false,
     }),
@@ -52,7 +54,7 @@ export async function buildWorkshop(scene, surfaces) {
   exterior.rotation.y = 1.4;
   scene.add(exterior);
   const padMaterial = new THREE.MeshPhysicalMaterial({
-    color: "#345b48",
+    color: "#aaa89c",
     roughness: 0.95,
     sheen: 0.6,
     sheenColor: "#78917b",
@@ -87,7 +89,7 @@ export async function buildWorkshop(scene, surfaces) {
   scene.add(mat);
   // Only the live task light is positional. Fixed window, shaded lamp and bounced firelight is
   // already in the atlas; this weak fill gives moving objects a soft key.
-  const sun = new THREE.DirectionalLight("#9eb5de", 0.15);
+  const sun = new THREE.DirectionalLight("#e3ecff", 0.45);
   sun.position.set(-5, 6, -6);
   sun.target.position.set(0, 0, 0);
   sun.castShadow = true;
@@ -170,6 +172,7 @@ export async function buildWorkshop(scene, surfaces) {
   return {
     mat,
     sun,
+    causticReceivers: [mat.material, ...roomMaterials],
     animate(t, motion) {
       fireUniforms.time.value = motion ? t : 0;
       fireLight.intensity =

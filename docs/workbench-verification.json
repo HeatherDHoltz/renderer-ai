@@ -7,7 +7,7 @@
   },
   "checks": {
     "web_tests": {
-      "passed": 29,
+      "passed": 31,
       "failed": 0,
       "command": "npm test --prefix workbench"
     },
@@ -244,6 +244,47 @@
       "url": "https://heathers-little-jeweler.zoeholtz2000.chatgpt.site",
       "audience": "Existing owner-private access preserved; selected account confirmed owner with only that owner allowed before edits.",
       "hosted_verification": "Native deployment succeeded. Browser reached the normal ChatGPT sign-in page; continuing redirected to the account login form. No new hosted interaction/graphics QA is claimed. Canonical site left open for Heather; all scene/interaction screenshots are from the verified local build."
+    }
+  },
+  "caustic_revision": {
+    "date": "2026-10-16",
+    "lighting": "Brighter neutral hemisphere, window and broad collection/bench fill; runtime baked-irradiance gain 2.1, exposure 1.05, neutral ivory default mat. Existing absorption/color presets unchanged. Focused aperture radius .06; broad aperture 1.25. Both direct modes use a shadowed source-center point proxy, filtered more broadly in broad mode, avoiding the former shadowless-rectangle double count.",
+    "model": "GPU light-side particle tracing through the selected actual convex gem. Shared Fresnel/facet exits with the eye tracer; Snell/TIR, stochastic Fresnel choices, Beer absorption, 3 correlated RGB wavelength channels, max 12 internal bounces. Projected-disk flux includes solid-angle Jacobian. Normalized 3-pixel Epanechnikov splats accumulate into a 512-square half-float irradiance map. No painted rainbow texture or artistic caustic amplitude multiplier.",
+    "quality": "8192 photons/channel during motion (24576 paths); 16384/channel (49152 paths) after 180 ms stillness. Fully cached after refinement; opaque tiger eye skips the pass. Optional Refracted light on the bench toggle.",
+    "performance": {
+      "device": "Heather\u2019s Apple M1 Max; Codex in-app browser, WebGL2 EXT_disjoint_timer_query_webgl2",
+      "moving_mean_gpu_ms": 1.574,
+      "moving_sample_window": 60,
+      "moving_paths": 24576,
+      "warmed_refinement_single_gpu_ms": 2.848,
+      "refinement_paths": 49152,
+      "scope": "Caustic pass only; excludes initial shader compilation/buffer warmup and the main gem/scene draw. No total FPS or mobile-device guarantee. Earlier startup measurements were higher; warmed samples are explicitly labeled."
+    },
+    "checks": {
+      "web_tests": 31,
+      "rust_tests": 98,
+      "format": "passed",
+      "clippy": "passed",
+      "class_hashes_unchanged": 12,
+      "projected_flux": "Numerically integrated production disk samples agree with independent exact cone solid angle within 1e-6 relative tolerance, separately per RGB channel.",
+      "sampling": "Shared correlated RGB incident samples, deterministic frames and balanced 8x8 strata.",
+      "webgl": "Main diamond/emerald/sapphire shaders and photon pass compiled; no console warnings/errors. Settled draw changes path count to 49152 and stays cached. Focused grazing light adds bench irradiance; optional switch removes it."
+    },
+    "evidence": [
+      "gallery/workbench/study-bright.jpg",
+      "gallery/workbench/caustics.jpg",
+      "output/caustic-research/final-off.jpg"
+    ],
+    "limitations": [
+      "Flat y=-1.32 receiver approximates mat/table heights; only horizontal bench surfaces in a narrow height band receive it.",
+      "Only the main faceted gem and selected examination source contribute; case samples, tiger eye and fill-light caustics are excluded.",
+      "No ring/prop occlusion along bent photon paths, full scene transport, measured spectral dispersion, fluorescence or unbiased spectral rendering.",
+      "Broad-source direct visibility uses filtered point-source shadow maps, not full area-source integration.",
+      "Finite photons and fixed kernel can soften/speckle the caustic; refinement reduces but does not eliminate sampling error.",
+      "Brilliant cuts return much light upward; their bench caustic need not fill the whole geometric shadow."
+    ],
+    "publication": {
+      "status": "pending"
     }
   }
 }

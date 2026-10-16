@@ -97,9 +97,7 @@ export function makeFacetMaterial(
         }
         return result;
       }
-      float fresnel(float ci,float ni,float nt){ci=abs(ci);float s2=ni*ni/(nt*nt)*(1.-ci*ci);if(s2>=1.)return 1.;float ct=sqrt(1.-s2);float rs=(ni*ci-nt*ct)/(ni*ci+nt*ct);float rp=(nt*ci-ni*ct)/(nt*ci+ni*ct);return .5*(rs*rs+rp*rp);}
-      float exitFacet(vec3 o,vec3 d,out vec3 normal){float nearest=1e6;normal=vec3(0,1,0);
-        for(int i=0;i<${planes.length};i++){vec4 p=facets[i];float den=dot(p.xyz,d);if(den>1e-6){float t=-(dot(p.xyz,o)+p.w)/den;if(t>1e-5&&t<nearest){nearest=t;normal=p.xyz;}}}return nearest;}
+      ${convexOpticsGLSL(planes.length)}
       vec3 traceStone(vec3 incident,vec3 n,float eta){
         float f=fresnel(-dot(incident,n),1.,eta);
         vec3 result=f*externalRadiance(pointLocal,reflect(incident,n));
@@ -217,4 +215,12 @@ export function convexFacetHull(geometry) {
   result.computeVertexNormals();
   result.computeBoundingBox();
   return result;
+}
+
+// Shared by eye rays and light-side photons; exactly the same facet exits/Fresnel.
+export function convexOpticsGLSL(count) {
+  return `      float fresnel(float ci,float ni,float nt){ci=abs(ci);float s2=ni*ni/(nt*nt)*(1.-ci*ci);if(s2>=1.)return 1.;float ct=sqrt(1.-s2);float rs=(ni*ci-nt*ct)/(ni*ci+nt*ct);float rp=(nt*ci-ni*ct)/(nt*ci+ni*ct);return .5*(rs*rs+rp*rp);}
+      float exitFacet(vec3 o,vec3 d,out vec3 normal){float nearest=1e6;normal=vec3(0,1,0);
+        for(int i=0;i<${count};i++){vec4 p=facets[i];float den=dot(p.xyz,d);if(den>1e-6){float t=-(dot(p.xyz,o)+p.w)/den;if(t>1e-5&&t<nearest){nearest=t;normal=p.xyz;}}}return nearest;}
+`;
 }

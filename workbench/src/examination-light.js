@@ -7,15 +7,15 @@ export function examinationLights(position, broad = false) {
   return [
     {
       position: position.clone(),
-      radius: broad ? 1.25 : 0.45,
+      radius: broad ? 1.25 : 0.06,
       radiance: new THREE.Vector3(1, 0.985, 0.95).multiplyScalar(
-        broad ? 8 : 65,
+        broad ? 8 : 900,
       ),
     },
     {
       position: new THREE.Vector3(-3.1, 4.7, 1.6),
-      radius: 1.1,
-      radiance: new THREE.Vector3(12, 12, 12),
+      radius: 1.45,
+      radiance: new THREE.Vector3(16, 16, 16),
     },
     {
       position: new THREE.Vector3(2.7, 4.6, -2.0),
@@ -25,7 +25,7 @@ export function examinationLights(position, broad = false) {
     {
       position: new THREE.Vector3(-0.6, 5.8, -3.3),
       radius: 2.25,
-      radiance: new THREE.Vector3(4.5, 4.5, 4.5),
+      radiance: new THREE.Vector3(8, 8, 8),
     },
   ].map((light) => ({
     ...light,
