@@ -4,8 +4,8 @@ const state = {
   metal: "gold",
   setting: "ring",
   finish: 14,
-  angle: 45,
-  height: 45,
+  angle: 48,
+  height: 28,
   source: "penlight",
   background: "green",
   tool: "turn",
@@ -37,7 +37,7 @@ function description() {
   const text = {
     tiger: [
       "Find the little ribbon of light.",
-      "Move the penlight across the tiger’s eye and watch its silky band follow.",
+      "Move the lamp across the tiger’s eye and watch its silky band follow.",
     ],
     diamond: [
       "Every facet has a different good side.",
@@ -77,8 +77,8 @@ function updateLabels() {
     `${names[state.gem].toUpperCase()}${state.setting === "ring" ? " & " + state.metal.toUpperCase() : " · LOOSE STONE"}`;
   $("light-angle").value = state.angle;
   $("light-height").value = state.height;
-  $("light-value").textContent = state.angle + "°";
-  $("height-value").textContent = state.height + "°";
+  $("light-value").textContent = state.angle + "%";
+  $("height-value").textContent = state.height + "%";
   $("finish-value").textContent =
     state.finish < 28 ? "Polished" : state.finish < 65 ? "Satin" : "Brushed";
   $("auto-turn").setAttribute("aria-pressed", String(state.auto));
@@ -90,8 +90,8 @@ function updateLabels() {
   $("loupe-controls").hidden = state.tool !== "loupe";
   $("tray-tip").hidden = state.tool === "loupe";
   const hint = {
-    turn: "Drag the jewelry to turn it · scroll to bring it closer",
-    light: "Drag across the bench to move the light",
+    turn: "Look around with your cursor · touch the objects on the bench",
+    light: "Drag the lamp shade · arrow keys also move the light",
     loupe: "Drag to turn the stone · scroll to magnify",
   }[state.tool];
   $("interaction-hint").textContent = hint;
@@ -103,6 +103,8 @@ function updateLabels() {
   updateLoupe();
 }
 function setTool(value) {
+  app?.hover(null);
+  $("object-hint").hidden = true;
   state.tool = value;
   state.auto = false;
   choose("tool", value);
@@ -241,21 +243,66 @@ function distance() {
   const p = [...pointers.values()];
   return p.length === 2 ? Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) : 0;
 }
+let grab = null,
+  pressed = null,
+  travel = 0;
+function hoverAt(event) {
+  if (!app || dragging) return;
+  const p = point(event);
+  const action = app.pick(p.x, p.y);
+  app.hover(action);
+  host.style.cursor = action
+    ? ["jewelry", "lamp"].includes(action.kind)
+      ? "grab"
+      : "pointer"
+    : "default";
+  $("object-hint").textContent = action?.label || "";
+  $("object-hint").hidden = !action;
+  return action;
+}
 host.addEventListener("pointerdown", (event) => {
+  if (!app || app.transitioning || event.button !== 0) return;
+  if (pointers.size) {
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    pinchDistance = distance();
+    host.setPointerCapture(event.pointerId);
+    return;
+  }
+  const p = point(event),
+    action = app.pick(p.x, p.y);
+  if (!action) return;
+  app.holdLook();
+  if (action.kind === "lamp") app.beginLampDrag(p.x, p.y);
+  pressed = action;
+  grab = action.kind;
+  travel = 0;
   dragging = true;
   lastPoint = { x: event.clientX, y: event.clientY };
   pointers.set(event.pointerId, lastPoint);
   pinchDistance = distance();
   state.auto = false;
-  app?.setAutoTurn(false);
+  app.setAutoTurn(false);
   updateLabels();
   host.setPointerCapture(event.pointerId);
   host.focus({ preventScroll: true });
-  if (state.tool === "light") moveLight(event);
+  host.style.cursor = ["jewelry", "lamp"].includes(grab)
+    ? "grabbing"
+    : "pointer";
 });
 host.addEventListener("pointermove", (event) => {
-  if (!dragging || !app) return;
+  if (!app) return;
+  if (!dragging) {
+    if (event.pointerType !== "touch") {
+      const p = point(event);
+      app.look(p.x, p.y);
+    }
+    hoverAt(event);
+    return;
+  }
   const next = { x: event.clientX, y: event.clientY };
+  const dx = next.x - lastPoint.x,
+    dy = next.y - lastPoint.y;
+  travel += Math.hypot(dx, dy);
   pointers.set(event.pointerId, next);
   if (pointers.size === 2) {
     const d = distance();
@@ -265,29 +312,48 @@ host.addEventListener("pointermove", (event) => {
       else app.zoom(d > pinchDistance ? 0.9 : 1.1);
     }
     pinchDistance = d;
-    lastPoint = next;
-    return;
-  }
-  if (state.tool === "light") moveLight(event);
-  else
-    app.rotate((next.x - lastPoint.x) * 0.008, (next.y - lastPoint.y) * 0.008);
+  } else if (grab === "lamp") {
+    const p = point(event);
+    const values = app.dragLamp(p.x, p.y);
+    state.angle = values.angle;
+    state.height = values.height;
+    updateLabels();
+  } else if (grab === "jewelry") app.rotate(dx * 0.008, dy * 0.008);
   lastPoint = next;
 });
 function release(event) {
+  if (!pointers.has(event.pointerId)) return;
   pointers.delete(event.pointerId);
-  dragging = pointers.size > 0;
+  if (pointers.size) {
+    lastPoint = [...pointers.values()][0];
+    pinchDistance = 0;
+    return;
+  }
+  const activate = event.type === "pointerup" && travel < 9 && pressed;
+  dragging = false;
+  grab = null;
+  pressed = null;
   pinchDistance = 0;
-  if (dragging) lastPoint = [...pointers.values()][0];
+  if (activate?.kind === "gem")
+    document.querySelector(`[data-gem="${activate.value}"]`).click();
+  if (activate?.kind === "metal") {
+    if (state.setting === "loose")
+      document.querySelector('[data-setting="ring"]').click();
+    document.querySelector(`[data-metal="${activate.value}"]`).click();
+  }
+  if (activate?.kind === "loupe") setTool("loupe");
+  hoverAt(event);
 }
 host.addEventListener("pointerup", release);
 host.addEventListener("pointercancel", release);
 host.addEventListener("lostpointercapture", release);
-function moveLight(event) {
-  const p = point(event);
-  state.angle = Math.round(Math.max(-180, Math.min(180, (p.x - 0.5) * 360)));
-  state.height = Math.round(Math.max(8, Math.min(85, 85 - p.y * 77)));
-  updateLight();
-}
+host.addEventListener("pointerleave", () => {
+  if (!dragging) {
+    app?.look(0.5, 0.5);
+    app?.hover(null);
+    $("object-hint").hidden = true;
+  }
+});
 host.addEventListener(
   "wheel",
   (event) => {
@@ -295,7 +361,7 @@ host.addEventListener(
     if (!app) return;
     if (state.tool === "loupe")
       changeMagnification(event.deltaY < 0 ? 0.2 : -0.2);
-    else app.zoom(event.deltaY < 0 ? 0.9 : 1.1);
+    else if (!app.transitioning) app.zoom(event.deltaY < 0 ? 0.9 : 1.1);
   },
   { passive: false },
 );
@@ -311,7 +377,7 @@ host.addEventListener("keydown", (event) => {
     event.preventDefault();
     const [dx, dy] = arrows[event.key];
     if (state.tool === "light") {
-      state.angle = Math.max(-180, Math.min(180, state.angle + dx * 5));
+      state.angle = Math.max(-100, Math.min(100, state.angle + dx * 5));
       state.height = Math.max(8, Math.min(85, state.height - dy * 5));
       updateLight();
     } else app.rotate(dx * 0.12, dy * 0.12);

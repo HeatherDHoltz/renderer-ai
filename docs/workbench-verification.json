@@ -7,7 +7,7 @@
   },
   "checks": {
     "web_tests": {
-      "passed": 8,
+      "passed": 13,
       "failed": 0,
       "command": "npm test --prefix workbench"
     },
@@ -29,28 +29,42 @@
       "emerald"
     ],
     "controls": [
-      "fixed workshop view / specimen rotation",
-      "3D eyepiece and magnification",
-      "gold and silver",
-      "ring and loose stone",
-      "polished and brushed",
-      "penlight and softbox",
-      "light controls",
-      "gem drawer",
-      "reference journal images",
-      "PNG download"
+      "bounded damped cursor gaze / independent specimen rotation",
+      "physical felt stone box: tiger eye, diamond, emerald",
+      "physical metal box: gold and silver",
+      "direct shade dragging with actual light movement",
+      "world-space loupe pickup, high/front clearance corridor, and reversible return",
+      "2x/3x loupe projection and ring/loose-stone camera retargeting",
+      "keyboard alternatives and small-screen bench controls",
+      "journal with all three reference images loaded",
+      "PNG download from the animated inspection camera"
     ],
     "layout_css_widths_checked": [
-      331,
-      1108
+      255,
+      430,
+      1280
     ],
     "horizontal_overflow_at_checked_widths": false,
     "shader_errors_observed": false,
     "evidence": [
       "gallery/workbench/workshop.jpg",
+      "gallery/workbench/loupe-pickup.jpg",
       "gallery/workbench/loupe.jpg"
     ],
-    "png_export_retained": "output/workshop-photo-check.png"
+    "png_export_retained": "output/workshop-photo-check.png",
+    "pickup_reversal_observed": {
+      "before": 0.021,
+      "after": 0,
+      "note": "UI animation progress decreased after Escape; full reversal invariants also covered by unit tests."
+    },
+    "responsive_note": "Actual CSS widths, not requested viewport pixels. The IAB viewport override produced inconsistent capture scaling; it was reset and final screenshots use a fresh 1280x720 normal tab.",
+    "reduced_motion": "Code path disables gaze parallax and candle flicker and shortens pickup duration; preference emulation was not browser-tested.",
+    "hover_and_pointer_targets": "Observed physical clicks for diamond, emerald, silver and loupe. Lamp drag changed reach/height; empty canvas does not turn jewelry.",
+    "lamp_drag": "Pointer-ray intersection with the head\u2019s z=-1 movement plane preserves grip offset; verified drag changed reach 48\u219282 and height 28\u21928 at the bounded lower limit.",
+    "png_export_dimensions": [
+      1280,
+      720
+    ]
   },
   "background_assets": {
     "models": 5,
@@ -60,17 +74,18 @@
   },
   "deployment": {
     "project_id": "appgprj_6ad1d1ee181c819186c337d3573bdaea",
-    "source_commit": "2f1f6c89b3851f4db082a7f5904ade319d2034bf",
-    "deployment_id": "appgdep_6ad1d94e895c8191a4f1665e1fe4187c",
+    "source_commit": "1b6a053533ce4e40b3d5eb874a8998d542026d8c",
+    "deployment_id": "appgdep_6ad1e1fa89f481918603092963d505e2",
     "status": "succeeded",
     "url": "https://heathers-little-jeweler.zoeholtz2000.chatgpt.site",
     "audience": "owner-private",
-    "browser_handoff": "Hosted page reaches ChatGPT sign-in. Authenticated hosted UI was not inspected; full UI QA used the identical local source."
+    "browser_handoff": "Owner-private access preserved. Native Sites deployment succeeded; full UI QA used the identical local source. Hosted preview requires ChatGPT sign-in."
   },
   "limits": [
     "No measured device FPS benchmark",
     "Tiger eye is an artist-tuned surface model, not measured volume optics",
     "Loupe uses camera projection and a 3D eyepiece, not ray tracing through a designed optical lens",
-    "Live browser GPU, Rust CPU, and external Mitsuba outputs are credited separately"
+    "Live browser GPU, Rust CPU, and external Mitsuba outputs are credited separately",
+    "Pickup clearance uses conservative proxies and mounted-gem bounds, not general rigid-body collision physics"
   ]
 }

@@ -1957,3 +1957,73 @@ dialog h2 {
     display: none;
   }
 }
+
+/* The scene is the primary interface; these are quiet keyboard alternatives. */
+.workshop-game .object-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 182px;
+  transform: translateX(-50%);
+  color: #f1e5c8;
+  padding: 9px 15px;
+  border: 1px solid #c2ac7255;
+  border-radius: 6px;
+  background: #1d261ee8;
+  backdrop-filter: blur(8px);
+  font-size: 12px;
+  letter-spacing: 0.025em;
+  pointer-events: none;
+  z-index: 5;
+  white-space: nowrap;
+}
+.workshop-game .object-hint[hidden] {
+  display: none;
+}
+@media (max-width: 520px) {
+  .workshop-game .object-hint {
+    bottom: 172px;
+    font-size: 11px;
+    max-width: 90vw;
+  }
+  .workshop-game #interaction-hint {
+    font-size: 10px;
+    max-width: 90vw;
+    text-align: center;
+  }
+}
+
+.workshop-game .tool-tray {
+  bottom: 22px;
+  padding: 6px;
+}
+.workshop-game .tool {
+  padding: 8px 12px;
+  min-height: 36px;
+  font-size: 11px;
+}
+.workshop-game .tool kbd {
+  display: none;
+}
+.workshop-game .viewer-bottom,
+.workshop-game .viewer[data-tool="loupe"] .viewer-bottom {
+  bottom: 90px;
+}
+.workshop-game #interaction-hint {
+  background: transparent;
+  font-size: 10px;
+  opacity: 0.8;
+}
+.workshop-game .discovery {
+  display: none;
+}
+@media (max-width: 520px) {
+  .workshop-game .tool-tray {
+    bottom: 18px;
+  }
+  .workshop-game .tool {
+    padding: 8px;
+  }
+  .workshop-game .viewer-bottom {
+    bottom: 85px;
+  }
+}

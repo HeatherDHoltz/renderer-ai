@@ -4,7 +4,6 @@ import {
   brilliantGeometry,
   readGemOBJ,
   normalizeGem,
-  lightPosition,
   inspectionFieldOfView,
   turnSpecimen,
 } from "./geometry.js";
@@ -143,7 +142,16 @@ function makeEnvironment(renderer) {
   return target;
 }
 
-import { buildWorkshop, makeEyepiece } from "./workshop.js";
+import { buildWorkshop } from "./workshop.js";
+import { makeBenchObjects } from "./bench-objects.js";
+import {
+  ease,
+  gazeOffset,
+  corridorPoint,
+  loupeCorridor,
+  advanceProgress,
+  lampControls,
+} from "./interaction.js";
 
 export async function createWorkbench(host, onFatalError) {
   RectAreaLightUniformsLib.init();
@@ -178,7 +186,14 @@ export async function createWorkbench(host, onFatalError) {
   inspectionCamera.position.set(0, 1.5, 2.7);
   inspectionCamera.lookAt(0, 0.55, 0.2);
   scene.add(inspectionCamera);
-  const eyepiece = makeEyepiece(inspectionCamera);
+  const benchPosition = camera.position.clone();
+  const benchQuaternion = camera.quaternion.clone();
+  const gaze = new THREE.Vector2(),
+    gazeTarget = new THREE.Vector2();
+  let inspection = 0,
+    inspectionDestination = 0,
+    flight = null,
+    hover = null;
   const metal = new THREE.MeshPhysicalMaterial({
     color: "#d5b374",
     metalness: 1,
@@ -273,7 +288,9 @@ export async function createWorkbench(host, onFatalError) {
   stone.onBeforeRender = (_r, _s, activeCamera) => {
     if (stone.material !== tiger) return;
     stone.worldToLocal(
-      tiger.userData.fiberUniforms.fiberEye.value.copy(activeCamera.position),
+      tiger.userData.fiberUniforms.fiberEye.value.copy(
+        activeCamera.getWorldPosition(new THREE.Vector3()),
+      ),
     );
     stone.worldToLocal(
       tiger.userData.fiberUniforms.fiberLight.value.copy(key.position),
@@ -305,24 +322,14 @@ export async function createWorkbench(host, onFatalError) {
   );
   scene.add(displayPost);
   function updatePivot() {
-    const inspect = tool === "loupe";
-    const g = stone.geometry.boundingBox;
-    const center = inspect
-      ? new THREE.Vector3(0, stone.position.y + g.max.y / 2, 0)
-      : new THREE.Vector3(0, 0.2, 0);
-    root.position.copy(center).negate();
-    spin.position.copy(
-      inspect
-        ? new THREE.Vector3(0, 0.55, 0.2)
-        : new THREE.Vector3(0, 0.2, proximity),
-    );
-    support.visible = !inspect;
+    root.position.set(0, -0.2, 0);
+    spin.position.set(0, 0.2, 0);
+    support.visible = true;
     support.position.y =
       selectedSetting === "loose" ? stone.position.y - 0.075 : -1.16;
-    displayPost.visible = !inspect && selectedSetting === "loose";
+    displayPost.visible = selectedSetting === "loose";
     displayPost.scale.y = Math.max(0.05, support.position.y - 0.075 + 1.35);
     displayPost.position.y = -1.35 + displayPost.scale.y / 2;
-    eyepiece.visible = inspect;
   }
   function updateMount() {
     for (const item of [...mount.children]) {
@@ -383,7 +390,12 @@ export async function createWorkbench(host, onFatalError) {
     updatePivot();
   }
   function updateLight() {
-    key.position.copy(lightPosition(angle, height));
+    key.position.set(
+      THREE.MathUtils.clamp(angle / 100, -1, 1) * 3.2,
+      2.1 + THREE.MathUtils.clamp((height - 8) / 77, 0, 1) * 1.7,
+      -1,
+    );
+    objects?.setLamp(key.position);
     softbox.position.copy(key.position);
     softbox.lookAt(0, 0.7, 0);
     key.intensity = source === "penlight" ? 75 : 0;
@@ -391,9 +403,140 @@ export async function createWorkbench(host, onFatalError) {
     tiger.userData.fiberUniforms.fiberSoftness.value =
       source === "softbox" ? 0.11 : 0.014;
   }
+  let objects;
   updateMount();
   updateLight();
   const workshop = await buildWorkshop(scene);
+  objects = makeBenchObjects(scene, geometries, materials);
+  objects.setLamp(key.position);
+  objects.select("gem", selectedGem);
+  objects.select("metal", "gold");
+  const raycaster = new THREE.Raycaster();
+  const lampPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 1);
+  const lampGrip = new THREE.Vector3();
+  function lampPoint(x, y) {
+    camera.updateMatrixWorld(true);
+    raycaster.setFromCamera(new THREE.Vector2(x * 2 - 1, 1 - y * 2), camera);
+    return raycaster.ray.intersectPlane(lampPlane, new THREE.Vector3());
+  }
+  function pick(x, y) {
+    if (inspectionDestination || inspection > 0)
+      return inspection === 1
+        ? { kind: "jewelry", label: "Turn the stone · drag" }
+        : null;
+    scene.updateMatrixWorld(true);
+    camera.updateMatrixWorld(true);
+    raycaster.setFromCamera(new THREE.Vector2(x * 2 - 1, 1 - y * 2), camera);
+    const hits = raycaster.intersectObjects(
+      [
+        ...objects.targets,
+        stone,
+        ...(setting.visible ? [band, ...mount.children] : []),
+      ],
+      true,
+    );
+    if (hits[0]?.object.userData.blockPointer) return null;
+    return hits.length
+      ? hits[0].object.userData.action || {
+          kind: "jewelry",
+          label: "Turn the jewelry · drag",
+        }
+      : null;
+  }
+  function prepareFlight() {
+    scene.updateMatrixWorld(true);
+    const center = stone.localToWorld(
+      stone.geometry.boundingBox.getCenter(new THREE.Vector3()),
+    );
+    const position = center.clone().add(new THREE.Vector3(0, 0.95, 2.8));
+    inspectionCamera.position.copy(position);
+    inspectionCamera.lookAt(center);
+    inspectionCamera.updateMatrixWorld(true);
+    const eye = new THREE.Vector3(0, 0, -0.66)
+      .applyQuaternion(inspectionCamera.quaternion)
+      .add(position);
+    const bounds = new THREE.Box3().setFromObject(spin);
+    flight = {
+      center,
+      position,
+      quaternion: inspectionCamera.quaternion.clone(),
+      points: loupeCorridor(objects.restPosition, eye, bounds),
+      benchPosition: camera.position.clone(),
+      benchQuaternion: camera.quaternion.clone(),
+    };
+  }
+  function updateCamera(dt) {
+    if (inspection === 1 && inspectionDestination === 1 && flight) {
+      const center = stone.localToWorld(
+        stone.geometry.boundingBox.getCenter(new THREE.Vector3()),
+      );
+      flight.center.lerp(center, 1 - Math.exp(-dt * 8));
+      flight.position.copy(flight.center).add(new THREE.Vector3(0, 0.95, 2.8));
+      inspectionCamera.position.copy(flight.position);
+      inspectionCamera.lookAt(flight.center);
+      flight.quaternion.copy(inspectionCamera.quaternion);
+      flight.points[flight.points.length - 1]
+        .set(0, 0, -0.66)
+        .applyQuaternion(flight.quaternion)
+        .add(flight.position);
+    }
+    gaze.x = THREE.MathUtils.damp(gaze.x, gazeTarget.x, 7, dt);
+    gaze.y = THREE.MathUtils.damp(gaze.y, gazeTarget.y, 7, dt);
+    if (inspection === 0 && inspectionDestination === 0) {
+      const offset = reduced.matches
+        ? new THREE.Vector2()
+        : gazeOffset(gaze.x, gaze.y);
+      const destination = benchPosition
+        .clone()
+        .add(
+          new THREE.Vector3(
+            reduced.matches ? 0 : gaze.x * 0.09,
+            reduced.matches ? 0 : gaze.y * 0.035,
+            -proximity,
+          ),
+        );
+      camera.position.lerp(destination, 1 - Math.exp(-dt * 8));
+      camera.quaternion
+        .copy(benchQuaternion)
+        .multiply(
+          new THREE.Quaternion().setFromEuler(
+            new THREE.Euler(-offset.y, -offset.x, 0, "YXZ"),
+          ),
+        );
+      camera.fov = width < heightPx ? 60 : 46;
+    } else if (flight) {
+      // The tool visibly lifts first. The seated camera then leans toward it.
+      const t = ease(THREE.MathUtils.clamp((inspection - 0.45) / 0.55, 0, 1));
+      camera.position.copy(flight.benchPosition).lerp(flight.position, t);
+      camera.quaternion
+        .copy(flight.benchQuaternion)
+        .slerp(flight.quaternion, t);
+      camera.fov = THREE.MathUtils.lerp(
+        width < heightPx ? 60 : 46,
+        inspectionFieldOfView(zoom),
+        t,
+      );
+    }
+    camera.updateProjectionMatrix();
+    if (flight) {
+      const lens = objects.loupe;
+      lens.position.copy(corridorPoint(flight.points, inspection));
+      lens.quaternion
+        .copy(objects.restQuaternion)
+        .slerp(flight.quaternion, ease(inspection));
+      const scale =
+        (0.78 *
+          Math.min(1, camera.aspect) *
+          Math.tan(THREE.MathUtils.degToRad(inspectionFieldOfView(zoom) / 2))) /
+        Math.tan(THREE.MathUtils.degToRad(19));
+      const size = THREE.MathUtils.lerp(1, scale, ease(inspection));
+      lens.scale.set(size, size, 1);
+      objects.baffle.visible = inspection > 0.88;
+      objects.baffle.material.opacity = ease((inspection - 0.88) / 0.12);
+    }
+    host.dataset.inspection = inspection.toFixed(3);
+    host.dataset.viewYaw = (reduced.matches ? 0 : gaze.x * 0.105).toFixed(4);
+  }
   // A light depth-of-field pass: room props soften while the specimen stays crisp.
   const target = new THREE.WebGLRenderTarget(1, 1, {
     type: THREE.HalfFloatType,
@@ -442,8 +585,14 @@ export async function createWorkbench(host, onFatalError) {
       1 / (width * ratio),
       1 / (heightPx * ratio),
     );
+    const benchZ = 6.4 + Math.min(9, Math.max(0, heightPx / width - 1) * 6.5);
+    benchPosition.set(0, 2.6 + (benchZ - 6.4) * 0.37, benchZ);
+    const framing = new THREE.PerspectiveCamera();
+    framing.position.copy(benchPosition);
+    framing.lookAt(0, 0.3, -0.3);
+    benchQuaternion.copy(framing.quaternion);
     camera.aspect = width / heightPx;
-    camera.fov = width < heightPx ? 54 : 46;
+    camera.fov = width < heightPx ? 60 : 46;
     camera.updateProjectionMatrix();
     inspectionCamera.aspect = width / heightPx;
     updateOptics();
@@ -452,12 +601,6 @@ export async function createWorkbench(host, onFatalError) {
   function updateOptics() {
     inspectionCamera.fov = inspectionFieldOfView(zoom);
     inspectionCamera.updateProjectionMatrix();
-    const scale =
-      (0.78 *
-        Math.min(1, inspectionCamera.aspect) *
-        Math.tan(THREE.MathUtils.degToRad(inspectionCamera.fov / 2))) /
-      Math.tan(THREE.MathUtils.degToRad(19));
-    eyepiece.scale.set(scale, scale, 1);
   }
   const observer = new ResizeObserver(resize);
   observer.observe(host);
@@ -467,10 +610,10 @@ export async function createWorkbench(host, onFatalError) {
   });
   intersection.observe(host);
   function draw() {
-    const active = tool === "loupe" ? inspectionCamera : camera;
+    const active = camera;
     postMaterial.uniforms.focus.value =
-      tool === "loupe"
-        ? active.position.distanceTo(new THREE.Vector3(0, 0.55, 0.2))
+      inspection > 0 && flight
+        ? active.position.distanceTo(flight.center)
         : active.position.distanceTo(new THREE.Vector3(0, 0.3, 0));
     renderer.setRenderTarget(target);
     renderer.render(scene, active);
@@ -480,9 +623,36 @@ export async function createWorkbench(host, onFatalError) {
   function frame(now) {
     scheduled = 0;
     if (stopped || paused || !visible || document.hidden) return;
-    const moving = auto || !reduced.matches;
+    const benchMoving =
+      inspection === 0 &&
+      camera.position.distanceTo(
+        benchPosition
+          .clone()
+          .add(
+            new THREE.Vector3(
+              reduced.matches ? 0 : gaze.x * 0.09,
+              reduced.matches ? 0 : gaze.y * 0.035,
+              -proximity,
+            ),
+          ),
+      ) > 0.001;
+    const aiming =
+      inspection === 1 &&
+      flight &&
+      flight.center.distanceTo(
+        stone.localToWorld(
+          stone.geometry.boundingBox.getCenter(new THREE.Vector3()),
+        ),
+      ) > 0.001;
+    const moving =
+      aiming ||
+      benchMoving ||
+      auto ||
+      !reduced.matches ||
+      inspection !== inspectionDestination ||
+      gaze.distanceTo(gazeTarget) > 0.001;
     if (needsFrame || now - lastDraw > 33) {
-      if (auto) {
+      if (auto && inspection === 0) {
         const q = new THREE.Quaternion().setFromAxisAngle(
           new THREE.Vector3(0, 1, 0),
           Math.min((now - lastDraw) / 1000, 0.05) * 0.22,
@@ -490,6 +660,18 @@ export async function createWorkbench(host, onFatalError) {
         spin.quaternion.premultiply(q).normalize();
         key.shadow.needsUpdate = true;
       }
+      const dt = Math.min((now - lastDraw) / 1000, 0.05);
+      if (inspection !== inspectionDestination) key.shadow.needsUpdate = true;
+      inspection = advanceProgress(
+        inspection,
+        inspectionDestination,
+        dt,
+        reduced.matches ? 0.65 : 2.4,
+      );
+      if (!inspectionDestination)
+        spin.position.lerp(new THREE.Vector3(0, 0.2, 0), 1 - Math.exp(-dt * 8));
+      updateCamera(dt);
+      objects.animate(dt, hover, !reduced.matches);
       workshop.animate(now / 1000, !reduced.matches);
       draw();
       needsFrame = false;
@@ -500,9 +682,9 @@ export async function createWorkbench(host, onFatalError) {
   function requestFrame() {
     if (!scheduled && !stopped) scheduled = requestAnimationFrame(frame);
   }
-  function invalidate() {
+  function invalidate(shadows = true) {
     needsFrame = true;
-    key.shadow.needsUpdate = true;
+    if (shadows) key.shadow.needsUpdate = true;
     requestFrame();
   }
   const wake = () => {
@@ -523,6 +705,7 @@ export async function createWorkbench(host, onFatalError) {
     },
     setGem(value) {
       selectedGem = value;
+      objects.select("gem", value);
       updateMount();
       invalidate();
     },
@@ -533,6 +716,7 @@ export async function createWorkbench(host, onFatalError) {
     },
     setMetal(value) {
       metal.color.set(value === "gold" ? "#d5b374" : "#d6dce1");
+      objects.select("metal", value);
       invalidate();
     },
     setFinish(value) {
@@ -563,9 +747,41 @@ export async function createWorkbench(host, onFatalError) {
     },
     setTool(value) {
       tool = value;
-      updatePivot();
+      if (value === "loupe" && inspection === 0) prepareFlight();
+      inspectionDestination = value === "loupe" ? 1 : 0;
       updateOptics();
       invalidate();
+    },
+    pick,
+    look(x, y) {
+      if (inspection > 0 || inspectionDestination) return;
+      gazeTarget.set(x * 2 - 1, y * 2 - 1);
+      invalidate(false);
+    },
+    hover(action) {
+      hover = action;
+      invalidate(false);
+    },
+    holdLook() {
+      gazeTarget.copy(gaze);
+    },
+    get transitioning() {
+      return inspection !== inspectionDestination;
+    },
+    beginLampDrag(x, y) {
+      const point = lampPoint(x, y);
+      if (point) lampGrip.copy(key.position).sub(point);
+    },
+    dragLamp(x, y) {
+      const point = lampPoint(x, y);
+      if (point) {
+        const controls = lampControls(point.add(lampGrip));
+        angle = controls.angle;
+        height = controls.height;
+      }
+      updateLight();
+      invalidate();
+      return { angle: Math.round(angle), height: Math.round(height) };
     },
     setLoupe(_x, _y, value) {
       zoom = value;
@@ -583,7 +799,21 @@ export async function createWorkbench(host, onFatalError) {
       invalidate();
     },
     rotate(dx, dy) {
+      if (inspection > 0 && inspection < 1) return;
+      const center =
+        inspection === 1
+          ? stone.localToWorld(
+              stone.geometry.boundingBox.getCenter(new THREE.Vector3()),
+            )
+          : null;
       turnSpecimen(spin.quaternion, dx, dy);
+      if (center) {
+        scene.updateMatrixWorld(true);
+        const next = stone.localToWorld(
+          stone.geometry.boundingBox.getCenter(new THREE.Vector3()),
+        );
+        spin.position.add(center.sub(next));
+      }
       invalidate();
     },
     zoom(factor) {
@@ -592,7 +822,7 @@ export async function createWorkbench(host, onFatalError) {
         -0.4,
         1.3,
       );
-      updatePivot();
+      if (!inspection) updatePivot();
       invalidate();
     },
     async photo() {

@@ -115,27 +115,6 @@ export async function buildWorkshop(scene) {
   box([4.95, 0.13, 0.09], [0, -1.27, 2.04], brass);
   for (const x of [-2.44, 2.44])
     box([0.09, 0.13, 4.0], [x, -1.27, 0.05], brass);
-  // Loose gem tray and a pair of hand tools, with no hands or avatar.
-  const tray = box([2.3, 0.12, 1.7], [3.8, -1.25, 1.2], trim);
-  box([2.06, 0.04, 1.46], [3.8, -1.16, 1.2], green);
-  for (let i = 0; i < 5; i++) {
-    const g = new THREE.Mesh(
-      new THREE.OctahedronGeometry(0.12),
-      new THREE.MeshPhysicalMaterial({
-        color: ["#459f8d", "#d7c695", "#7c91ad", "#9c6461", "#c5cfcc"][i],
-        metalness: 0.12,
-        roughness: 0.18,
-        clearcoat: 1,
-      }),
-    );
-    g.position.set(
-      3.16 + (i % 3) * 0.6,
-      -1.02,
-      0.86 + Math.floor(i / 3) * 0.63,
-    );
-    g.rotation.set(0.4, i, 0.2);
-    workshop.add(g);
-  }
   for (const sign of [-1, 1]) {
     const tool = box(
       [0.035, 0.035, 2.4],
@@ -145,7 +124,7 @@ export async function buildWorkshop(scene) {
     tool.rotation.y = sign * 0.065 - 0.4;
   }
   await prop("wooden_hammer_01", 2.2, [-4, -1.35, -0.4], 0.6, "z", true);
-  await prop("magnifying_glass_01", 2.3, [3.7, -1.3, -1.1], -0.35, "z", true);
+
   const shelf = await prop(
     "wooden_bookshelf_worn",
     13,
@@ -305,66 +284,4 @@ export async function buildWorkshop(scene) {
       });
     },
   };
-}
-
-export function makeEyepiece(camera) {
-  const group = new THREE.Group();
-  group.name = "Physical inspection eyepiece";
-  camera.add(group);
-  const black = new THREE.MeshStandardMaterial({
-    color: "#11130f",
-    metalness: 0.28,
-    roughness: 0.4,
-  });
-  const brass = new THREE.MeshStandardMaterial({
-    color: "#a88d52",
-    metalness: 0.9,
-    roughness: 0.24,
-    envMapIntensity: 0.7,
-  });
-  const outside = new THREE.Mesh(new THREE.RingGeometry(0.265, 3, 96), black);
-  outside.position.z = -0.66;
-  group.add(outside);
-  const tube = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.264, 0.24, 0.14, 96, 1, true),
-    new THREE.MeshStandardMaterial({
-      color: "#36332a",
-      metalness: 0.5,
-      roughness: 0.32,
-      side: THREE.DoubleSide,
-    }),
-  );
-  tube.rotation.x = Math.PI / 2;
-  tube.position.z = -0.71;
-  group.add(tube);
-  for (const [radius, z, thickness] of [
-    [0.266, -0.648, 0.018],
-    [0.24, -0.78, 0.009],
-  ]) {
-    const rim = new THREE.Mesh(
-      new THREE.TorusGeometry(radius, thickness, 16, 96),
-      brass,
-    );
-    rim.position.z = z;
-    group.add(rim);
-  }
-  const lens = new THREE.Mesh(
-    new THREE.SphereGeometry(1, 48, 32),
-    new THREE.MeshPhysicalMaterial({
-      color: "#f4f9f1",
-      roughness: 0.03,
-      metalness: 0,
-      transparent: true,
-      opacity: 0.035,
-      clearcoat: 1,
-      clearcoatRoughness: 0.025,
-      depthWrite: false,
-      envMapIntensity: 0.3,
-    }),
-  );
-  lens.scale.set(0.239, 0.239, 0.009);
-  lens.position.z = -0.792;
-  group.add(lens);
-  group.visible = false;
-  return group;
 }

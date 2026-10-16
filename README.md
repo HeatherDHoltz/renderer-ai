@@ -8,13 +8,13 @@ A Rust ray tracer with affine geometry, indexed meshes, SAH acceleration, HDR li
 
 ## Explore the workshop
 
-[The Little Jeweler](workbench/README.md) is a separate interactive browser companion: a candlelit first-person workshop with rotatable jewelry, tiger’s eye/diamond/emerald, gold/silver finishes, movable lighting, and a 3D loupe inspection view. Its Three.js GPU materials are distinct from this Rust renderer and the optional Mitsuba reference images.
+[The Little Jeweler](workbench/README.md) is a separate interactive browser companion: a candlelit first-person workshop with rotatable jewelry, tiger’s eye/diamond/emerald, gold/silver finishes, a directly draggable lamp, physical felt selection boxes, gentle cursor gaze, and an animated 3D loupe inspection view. Its Three.js GPU materials are distinct from this Rust renderer and the optional Mitsuba reference images.
 
 [Open the private hosted preview](https://heathers-little-jeweler.zoeholtz2000.chatgpt.site) (owner’s ChatGPT sign-in required).
 
 ![The Little Jeweler’s candlelit workshop and rotatable gold ring](gallery/workbench/workshop.jpg)
 
-With Node.js 20 or newer, run `npm run dev --prefix workbench` and open `http://127.0.0.1:4173/`. No npm installation, API keys, or asset downloads are needed. The gem drawer holds the material controls; drag the jewelry to rotate it while the room stays fixed.
+With Node.js 20 or newer, run `npm run dev --prefix workbench` and open `http://127.0.0.1:4173/`. No npm installation, API keys, or asset downloads are needed. Click gems and metals in their felt boxes, drag the jewelry or the lamp shade, and click the loupe to lift it. Bench controls provide keyboard-accessible alternatives.
 
 ## Run it
 

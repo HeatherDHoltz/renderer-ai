@@ -41,7 +41,7 @@
           aria-expanded="false"
           aria-controls="cabinet"
         >
-          ◇ &nbsp; Gem drawer</button
+          ◇ &nbsp; Bench controls</button
         ><button type="button" id="open-notes">
           Render journal <span aria-hidden="true">↗</span></button
         ><a
@@ -97,8 +97,9 @@
               id="render-host"
               tabindex="0"
               role="region"
-              aria-label="Jewelry at a fixed workshop camera. Drag or use arrow keys to turn the jewelry. Scroll or pinch to bring it closer. Home resets."
+              aria-label="A seated jeweler’s view. Move the cursor to look slightly around. Click stones and metals in their felt boxes. Drag the jewelry to turn it or the lamp shade to move the light. Click the loupe to pick it up. Arrow keys turn jewelry; 2 and arrows move the lamp; 3 lifts the loupe; Escape returns it."
             ></div>
+            <div id="object-hint" class="object-hint" hidden></div>
             <div class="loading" id="loading">
               <span class="loading-gem">◇</span><span>Setting the stone…</span>
             </div>
@@ -119,7 +120,8 @@
                   <path
                     d="m3 10 3-3m-3 3 3 3m-3-3h14m-3-3 3 3-3 3M10 3v14"
                   /></svg
-                >Drag the jewelry to turn it · scroll to bring it closer</span
+                >Look around with your cursor · touch the objects on the
+                bench</span
               ><button type="button" id="auto-turn" aria-pressed="false">
                 <span class="turn-icon" aria-hidden="true">↻</span> Slow turn
               </button>
@@ -136,6 +138,7 @@
                 type="button"
                 class="tool active"
                 data-tool="turn"
+                aria-label="Turn jewelry"
                 aria-pressed="true"
               >
                 <svg viewBox="0 0 28 28" aria-hidden="true">
@@ -146,18 +149,20 @@
                 type="button"
                 class="tool"
                 data-tool="light"
+                aria-label="Adjust lamp"
                 aria-pressed="false"
               >
                 <svg viewBox="0 0 28 28" aria-hidden="true">
                   <path
                     d="m8 23 7-12 5 3-7 12ZM14 10l2-5 7 4-3 5M20 3l2-2m2 7 3-1M15 2V0"
                   /></svg
-                ><span>Move light</span><kbd>2</kbd>
+                ><span>Adjust lamp</span><kbd>2</kbd>
               </button>
               <button
                 type="button"
                 class="tool"
                 data-tool="loupe"
+                aria-label="Pick up the loupe"
                 aria-pressed="false"
               >
                 <svg viewBox="0 0 28 28" aria-hidden="true">
@@ -331,16 +336,16 @@
               </button>
             </div>
             <label class="range-label" for="light-angle"
-              >Light position <output id="light-value">45°</output></label
+              >Lamp reach <output id="light-value">48%</output></label
             ><input
               type="range"
-              min="-180"
-              max="180"
+              min="-100"
+              max="100"
               step="1"
               value="45"
               id="light-angle"
             /><label class="range-label" for="light-height"
-              >Light height <output id="height-value">45°</output></label
+              >Lamp height <output id="height-value">28%</output></label
             ><input
               type="range"
               min="8"
@@ -458,16 +463,19 @@
         <p>
           The tiger’s-eye shader combines procedural fine fibers, a view- and
           light-dependent directional highlight, and a clear coat. Diamond and
-          emerald use approximate browser transmission. The workshop camera
-          stays fixed while the jewelry turns. Loupe mode uses a fixed close-up
-          camera and a lit 3D brass eyepiece. Its magnification comes from the
+          emerald use approximate browser transmission. The seated view follows
+          the cursor within a small limit while the jewelry turns independently.
+          The loupe lifts from the bench along a clear path before the camera
+          leans into its 3D brass eyepiece. Its magnification comes from the
           camera projection, rather than a full optical lens simulation. These
           are artistic material studies, not measured gemstone optics.
         </p>
         <p>
-          The worn table, bookshelf, candlestick, hammer, and magnifying-glass
-          props are CC0 models by Poly Haven contributors. Only their 1K color
-          maps are used.
+          The worn table, bookshelf, candlestick, and hammer are CC0 models by
+          Poly Haven contributors. Only their 1K color maps are used. The felt
+          boxes, articulated lamp, and moving loupe are project-created
+          geometry. An alternate scanned magnifier is also bundled with its
+          source credit.
           <a href="./assets/props/CREDITS.html" target="_blank" rel="noopener"
             >Prop sources, authors, and adaptations</a
           >. Heather directed the project; Codex assisted with code, scene

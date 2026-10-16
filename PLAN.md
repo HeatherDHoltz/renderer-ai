@@ -25,3 +25,6 @@ Proceed in order. Scene IO may be introduced early if it makes diagnostics repro
 | Gem meshes and material gallery | verified | Four online Zsky meshes imported with CC BY 3.0 credits; supplemental step cut/cabochon, homogeneous absorption, anisotropic sheen, 98 tests, 22 offline scenes; inspected six-gem panel, three stone variants, twelve-state moving-light GIF. See docs/GEMS.md. |
 | Independent Mitsuba tiger's-eye study | verified | Isolated Mitsuba 3.9.1 environment; scalar/vector CPU runs; inspected 900×900/3072-spp layered still and all eight 384×384/512-spp lighting states; raw EXRs and settings retained. Scripts, gallery and model/noise limits in docs/MITSUBA.md. External reference renderer, not a Rust engine feature. |
 | The Little Jeweler browser workshop | verified | Fixed first-person room, rotatable specimen, 3D eyepiece inspection, five CC0 props, GPU materials and credited reference gallery. Eight Node tests; desktop/narrow-screen browser QA, actual PNG export, all 98 Rust tests and strict checks; native Sites deployment succeeded. Hosted owner preview requires ChatGPT sign-in. See workbench/README.md and docs/workbench-verification.json. |
+
+
+Browser interaction refinement: bounded cursor gaze, physical felt selection boxes, directly draggable lamp, and reversible world-space loupe pickup implemented; verification recorded in STATUS.md.
