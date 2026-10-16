@@ -28,3 +28,6 @@ Proceed in order. Scene IO may be introduced early if it makes diagnostics repro
 
 
 Browser interaction refinement: bounded cursor gaze, physical felt selection boxes, directly draggable lamp, and reversible world-space loupe pickup implemented; verification recorded in STATUS.md.
+
+
+Contemporary atelier extension (October 16): Blender/Cycles static-lighting bake, 12 researched gemstone presets, finite-girdle cut families, adapted solitaire shank, and two-layer red/green cases with camera inspection are verified and published. See docs/GEM-COLOR.md and the atelier_revision evidence in docs/workbench-verification.json. All 26 web tests and 98 Rust tests pass; remaining optical differences from offline reference renderers are documented limitations, not completed spectral/volume features.

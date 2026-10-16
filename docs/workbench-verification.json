@@ -194,6 +194,15 @@
       "gallery/workbench/diamond-brilliant.jpg"
     ],
     "research": "docs/GEM-COLOR.md; assets/gem-color-study.json; assets/atelier-provenance.json",
-    "publication": "Pending same-Site publication after local verification."
+    "publication": {
+      "source_sha": "7094dc35559dcf38b07f9d711ad2ba34f8dba27e",
+      "deployment_id": "appgdep_6ad1fb257f3481918d656540bf70d5e2",
+      "status": "succeeded",
+      "url": "https://heathers-little-jeweler.zoeholtz2000.chatgpt.site/",
+      "audience": "Existing owner-private audience preserved.",
+      "hosted_checks": "Ready scene without console warnings/errors; actual twelve-gem unfolded case inspected; physical Ruby selection updated header and returned smoothly to bench.",
+      "initial_loading_note": "First automated readiness wait timed out; the next snapshot showed the ready scene without a reload. No console warning/error was recorded.",
+      "hosted_evidence": "output/atelier-research/hosted-atelier.jpg"
+    }
   }
 }
