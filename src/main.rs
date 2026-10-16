@@ -23,6 +23,18 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Command {
+    /// Compare verified brute-force, BVH, and octree ray-query workloads (release only).
+    Benchmark {
+        scene: PathBuf,
+        #[arg(long, default_value = "output/benchmark.json")]
+        output: PathBuf,
+        #[arg(long, default_value_t = 4096)]
+        rays: usize,
+        #[arg(long, default_value_t = 5)]
+        runs: usize,
+        #[arg(long, default_value_t = 1)]
+        warmups: usize,
+    },
     /// Render the built-in small smoke scene.
     Smoke {
         #[arg(long, default_value_t = 96)]
@@ -45,6 +57,8 @@ enum Command {
         height: Option<u32>,
         #[arg(long)]
         depth: Option<u32>,
+        #[arg(long, value_enum)]
+        accel: Option<renderer_project::accel::AccelKind>,
         #[arg(long, allow_hyphen_values = true)]
         exposure: Option<f32>,
     },
@@ -57,6 +71,31 @@ fn main() {
 }
 fn run() -> Result<(), Box<dyn Error>> {
     match Cli::parse().command {
+        Command::Benchmark {
+            scene,
+            output,
+            rays,
+            runs,
+            warmups,
+        } => {
+            let report = renderer_project::benchmark::run(&scene, rays, runs, warmups)?;
+            if let Some(parent) = output.parent().filter(|p| !p.as_os_str().is_empty()) {
+                std::fs::create_dir_all(parent)?;
+            }
+            std::fs::write(&output, serde_json::to_string_pretty(&report)?)?;
+            for result in &report.backend_results {
+                println!(
+                    "{:?}: median {:.3} ms (range {:.3}..{:.3}); {} primitive tests",
+                    result.backend,
+                    result.median_seconds * 1000.0,
+                    result.min_seconds * 1000.0,
+                    result.max_seconds * 1000.0,
+                    result.stats.primitive_tests
+                );
+            }
+            println!("Saved verified benchmark -> {}", output.display());
+            Ok(())
+        }
         Command::Smoke {
             width,
             height,
@@ -83,6 +122,7 @@ fn run() -> Result<(), Box<dyn Error>> {
             height,
             depth,
             exposure,
+            accel,
         } => {
             let start = Instant::now();
             let mut file = SceneFile::load(&scene)?;
@@ -97,6 +137,9 @@ fn run() -> Result<(), Box<dyn Error>> {
             }
             if let Some(v) = exposure {
                 file.render.exposure = v;
+            }
+            if let Some(v) = accel {
+                file.render.accel = v;
             }
             let loaded = file.build(scene.parent().unwrap_or(Path::new(".")))?;
             let load_time = start.elapsed();
@@ -155,6 +198,7 @@ fn smoke(width: u32, height: u32, output: PathBuf) -> Result<(), Box<dyn Error>>
             color: Vec3::ONE,
         }],
         textures: vec![],
+        acceleration: None,
     };
     let camera = Camera::new(
         Vec3::new(4.0, 3.0, 7.0),

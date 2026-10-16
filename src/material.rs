@@ -135,6 +135,7 @@ mod tests {
                 color: Vec3::ONE,
             }],
             textures: vec![],
+            acceleration: None,
         }
     }
 

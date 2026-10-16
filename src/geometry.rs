@@ -56,6 +56,17 @@ fn roots(a: f64, b: f64, c: f64) -> [f32; 2] {
 }
 
 impl Shape for Instance {
+    fn bounds(&self) -> Option<crate::accel::Aabb> {
+        if matches!(self.primitive, Primitive::Plane) {
+            None
+        } else {
+            Some(
+                crate::accel::Aabb::new(Vec3::splat(-1.000002), Vec3::splat(1.000002))
+                    .expect("canonical bounds")
+                    .transform(self.transform.model()),
+            )
+        }
+    }
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
         if t_min.is_nan()
             || t_max.is_nan()

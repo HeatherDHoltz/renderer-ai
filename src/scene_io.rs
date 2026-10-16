@@ -77,6 +77,7 @@ pub struct RenderSettings {
     pub min_throughput: f32,
     pub exposure: f32,
     pub tone_map: String,
+    pub accel: crate::accel::AccelKind,
 }
 impl Default for RenderSettings {
     fn default() -> Self {
@@ -90,6 +91,7 @@ impl Default for RenderSettings {
             min_throughput: 1e-4,
             exposure: 0.0,
             tone_map: "reinhard".into(),
+            accel: crate::accel::AccelKind::Bvh,
         }
     }
 }
@@ -247,6 +249,14 @@ pub struct LoadedScene {
     pub camera: Camera,
     pub render: RenderSettings,
     pub background: Vec3,
+    pub build_timings: BuildTimings,
+}
+
+#[derive(Clone, Copy, Default, Serialize)]
+pub struct BuildTimings {
+    pub total_seconds: f64,
+    pub asset_seconds: f64,
+    pub acceleration_seconds: f64,
 }
 impl LoadedScene {
     pub fn render(&self) -> Result<LinearFilm, String> {
@@ -282,6 +292,8 @@ impl SceneFile {
             .map_err(|e| format!("{}: {e}", path.display()))
     }
     pub fn build(&self, base: &Path) -> Result<LoadedScene, String> {
+        let build_start = std::time::Instant::now();
+        let mut build_timings = BuildTimings::default();
         if self.version != 1 {
             return Err(format!(
                 "unsupported scene version {}; expected 1",
@@ -320,6 +332,7 @@ impl SceneFile {
         let mut texture_ids = BTreeMap::new();
         let mut texture_pixels = 0;
         for (name, def) in &self.textures {
+            let asset_start = std::time::Instant::now();
             let texture = match def {
                 TextureDef::Checker { a, b, scale } => {
                     let a = color(*a, "checker a")?;
@@ -335,6 +348,7 @@ impl SceneFile {
                     Texture::load(&base.join(path), *filter, *wrap)?
                 }
             };
+            build_timings.asset_seconds += asset_start.elapsed().as_secs_f64();
             texture_pixels += texture.pixel_count();
             if texture_pixels > 16_777_216 {
                 return Err("scene textures exceed 16 megapixels combined".into());
@@ -370,7 +384,12 @@ impl SceneFile {
         let mut mesh_elements = 0;
         for (name, def) in &self.geometries {
             if let GeometryDef::Mesh { path } = def {
-                let mesh = Mesh::load(&base.join(path))?;
+                let asset_start = std::time::Instant::now();
+                let mut mesh = Mesh::load(&base.join(path))?;
+                build_timings.asset_seconds += asset_start.elapsed().as_secs_f64();
+                let accel_start = std::time::Instant::now();
+                mesh.build_accel(self.render.accel)?;
+                build_timings.acceleration_seconds += accel_start.elapsed().as_secs_f64();
                 mesh_elements += mesh.positions.len()
                     + mesh.triangles.len()
                     + mesh.normals.len()
@@ -496,11 +515,16 @@ impl SceneFile {
                 }
             }
         }
+        let accel_start = std::time::Instant::now();
+        scene.build_accel(self.render.accel)?;
+        build_timings.acceleration_seconds += accel_start.elapsed().as_secs_f64();
+        build_timings.total_seconds = build_start.elapsed().as_secs_f64();
         Ok(LoadedScene {
             scene,
             camera,
             render: self.render.clone(),
             background: color(self.background, "background")?,
+            build_timings,
         })
     }
 }

@@ -18,7 +18,7 @@ Versioned JSON scenes now support named materials/textures, reusable OBJ meshes,
 
 ![Imported textured mesh, flat and smooth shading](gallery/mesh.png)
 
-Current limits: one center sample per pixel, serial brute-force traversal, hard point-light shadows, and educational materials. Acceleration, antialiasing, physical HDR lighting, animation, and procedural generation remain in progress. No performance speedup is claimed yet.
+Current limits: one center sample per pixel, serial rendering, hard point-light shadows, and educational materials. Selectable brute-force, binned-SAH BVH, and reference octree traversal now cover both instances and mesh triangles. Antialiasing, physical HDR lighting, animation, and procedural generation remain in progress. Benchmark measurement is underway; no speedup is claimed yet.
 
 ![Canonical shapes and nonuniform affine geometry](gallery/shapes.png)
 

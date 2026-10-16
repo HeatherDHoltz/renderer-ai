@@ -4,7 +4,7 @@ This is the separate AI-assisted portfolio renderer based on Heather's early-sem
 
 The current core is a library used by a CLI and a preserved `legacy` example. Geometry is accessed through the thread-safe `Shape` trait. `Scene` owns shapes/lights and exposes closest-hit and early-exit occlusion queries. `Camera` validates perspective/orthographic frames. `LinearFilm` stores radiance sums and individual pixel counts, rejects nonfinite/negative samples, averages before exposure and Reinhard/linear tone mapping, then uses the piecewise sRGB transfer for PNG. Legacy `Film`/`render` preserve the original 8-bit educational output for baseline comparison.
 
-`Transform` validates finite affine matrices, rejects singular/ill-conditioned frames, and caches inverse and inverse transpose. Matrix fields are private to prevent stale caches. `Instance` transforms rays without normalization, evaluates canonical geometry, and transforms outward normals. Hit records preserve geometric outward normals, oriented shading normals, front-face state, UVs, stable scene object IDs, and slots for mesh barycentrics/primitive IDs. Equal-t scene hits retain the earlier object. No physical shading or acceleration is implemented yet.
+`Transform` validates finite affine matrices, rejects singular/ill-conditioned frames, and caches inverse and inverse transpose. Matrix fields are private to prevent stale caches. `Instance` transforms rays without normalization, evaluates canonical geometry, and transforms outward normals. Hit records preserve geometric outward normals, oriented shading normals, front-face state, UVs, stable scene object IDs, and slots for mesh barycentrics/primitive IDs. Equal-t scene hits retain the earlier object. Physical shading is not implemented yet.
 
 ## Canonical geometry
 
@@ -28,7 +28,7 @@ See [PLAN.md](../PLAN.md) and [STATUS.md](../STATUS.md) for verified capabilitie
 
 Serde/serde_json implement strict versioned JSON loading; clap implements CLI parsing. Original glam/image versions are unchanged. Scene IO validates named references, resource counts, material ranges, cameras, and composed transforms before rendering. An iterative parent walk detects cycles without unbounded recursion. Instances share an Arc of each indexed mesh. This graph supports static groups now; keyframe evaluation remains M8.
 
-The focused OBJ loader retains separate position/normal/UV corner indices and resolves negative indices during loading. Triangles intersect with double-sided Möller–Trumbore using f64 intermediates, a relative determinant tolerance, and barycentric edge tolerance 1e-8. Flat normals and interpolated shading normals remain distinct. Missing smooth normals use an area-weighted sum. No acceleration is claimed yet: each mesh instance loops over its triangles.
+The focused OBJ loader retains separate position/normal/UV corner indices and resolves negative indices during loading. Triangles intersect with double-sided Möller–Trumbore using f64 intermediates, a relative determinant tolerance, and barycentric edge tolerance 1e-8. Flat normals and interpolated shading normals remain distinct. Missing smooth normals use an area-weighted sum. Each mesh builds a selectable local index over triangle bounds; scene acceleration indexes reusable instances. Both levels share generic traversal and the same input-index tie policy.
 
 Textures are immutable scene data referenced by small material IDs; hits still copy only a small material value. PNG color texels are decoded to linear RGB once. Checker sampling and nearest/bilinear filtering happen at the hit UV. OBJ v=1 corresponds to the image top. Canonical primitive UV formulas retain the conventions documented above. Wrapping includes bilinear neighbors at the seam. All image radiance remains linear until output conversion.
 
@@ -39,3 +39,15 @@ Textures are immutable scene data referenced by small material IDs; hits still c
 Front-face state selects air/material IOR; nested dielectric media are not supported. Schlick uses incident cosine when entering and transmitted cosine when exiting. True TIR suppresses transmission and sets F=1; a tolerance of eight f32 epsilons handles roundoff at the critical boundary. Equal IORs transmit unchanged with zero reflection.
 
 A centralized scale-aware geometric-normal offset plus representable f32 steps places spawned rays on the correct side. Shadow rays recompute their endpoint interval after offsetting. This is suitable for the tested 0.001–1000 origin-centered scales; it is not a formal error-bound method for arbitrary extreme world-coordinate/object-size ratios. Depth is bounded at 16; accumulated RGB maximum controls branch termination. Diffuse indirect light, physical BRDFs, nested media, caustics, and refractive shadows are absent. Glass occludes shadow rays.
+
+## Acceleration
+
+`accel` implements inclusive f64 slab queries with explicit zero-direction handling. Finite analytic bounds transform all eight corners and add conservative float padding; triangle bounds are padded to retain thin surfaces and edge tolerances. Infinite planes remain outside every finite tree.
+
+The default BVH uses 12-bin surface-area heuristic splits, compares traversal/split cost against leaf cost, and stops at four items or depth 48. Coincident centroids/empty partitions remain leaves. Traversal visits near children first, tightens maximum t, and resolves exact equal-t hits by lowest original index, independent of traversal order.
+
+The reference octree splits root axes at their midpoint into eight cells, retains cell-crossing primitives at their parent, and limits depth to 16. Every finite item is stored once. Both trees have bounded stack traversal and dedicated early-exit any-hit queries. No unsafe code, locks, or per-query heap allocations are used. `TraceStats` counts popped nodes, instance queries, and analytic/triangle tests in explicitly measured entry points; ordinary paths specialize counters away.
+
+Scene geometry must remain unchanged after `build_accel`; rebuild after changing transforms or objects. Scene-file loading always builds fresh mesh and scene indices. Manual library scenes default to brute force until built explicitly. Public geometry vectors exist for now; callers must rebuild after edits.
+
+The benchmark CLI validates every ray's hit/identity/distance and occlusion against brute force before timing. Its ray-query loop excludes shading, recursive bounces, image output, and counter overhead. Repeated warm timings are separate from scene JSON parse, asset load, and acceleration construction. Full renderer/thread-scaling benchmarks remain M6; a ray-query speedup is not an end-to-end render speedup.

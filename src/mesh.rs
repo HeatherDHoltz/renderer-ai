@@ -19,6 +19,8 @@ pub struct Mesh {
     pub normals: Vec<Vec3>,
     pub triangles: Vec<[Corner; 3]>,
     generated_normals: Vec<Vec3>,
+    bounds: Option<crate::accel::Aabb>,
+    acceleration: Option<crate::accel::Acceleration>,
 }
 
 impl Mesh {
@@ -43,6 +45,8 @@ impl Mesh {
             normals: vec![],
             triangles: vec![],
             generated_normals: vec![],
+            bounds: None,
+            acceleration: None,
         };
         for (line_number, line) in text.lines().enumerate() {
             let tokens: Vec<_> = line
@@ -186,7 +190,34 @@ impl Mesh {
         for n in &mut mesh.generated_normals {
             *n = n.normalize_or_zero();
         }
+        mesh.build_accel(crate::accel::AccelKind::None)?;
         Ok(mesh)
+    }
+}
+
+impl Mesh {
+    pub fn build_accel(&mut self, kind: crate::accel::AccelKind) -> Result<(), String> {
+        let boxes: Vec<_> = self
+            .triangles
+            .iter()
+            .map(|triangle| {
+                let p = triangle.map(|c| self.positions[c.position]);
+                Some(
+                    crate::accel::Aabb {
+                        min: p[0].min(p[1]).min(p[2]),
+                        max: p[0].max(p[1]).max(p[2]),
+                    }
+                    .padded(),
+                )
+            })
+            .collect();
+        self.bounds = boxes
+            .iter()
+            .flatten()
+            .copied()
+            .reduce(crate::accel::Aabb::union);
+        self.acceleration = Some(crate::accel::Acceleration::build(kind, &boxes)?);
+        Ok(())
     }
 }
 
@@ -211,64 +242,141 @@ impl MeshInstance {
         })
     }
 }
-impl Shape for MeshInstance {
-    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
-        let local = ray.transform(&self.transform.inverse());
+impl MeshInstance {
+    fn triangle_hit(
+        &self,
+        primitive_id: usize,
+        ray: &Ray,
+        local: &Ray,
+        t_min: f32,
+        t_max: f32,
+    ) -> Option<Hit> {
+        let triangle = &self.mesh.triangles[primitive_id];
         let o = local.origin().as_dvec3();
         let d = local.direction().as_dvec3();
-        let mut closest = t_max;
-        let mut result = None;
-        for (primitive_id, triangle) in self.mesh.triangles.iter().enumerate() {
-            let p = triangle.map(|c| self.mesh.positions[c.position].as_dvec3());
-            let e1 = p[1] - p[0];
-            let e2 = p[2] - p[0];
-            let h = d.cross(e2);
-            let det = e1.dot(h);
-            if det.abs() <= 1e-12 * e1.length() * e2.length() * d.length() {
-                continue;
-            }
-            let s = o - p[0];
-            let beta = s.dot(h) / det;
-            let q = s.cross(e1);
-            let gamma = d.dot(q) / det;
-            if beta < -1e-8 || gamma < -1e-8 || beta + gamma > 1.0 + 1e-8 {
-                continue;
-            }
-            let t = (e2.dot(q) / det) as f32;
-            if !t.is_finite() || t < t_min || t > closest || (result.is_some() && t == closest) {
-                continue;
-            }
-            let weights = Vec3::new((1.0 - beta - gamma) as f32, beta as f32, gamma as f32);
-            let geom = e1.cross(e2).as_vec3().normalize();
-            let mut normal = Vec3::ZERO;
-            let mut uv = Vec2::ZERO;
-            for i in 0..3 {
-                normal += triangle[i]
-                    .normal
-                    .map_or(self.mesh.generated_normals[triangle[i].position], |n| {
-                        self.mesh.normals[n]
-                    })
-                    * weights[i];
-                uv += triangle[i].uv.map_or(Vec2::ZERO, |i| self.mesh.uvs[i]) * weights[i];
-            }
-            if normal.length_squared() < 1e-16 {
-                normal = geom;
-            }
-            if normal.dot(geom) < 0.0 {
-                normal = -normal;
-            }
-            // Orientation follows the local mesh's winding even under mirrored instances.
-            let outward = self.transform.normal(geom);
-            let mut hit = Hit::new(ray, t, outward, self.material, uv);
-            if self.smooth {
-                let n = self.transform.normal(normal);
-                hit.normal = if hit.front_face { n } else { -n };
-            }
-            hit.barycentrics = Some(weights);
-            hit.primitive_id = primitive_id;
-            closest = t;
-            result = Some(hit);
+        let p = triangle.map(|c| self.mesh.positions[c.position].as_dvec3());
+        let e1 = p[1] - p[0];
+        let e2 = p[2] - p[0];
+        let h = d.cross(e2);
+        let det = e1.dot(h);
+        if det.abs() <= 1e-12 * e1.length() * e2.length() * d.length() {
+            return None;
         }
-        result
+        let s = o - p[0];
+        let beta = s.dot(h) / det;
+        let q = s.cross(e1);
+        let gamma = d.dot(q) / det;
+        if beta < -1e-8 || gamma < -1e-8 || beta + gamma > 1.0 + 1e-8 {
+            return None;
+        }
+        let t = (e2.dot(q) / det) as f32;
+        if !t.is_finite() || t < t_min || t > t_max {
+            return None;
+        }
+        let weights = Vec3::new((1.0 - beta - gamma) as f32, beta as f32, gamma as f32);
+        let geom = e1.cross(e2).as_vec3().normalize();
+        let mut normal = Vec3::ZERO;
+        let mut uv = Vec2::ZERO;
+        for i in 0..3 {
+            normal += triangle[i]
+                .normal
+                .map_or(self.mesh.generated_normals[triangle[i].position], |n| {
+                    self.mesh.normals[n]
+                })
+                * weights[i];
+            uv += triangle[i].uv.map_or(Vec2::ZERO, |i| self.mesh.uvs[i]) * weights[i];
+        }
+        if normal.length_squared() < 1e-16 {
+            normal = geom;
+        }
+        if normal.dot(geom) < 0.0 {
+            normal = -normal;
+        }
+        // Orientation follows the local mesh's winding even under mirrored instances.
+        let outward = self.transform.normal(geom);
+        let mut hit = Hit::new(ray, t, outward, self.material, uv);
+        if self.smooth {
+            let n = self.transform.normal(normal);
+            hit.normal = if hit.front_face { n } else { -n };
+        }
+        hit.barycentrics = Some(weights);
+        hit.primitive_id = primitive_id;
+        Some(hit)
+    }
+    fn trace<const MEASURE: bool>(
+        &self,
+        ray: &Ray,
+        t_min: f32,
+        t_max: f32,
+        stats: &mut crate::accel::TraceStats,
+    ) -> Option<Hit> {
+        let local = ray.transform(&self.transform.inverse());
+        self.mesh
+            .acceleration
+            .as_ref()
+            .expect("mesh built at parse")
+            .closest::<_, MEASURE>(&local, t_min, t_max, stats, |id, max, stats| {
+                if MEASURE {
+                    stats.primitive_tests += 1;
+                }
+                self.triangle_hit(id, ray, &local, t_min, max)
+                    .map(|hit| (hit.t, hit))
+            })
+    }
+    fn any<const MEASURE: bool>(
+        &self,
+        ray: &Ray,
+        t_min: f32,
+        t_max: f32,
+        stats: &mut crate::accel::TraceStats,
+    ) -> bool {
+        let local = ray.transform(&self.transform.inverse());
+        self.mesh
+            .acceleration
+            .as_ref()
+            .expect("mesh built at parse")
+            .any::<MEASURE>(&local, t_min, t_max, stats, |id, stats| {
+                if MEASURE {
+                    stats.primitive_tests += 1;
+                }
+                self.triangle_hit(id, ray, &local, t_min, t_max).is_some()
+            })
+    }
+}
+impl Shape for MeshInstance {
+    fn bounds(&self) -> Option<crate::accel::Aabb> {
+        self.mesh
+            .bounds
+            .map(|b| b.transform(self.transform.model()))
+    }
+    fn triangle_count(&self) -> usize {
+        self.mesh.triangles.len()
+    }
+    fn primitive_count(&self) -> usize {
+        self.mesh.triangles.len()
+    }
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
+        self.trace::<false>(ray, t_min, t_max, &mut crate::accel::TraceStats::default())
+    }
+    fn hit_with_stats(
+        &self,
+        ray: &Ray,
+        t_min: f32,
+        t_max: f32,
+        stats: &mut crate::accel::TraceStats,
+    ) -> Option<Hit> {
+        self.trace::<true>(ray, t_min, t_max, stats)
+    }
+    fn occluded(&self, ray: &Ray, t_min: f32, t_max: f32) -> bool {
+        self.any::<false>(ray, t_min, t_max, &mut crate::accel::TraceStats::default())
+    }
+    fn occluded_with_stats(
+        &self,
+        ray: &Ray,
+        t_min: f32,
+        t_max: f32,
+        stats: &mut crate::accel::TraceStats,
+    ) -> bool {
+        self.any::<true>(ray, t_min, t_max, stats)
     }
 }

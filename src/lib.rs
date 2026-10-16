@@ -1,5 +1,7 @@
 //! AI-assisted CPU renderer. See the implementation plan for current scope.
 
+pub mod accel;
+pub mod benchmark;
 pub mod camera;
 pub mod film;
 pub mod geometry;

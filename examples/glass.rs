@@ -69,6 +69,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
         ],
         textures: vec![],
+        acceleration: None,
     };
     let camera = Camera::perspective(
         Vec3::new(5.0, 3.5, 10.0),

@@ -14,28 +14,96 @@ pub struct Scene {
     pub shapes: Vec<Box<dyn Shape>>,
     pub lights: Vec<PointLight>,
     pub textures: Vec<crate::texture::Texture>,
+    pub acceleration: Option<crate::accel::Acceleration>,
 }
 
 impl Scene {
+    pub fn build_accel(&mut self, kind: crate::accel::AccelKind) -> Result<(), String> {
+        self.acceleration = Some(crate::accel::Acceleration::build(
+            kind,
+            &self.shapes.iter().map(|s| s.bounds()).collect::<Vec<_>>(),
+        )?);
+        Ok(())
+    }
     pub fn nearest_hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
-        let mut closest_t = t_max;
-        let mut closest_hit = None;
-        for (object_id, shape) in self.shapes.iter().enumerate() {
-            if let Some(mut hit) = shape.hit(ray, t_min, closest_t)
-                && (closest_hit.is_none() || hit.t < closest_t)
+        self.trace::<false>(ray, t_min, t_max, &mut crate::accel::TraceStats::default())
+    }
+    pub fn nearest_hit_with_stats(
+        &self,
+        ray: &Ray,
+        t_min: f32,
+        t_max: f32,
+        stats: &mut crate::accel::TraceStats,
+    ) -> Option<Hit> {
+        self.trace::<true>(ray, t_min, t_max, stats)
+    }
+    fn trace<const MEASURE: bool>(
+        &self,
+        ray: &Ray,
+        t_min: f32,
+        t_max: f32,
+        stats: &mut crate::accel::TraceStats,
+    ) -> Option<Hit> {
+        let visit = |id: usize, max: f32, stats: &mut crate::accel::TraceStats| {
+            if MEASURE {
+                stats.instance_tests += 1;
+            }
+            let hit = if MEASURE {
+                self.shapes[id].hit_with_stats(ray, t_min, max, stats)
+            } else {
+                self.shapes[id].hit(ray, t_min, max)
+            };
+            hit.map(|mut hit| {
+                hit.object_id = id;
+                (hit.t, hit)
+            })
+        };
+        if let Some(acceleration) = &self.acceleration {
+            return acceleration.closest::<_, MEASURE>(ray, t_min, t_max, stats, visit);
+        }
+        let mut closest = t_max;
+        let mut result = None;
+        for id in 0..self.shapes.len() {
+            if let Some((t, hit)) = visit(id, closest, stats)
+                && (result.is_none() || t < closest)
             {
-                closest_t = hit.t;
-                hit.object_id = object_id;
-                closest_hit = Some(hit);
+                closest = t;
+                result = Some(hit);
             }
         }
-        closest_hit
+        result
     }
-
     pub fn occluded(&self, ray: &Ray, t_min: f32, t_max: f32) -> bool {
-        self.shapes
-            .iter()
-            .any(|shape| shape.hit(ray, t_min, t_max).is_some())
+        self.any::<false>(ray, t_min, t_max, &mut crate::accel::TraceStats::default())
+    }
+    pub fn occluded_with_stats(
+        &self,
+        ray: &Ray,
+        t_min: f32,
+        t_max: f32,
+        stats: &mut crate::accel::TraceStats,
+    ) -> bool {
+        self.any::<true>(ray, t_min, t_max, stats)
+    }
+    fn any<const MEASURE: bool>(
+        &self,
+        ray: &Ray,
+        t_min: f32,
+        t_max: f32,
+        stats: &mut crate::accel::TraceStats,
+    ) -> bool {
+        let visit = |id: usize, stats: &mut crate::accel::TraceStats| {
+            if MEASURE {
+                stats.instance_tests += 1;
+                self.shapes[id].occluded_with_stats(ray, t_min, t_max, stats)
+            } else {
+                self.shapes[id].occluded(ray, t_min, t_max)
+            }
+        };
+        if let Some(acceleration) = &self.acceleration {
+            return acceleration.any::<MEASURE>(ray, t_min, t_max, stats, visit);
+        }
+        (0..self.shapes.len()).any(|id| visit(id, stats))
     }
 }
 
@@ -60,6 +128,7 @@ mod tests {
             lights: vec![],
             shapes: vec![],
             textures: vec![],
+            acceleration: None,
         };
         let ray = Ray::new(Vec3::ZERO, -Vec3::Z);
         assert!(scene.nearest_hit(&ray, 0.001, 100.0).is_none());
@@ -78,6 +147,7 @@ mod tests {
                 Box::new(Plane::new(-Vec3::Y, Vec3::Y, material(Vec3::Y))),
             ],
             textures: vec![],
+            acceleration: None,
         };
         let ray = Ray::new(Vec3::new(0.0, 0.0, 5.0), -Vec3::Z);
         assert!(scene.nearest_hit(&ray, 0.001, 100.0).is_none());
@@ -92,6 +162,7 @@ mod tests {
                 Box::new(Sphere::new(2.0 * Vec3::Z, 1.0, material(Vec3::Y))),
             ],
             textures: vec![],
+            acceleration: None,
         };
         let ray = Ray::new(5.0 * Vec3::Z, -Vec3::Z);
         for _ in 0..2 {
@@ -113,6 +184,7 @@ mod tests {
                 Box::new(Sphere::new(2.0 * Vec3::Y, 1.0, material(Vec3::X))),
             ],
             textures: vec![],
+            acceleration: None,
         };
         let above_sphere = Ray::new(5.0 * Vec3::Y, -Vec3::Y);
         let hit = scene.nearest_hit(&above_sphere, 0.001, 100.0).unwrap();
@@ -134,6 +206,7 @@ mod tests {
                 Box::new(Plane::new(Vec3::ZERO, Vec3::Y, material(Vec3::Y))),
             ],
             textures: vec![],
+            acceleration: None,
         };
         let ray = Ray::new(5.0 * Vec3::Y, -Vec3::Y);
         assert!(scene.nearest_hit(&ray, 0.001, 1.0).is_none());

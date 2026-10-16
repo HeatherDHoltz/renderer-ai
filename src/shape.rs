@@ -38,4 +38,35 @@ impl Hit {
 
 pub trait Shape: Send + Sync {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit>;
+    fn bounds(&self) -> Option<crate::accel::Aabb> {
+        None
+    }
+    fn triangle_count(&self) -> usize {
+        0
+    }
+    fn primitive_count(&self) -> usize {
+        1
+    }
+    fn hit_with_stats(
+        &self,
+        ray: &Ray,
+        t_min: f32,
+        t_max: f32,
+        stats: &mut crate::accel::TraceStats,
+    ) -> Option<Hit> {
+        stats.primitive_tests += 1;
+        self.hit(ray, t_min, t_max)
+    }
+    fn occluded(&self, ray: &Ray, t_min: f32, t_max: f32) -> bool {
+        self.hit(ray, t_min, t_max).is_some()
+    }
+    fn occluded_with_stats(
+        &self,
+        ray: &Ray,
+        t_min: f32,
+        t_max: f32,
+        stats: &mut crate::accel::TraceStats,
+    ) -> bool {
+        self.hit_with_stats(ray, t_min, t_max, stats).is_some()
+    }
 }

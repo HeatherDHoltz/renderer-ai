@@ -24,9 +24,11 @@ All colors are linear RGB unless explicitly decoded from a color PNG texture. Po
 
 Camera fields: `kind` is `perspective` (default) or `orthographic`; `position` defaults to [4,3,7], `target` to [0,1,0], and `up` to [0,1,0]. Perspective vertical `fov` defaults to 40 degrees and must be in (0,179). Orthographic `height` defaults to 5 and must be positive. Aspect follows output dimensions. Eye and target must differ; up cannot be zero or parallel to view.
 
-Render defaults: `width` 640, `height` 480, `spp` 1, `seed` 116, `integrator` `whitted`, `max_depth` 8, `min_throughput` 0.0001, `exposure` 0 stops, `tone_map` `reinhard`. The other tone map is `linear`. Depth is 0..16, throughput is [0,1], and exposure is [-32,32]. Dimensions are 1..8192 and at most 16 megapixels. Only `spp=1` is currently supported: one center camera sample. `seed` is reserved for M5 and does not affect this deterministic center sample. Unsupported sampling/integrators fail instead of being silently ignored.
+Render defaults: `width` 640, `height` 480, `spp` 1, `seed` 116, `integrator` `whitted`, `max_depth` 8, `min_throughput` 0.0001, `exposure` 0 stops, `tone_map` `reinhard`, `accel` `bvh`. The other tone map is `linear`. Depth is 0..16, throughput is [0,1], and exposure is [-32,32]. Dimensions are 1..8192 and at most 16 megapixels. Only `spp=1` is currently supported: one center camera sample. `seed` is reserved for M5 and does not affect this deterministic center sample. Unsupported sampling/integrators fail instead of being silently ignored.
 
-CLI `render` overrides: `--width`, `--height`, `--depth`, `--exposure`, `--output`. All overrides pass validation. `validate` also loads all defined mesh and texture assets. `render` prints load, render, and output timings; these single-run diagnostics are not a benchmark report.
+`accel` selects `none` (brute force), `bvh` (12-bin SAH, default), or `octree` (reference, parent straddlers). Both mesh triangles and scene instances use the selected backend.
+
+CLI `render` overrides: `--width`, `--height`, `--depth`, `--exposure`, `--accel`, `--output`. All overrides pass validation. `validate` also loads all defined mesh and texture assets. `render` prints load, render, and output timings; these single-run diagnostics are not a benchmark report.
 
 ## Geometry, instances, and groups
 
@@ -50,4 +52,4 @@ Point light: `{"kind":"point","position":[-3,7,5],"color":[1.2,1.1,0.95]}`. Colo
 
 OBJ supports `v`, `vt`, `vn`, independent face index tuples, and positive/negative indices. Triangles load directly; convex planar quads triangulate as a fan. Concave, nonplanar, larger, or degenerate faces fail with line-number diagnostics. Missing normals use area-weighted vertex normals across shared position indices when smooth shading is requested. Explicit normal splits are preserved. Split positions/normals are needed for hard edges: OBJ smoothing groups and material/library directives are ignored. Missing UVs default to [0,0]. Smooth normals change shading, not silhouettes.
 
-Limits: scene file 4 MiB; OBJ or PNG file 64 MiB each; one million positions/normals/UVs/triangles per mesh and four million combined mesh elements per scene; four megapixels per texture and sixteen megapixels combined. Scene counts: 100,000 objects, 4,096 materials/geometries, 256 textures, 1,024 lights. These are validation ceilings, not performance promises; brute-force mesh traversal is still the reference implementation before M4.
+Limits: scene file 4 MiB; OBJ or PNG file 64 MiB each; one million positions/normals/UVs/triangles per mesh and four million combined mesh elements per scene; four megapixels per texture and sixteen megapixels combined. Scene counts: 100,000 objects, 4,096 materials/geometries, 256 textures, 1,024 lights. These are validation ceilings, not performance promises; brute-force traversal remains available as the correctness reference.

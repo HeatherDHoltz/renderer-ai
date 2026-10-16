@@ -25,6 +25,9 @@ impl Sphere {
     }
 }
 impl Shape for Sphere {
+    fn bounds(&self) -> Option<crate::accel::Aabb> {
+        self.instance.bounds()
+    }
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
         self.instance.hit(ray, t_min, t_max)
     }
