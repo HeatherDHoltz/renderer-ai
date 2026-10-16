@@ -9,6 +9,8 @@
 - `assets/benchmark-grid.obj` and `scenes/benchmark.json`: deterministic 64×64 sinusoidal grid, 4,225 vertices / 8,192 triangles, recreated by `python3 scripts/generate_benchmark.py`. `gallery/wave.png` is the inspected default BVH render.
 - `gallery/aa-center.png` / `aa-128.png`: analytic/checker AA diagnostics at 480×270, center 1 spp versus seeded jittered 128 spp.
 - `gallery/soft-1.png`, `soft-shadows.png`, and `soft-small.png`: inspected 320×224 rectangular-light diagnostics, generated from the included soft-shadow scenes; exact commands in SAMPLING.md.
+- `assets/studio.hdr`: synthetic 256×128 linear Radiance RGBE map with three angular softboxes and a dim upper/lower field, generated entirely by `cargo run --release --locked --example generate_environment`. No photograph or external environment. Values exceed one before display mapping.
+- `gallery/physical-studio.png`: inspected 960×540, 256-spp environment-only render of `scenes/physical_studio.json`; command, material ordering, and limitations in PHYSICAL.md. The accompanying raw HDR stays in ignored `output/`.
 - Course slides, handouts, syllabus, and class submission files are not redistributed here.
 
 No license has been assigned to project-authored files or images. Dependency licenses remain those declared by their respective packages.

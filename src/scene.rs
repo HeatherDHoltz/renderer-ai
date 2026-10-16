@@ -16,6 +16,7 @@ pub struct Scene {
     pub area_lights: Vec<crate::light::RectLight>,
     pub textures: Vec<crate::texture::Texture>,
     pub acceleration: Option<crate::accel::Acceleration>,
+    pub environment: Option<crate::environment::Environment>,
 }
 
 impl Scene {
@@ -131,6 +132,7 @@ mod tests {
             textures: vec![],
             area_lights: vec![],
             acceleration: None,
+            environment: None,
         };
         let ray = Ray::new(Vec3::ZERO, -Vec3::Z);
         assert!(scene.nearest_hit(&ray, 0.001, 100.0).is_none());
@@ -151,6 +153,7 @@ mod tests {
             textures: vec![],
             area_lights: vec![],
             acceleration: None,
+            environment: None,
         };
         let ray = Ray::new(Vec3::new(0.0, 0.0, 5.0), -Vec3::Z);
         assert!(scene.nearest_hit(&ray, 0.001, 100.0).is_none());
@@ -167,6 +170,7 @@ mod tests {
             textures: vec![],
             area_lights: vec![],
             acceleration: None,
+            environment: None,
         };
         let ray = Ray::new(5.0 * Vec3::Z, -Vec3::Z);
         for _ in 0..2 {
@@ -190,6 +194,7 @@ mod tests {
             textures: vec![],
             area_lights: vec![],
             acceleration: None,
+            environment: None,
         };
         let above_sphere = Ray::new(5.0 * Vec3::Y, -Vec3::Y);
         let hit = scene.nearest_hit(&above_sphere, 0.001, 100.0).unwrap();
@@ -213,6 +218,7 @@ mod tests {
             textures: vec![],
             area_lights: vec![],
             acceleration: None,
+            environment: None,
         };
         let ray = Ray::new(5.0 * Vec3::Y, -Vec3::Y);
         assert!(scene.nearest_hit(&ray, 0.001, 1.0).is_none());

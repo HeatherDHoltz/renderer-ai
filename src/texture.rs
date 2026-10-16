@@ -41,6 +41,12 @@ pub fn srgb_to_linear(x: f32) -> f32 {
 }
 
 impl Texture {
+    pub fn valid_albedo(&self) -> bool {
+        match self {
+            Self::Checker { a, b, .. } => a.max_element() <= 1.0 && b.max_element() <= 1.0,
+            Self::Image { pixels, .. } => pixels.iter().all(|p| p.max_element() <= 1.0),
+        }
+    }
     pub fn pixel_count(&self) -> usize {
         match self {
             Self::Checker { .. } => 0,

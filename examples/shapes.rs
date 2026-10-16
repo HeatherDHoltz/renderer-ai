@@ -24,6 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         textures: vec![],
         area_lights: vec![],
         acceleration: None,
+        environment: None,
     };
     let material = |color| Material {
         diffuse: color,

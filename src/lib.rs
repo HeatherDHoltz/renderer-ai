@@ -3,12 +3,15 @@
 pub mod accel;
 pub mod benchmark;
 pub mod camera;
+pub mod environment;
 pub mod film;
 pub mod geometry;
 pub mod integrator;
 pub mod light;
 pub mod material;
 pub mod mesh;
+pub mod pbr;
+pub mod physical;
 pub mod plane;
 pub mod ray;
 pub mod render;

@@ -34,6 +34,8 @@ pub struct SceneFile {
     pub objects: Vec<ObjectDef>,
     #[serde(default)]
     pub lights: Vec<LightDef>,
+    #[serde(default)]
+    pub environment: Option<EnvironmentDef>,
 }
 fn default_background() -> [f32; 3] {
     [0.05, 0.07, 0.1]
@@ -129,8 +131,8 @@ impl RenderSettings {
         {
             return Err("spp must be 1..16384 and total pixel samples at most 2^30".into());
         }
-        if self.integrator != "whitted" {
-            return Err("integrator must be whitted".into());
+        if self.integrator != "whitted" && self.integrator != "physical" {
+            return Err("integrator must be whitted or physical".into());
         }
         self.whitted()?;
         self.tone()?;
@@ -138,6 +140,15 @@ impl RenderSettings {
             return Err("exposure must be in [-32,32] stops".into());
         }
         Ok(())
+    }
+    pub fn renderer(&self) -> Result<crate::integrator::Integrator, String> {
+        match self.integrator.as_str() {
+            "whitted" => Ok(crate::integrator::Integrator::Whitted(self.whitted()?)),
+            "physical" => Ok(crate::integrator::Integrator::Physical(
+                crate::physical::PhysicalIntegrator::new(self.max_depth, self.min_throughput)?,
+            )),
+            _ => Err("unknown integrator".into()),
+        }
     }
     pub fn whitted(&self) -> Result<Whitted, String> {
         Whitted::new(self.max_depth, self.min_throughput)
@@ -149,6 +160,24 @@ impl RenderSettings {
             _ => Err("tone_map must be reinhard or linear".into()),
         }
     }
+}
+
+fn unit_intensity() -> f32 {
+    1.0
+}
+#[derive(Clone, Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum EnvironmentDef {
+    Constant {
+        radiance: [f32; 3],
+    },
+    Hdr {
+        path: String,
+        #[serde(default = "unit_intensity")]
+        intensity: f32,
+        #[serde(default)]
+        rotation_degrees: f32,
+    },
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -178,6 +207,7 @@ pub struct MaterialDef {
     pub transmission: [f32; 3],
     pub ior: f32,
     pub texture: Option<String>,
+    pub physical: Option<crate::pbr::PhysicalMaterial>,
 }
 impl Default for MaterialDef {
     fn default() -> Self {
@@ -190,6 +220,7 @@ impl Default for MaterialDef {
             transmission: m.transmission.to_array(),
             ior: m.ior,
             texture: None,
+            physical: None,
         }
     }
 }
@@ -354,6 +385,32 @@ impl SceneFile {
             _ => return Err("camera kind must be perspective or orthographic".into()),
         };
         let mut scene = Scene::default();
+        if let Some(def) = &self.environment {
+            let asset_start = std::time::Instant::now();
+            if self.render.integrator != "physical" {
+                return Err("environment illumination requires integrator physical".into());
+            }
+            scene.environment = Some(match def {
+                EnvironmentDef::Constant { radiance } => crate::environment::Environment::new(
+                    1,
+                    1,
+                    vec![color(*radiance, "environment radiance")?],
+                    1.0,
+                    0.0,
+                )?,
+                EnvironmentDef::Hdr {
+                    path,
+                    intensity,
+                    rotation_degrees,
+                } => crate::environment::Environment::load(
+                    &base.join(path),
+                    *intensity,
+                    *rotation_degrees,
+                )?,
+            });
+            build_timings.asset_seconds += asset_start.elapsed().as_secs_f64();
+        }
+
         let mut texture_ids = BTreeMap::new();
         let mut texture_pixels = 0;
         for (name, def) in &self.textures {
@@ -401,8 +458,22 @@ impl SceneFile {
                 transmission: def.transmission.into(),
                 ior: def.ior,
                 texture,
+                physical: def.physical,
             };
             m.validate().map_err(|e| format!("material {name}: {e}"))?;
+            if (self.render.integrator == "physical") != m.physical.is_some() {
+                return Err(format!(
+                    "material {name}: physical mode requires physical material blocks; whitted mode requires educational materials"
+                ));
+            }
+            if m.physical.is_some()
+                && m.texture
+                    .is_some_and(|id| !scene.textures[id].valid_albedo())
+            {
+                return Err(format!(
+                    "material {name}: physical albedo texture must stay in [0,1]"
+                ));
+            }
             materials.insert(name.clone(), m);
         }
         let mut meshes = BTreeMap::new();

@@ -4,7 +4,7 @@ This is the separate AI-assisted portfolio renderer based on Heather's early-sem
 
 The current core is a library used by a CLI and a preserved `legacy` example. Geometry is accessed through the thread-safe `Shape` trait. `Scene` owns shapes/lights and exposes closest-hit and early-exit occlusion queries. `Camera` validates perspective/orthographic frames. `LinearFilm` stores radiance sums and individual pixel counts, rejects nonfinite/negative samples, averages before exposure and Reinhard/linear tone mapping, then uses the piecewise sRGB transfer for PNG. Legacy `Film`/`render` preserve the original 8-bit educational output for baseline comparison.
 
-`Transform` validates finite affine matrices, rejects singular/ill-conditioned frames, and caches inverse and inverse transpose. Matrix fields are private to prevent stale caches. `Instance` transforms rays without normalization, evaluates canonical geometry, and transforms outward normals. Hit records preserve geometric outward normals, oriented shading normals, front-face state, UVs, stable scene object IDs, and slots for mesh barycentrics/primitive IDs. Equal-t scene hits retain the earlier object. Physical shading is not implemented yet.
+`Transform` validates finite affine matrices, rejects singular/ill-conditioned frames, and caches inverse and inverse transpose. Matrix fields are private to prevent stale caches. `Instance` transforms rays without normalization, evaluates canonical geometry, and transforms outward normals. Hit records preserve geometric outward normals, oriented shading normals, front-face state, UVs, stable scene object IDs, and slots for mesh barycentrics/primitive IDs. Equal-t scene hits retain the earlier object. `Integrator` dispatches explicitly between educational Whitted and physical direct lighting.
 
 ## Canonical geometry
 
@@ -38,7 +38,7 @@ Textures are immutable scene data referenced by small material IDs; hits still c
 
 Front-face state selects air/material IOR; nested dielectric media are not supported. Schlick uses incident cosine when entering and transmitted cosine when exiting. True TIR suppresses transmission and sets F=1; a tolerance of eight f32 epsilons handles roundoff at the critical boundary. Equal IORs transmit unchanged with zero reflection.
 
-A centralized scale-aware geometric-normal offset plus representable f32 steps places spawned rays on the correct side. Shadow rays recompute their endpoint interval after offsetting. This is suitable for the tested 0.001–1000 origin-centered scales; it is not a formal error-bound method for arbitrary extreme world-coordinate/object-size ratios. Depth is bounded at 16; accumulated RGB maximum controls branch termination. Diffuse indirect light, physical BRDFs, nested media, caustics, and refractive shadows are absent. Glass occludes shadow rays.
+A centralized scale-aware geometric-normal offset plus representable f32 steps places spawned rays on the correct side. Shadow rays recompute their endpoint interval after offsetting. This is suitable for the tested 0.001–1000 origin-centered scales; it is not a formal error-bound method for arbitrary extreme world-coordinate/object-size ratios. Depth is bounded at 16; accumulated RGB maximum controls branch termination. Diffuse indirect light, nested media, caustics, and refractive shadows are absent. Glass occludes shadow rays. Physical BRDFs, HDR sampling, exact dielectric Fresnel, and the radiance transport convention are defined separately in [PHYSICAL.md](PHYSICAL.md).
 
 ## Acceleration
 
@@ -50,11 +50,11 @@ The reference octree splits root axes at their midpoint into eight cells, retain
 
 Scene geometry must remain unchanged after `build_accel`; rebuild after changing transforms or objects. Scene-file loading always builds fresh mesh and scene indices. Manual library scenes default to brute force until built explicitly. Public geometry vectors exist for now; callers must rebuild after edits.
 
-The benchmark CLI validates every ray's hit/identity/distance and occlusion against brute force before timing. Its ray-query loop excludes shading, recursive bounces, image output, and counter overhead. Repeated warm timings are separate from scene JSON parse, asset load, and acceleration construction. Full renderer/thread-scaling benchmarks remain M6; a ray-query speedup is not an end-to-end render speedup.
+The benchmark CLI validates every ray's hit/identity/distance and occlusion against brute force before timing. Its ray-query loop excludes shading, recursive bounces, image output, and counter overhead. Repeated warm timings are separate from scene JSON parse, asset load, and acceleration construction. A separate full-render thread-scaling harness verifies linear film hashes; a ray-query speedup is not an end-to-end render speedup.
 
 ## Sampling and source integration
 
-`SampleKey` hashes seed/pixel/sample/dimension/recursive stream without shared mutable state. Sequential sample indices preserve prefixes as spp or batch partitions change. `render_range` validates film prefixes and appends linear samples in ascending order. Rectangular source sampling supplies the correct area-to-solid-angle conversion; legacy empirical shading stays distinct from future physical BRDF evaluation. See [SAMPLING.md](SAMPLING.md) for equations, sidedness, source-power policy, and visual evidence.
+`SampleKey` hashes seed/pixel/sample/dimension/recursive stream without shared mutable state. Sequential sample indices preserve prefixes as spp or batch partitions change. `render_range` validates film prefixes and appends linear samples in ascending order. Rectangular source sampling supplies the correct area-to-solid-angle conversion; legacy empirical shading stays distinct from physical BRDF evaluation. See [SAMPLING.md](SAMPLING.md) for equations, sidedness, source-power policy, and visual evidence. Camera dimensions are 0/1, rectangles start at 2, and physical environment/BRDF sampling uses disjoint dimensions 4096–4098/4100–4102. Recursive ideal transport forks streams.
 
 ## Tiled execution and previews
 

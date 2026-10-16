@@ -56,7 +56,7 @@ impl TiledRenderer {
         if range.is_empty() {
             return Ok(());
         }
-        let integrator = settings.whitted()?;
+        let integrator = settings.renderer()?;
         let cols = settings.width.div_ceil(settings.tile_size);
         let rows = settings.height.div_ceil(settings.tile_size);
         let base = &*film;
@@ -290,6 +290,7 @@ mod tests {
             textures: vec![],
             area_lights: vec![],
             acceleration: None,
+            environment: None,
         };
         let film = render(&camera, &scene, 2, 2, 0.001, 100.0, [80, 120, 200]);
         for y in 0..2 {
@@ -312,6 +313,7 @@ mod tests {
             textures: vec![],
             area_lights: vec![],
             acceleration: None,
+            environment: None,
         };
         let film = render(&camera, &scene, 3, 3, 0.001, 100.0, [25, 30, 40]);
         assert_eq!(film.get_pixel(1, 0), [69, 0, 0]);
@@ -334,6 +336,7 @@ mod tests {
             textures: vec![],
             area_lights: vec![],
             acceleration: None,
+            environment: None,
         };
         assert_eq!(
             render(&camera, &scene, 1, 1, 0.001, 100.0, [25, 30, 40]).get_pixel(0, 0),

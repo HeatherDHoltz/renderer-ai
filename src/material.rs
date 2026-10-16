@@ -10,6 +10,7 @@ pub struct Material {
     pub transmission: Vec3,
     pub ior: f32,
     pub texture: Option<usize>,
+    pub physical: Option<crate::pbr::PhysicalMaterial>,
 }
 
 impl Default for Material {
@@ -22,6 +23,7 @@ impl Default for Material {
             transmission: Vec3::ZERO,
             ior: 1.5,
             texture: None,
+            physical: None,
         }
     }
 }
@@ -43,6 +45,9 @@ impl Material {
         }
     }
     pub fn validate(&self) -> Result<(), String> {
+        if let Some(physical) = self.physical {
+            physical.validate()?;
+        }
         for color in [
             self.diffuse,
             self.specular,
@@ -166,6 +171,7 @@ mod tests {
             textures: vec![],
             area_lights: vec![],
             acceleration: None,
+            environment: None,
         }
     }
 

@@ -95,6 +95,7 @@ fn mirror_and_zero_local_glass_transmit_background() {
             textures: vec![],
             area_lights: vec![],
             acceleration: None,
+            environment: None,
         };
         let color = Whitted::new(16, 0.0)
             .unwrap()
@@ -127,6 +128,7 @@ fn facing_mirrors_terminate_and_threshold_checks_every_color_channel() {
         textures: vec![],
         area_lights: vec![],
         acceleration: None,
+        environment: None,
     };
     // Five shaded surfaces (primary plus four bounces), red remains significant.
     close(
@@ -153,6 +155,7 @@ fn educational_formula_is_additive_without_double_glass_reflection() {
         textures: vec![],
         area_lights: vec![],
         acceleration: None,
+        environment: None,
     };
     let color = Whitted::default().trace(&Ray::new(Vec3::Y, -Vec3::Y), &scene, Vec3::ONE);
     close(color, Vec3::splat(0.2 * 0.27 + 0.3));
@@ -183,6 +186,7 @@ fn ambient_once_unclamped_rgb_and_zero_half_vector() {
         textures: vec![],
         area_lights: vec![],
         acceleration: None,
+        environment: None,
     };
     close(shade_linear(&hit, &ray, &scene), 3.27 * material.diffuse);
     scene.lights = vec![PointLight {
@@ -204,6 +208,7 @@ fn shadow_endpoints_and_material_validation() {
         textures: vec![],
         area_lights: vec![],
         acceleration: None,
+        environment: None,
     };
     let ray = Ray::new(Vec3::ZERO, Vec3::Y);
     assert!(!scene.occluded(&ray, 0.0, 3.0));

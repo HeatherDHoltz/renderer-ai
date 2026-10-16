@@ -17,6 +17,7 @@ Working examples: [canonical geometry](../scenes/shapes.json), [mirror/glass](..
 | `geometries` | Required map of names to geometry definitions |
 | `objects` | Required array of instances and transform groups |
 | `lights` | Optional array of point lights |
+| `environment` | Optional constant or Radiance HDR environment, physical mode only |
 
 All colors are linear RGB unless explicitly decoded from a color PNG texture. Positions use arbitrary consistent world units, right-handed +Y up. Arrays have exactly the indicated number of components. JSON does not accept NaN or infinity; computed values and numeric ranges are validated too.
 
@@ -28,7 +29,9 @@ Render defaults: `width` 640, `height` 480, `spp` 1, `seed` 116, `integrator` `w
 
 `accel` selects `none` (brute force), `bvh` (12-bin SAH, default), or `octree` (reference, parent straddlers). Both mesh triangles and scene instances use the selected backend.
 
-CLI `render` overrides: `--width`, `--height`, `--depth`, `--exposure`, `--accel`, `--spp`, `--seed`, `--sampling`, `--threads`, `--tile-size`, `--progressive`/`--no-progressive`, `--preview-every`, `--output`. All overrides pass validation. `validate` also loads all defined mesh and texture assets. See [PARALLEL.md](PARALLEL.md) for tile/prefix/cancellation semantics. `render` prints load, render, and output timings; these single-run diagnostics are not a benchmark report.
+CLI `render` overrides: `--width`, `--height`, `--depth`, `--exposure`, `--accel`, `--spp`, `--seed`, `--sampling`, `--threads`, `--tile-size`, `--progressive`/`--no-progressive`, `--preview-every`, `--integrator`, `--output`, and optional `--hdr-output`. All overrides pass validation. `validate` also loads all defined mesh, texture, and environment assets. See [PARALLEL.md](PARALLEL.md) for tile/prefix/cancellation semantics. `render` prints load, render, and output timings; these single-run diagnostics are not a benchmark report.
+
+`integrator` supports `whitted` and `physical`. In physical mode every defined material requires a `physical` block; Whitted mode rejects such blocks. Changing modes requires matching material definitions. The physical mode ignores the educational diffuse/specular/reflection/transmission coefficients and has no ambient term. `--hdr-output` must end in `.hdr` and saves averaged raw linear RGBE independent of PNG exposure/tone mapping. PNG output still uses `--output`.
 
 ## Geometry, instances, and groups
 
@@ -42,13 +45,29 @@ Every object has a unique `name` (1..128 bytes). An instance needs `geometry` an
 
 Material defaults: `diffuse` [0.7,0.7,0.7], `specular` [0,0,0], `shininess` 32, `reflection` [0,0,0], `transmission` [0,0,0], `ior` 1.5, optional `texture` name. Coefficients must be in [0,1], shininess nonnegative, and IOR in [1,4]. This is an educational additive material model, not physical energy conservation. A mirror sets diffuse/specular to zero and reflection to its tint. Glass sets diffuse/specular/reflection to zero and transmission to its tint; see transport limitations in the architecture notes.
 
+Physical examples (each is an entire named material value):
+
+```json
+{"physical":{"model":"diffuse","base_color":[0.65,0.23,0.07]}}
+```
+```json
+{"physical":{"model":"metal_rough","base_color":[0.83,0.58,0.21],"metallic":1.0,"roughness":0.5}}
+```
+```json
+{"physical":{"model":"dielectric","tint":[0.5,0.82,0.96],"ior":1.45}}
+```
+
+Base color/tint and metallic/roughness must be in [0,1]; physical IOR is [1,4]. Optional `texture` multiplies the physical base color or per-interface tint and must stay in [0,1]. The physical IOR is inside its block, independent of the educational outer IOR. [PHYSICAL.md](PHYSICAL.md) defines alpha, Fresnel, PDFs, MIS, and direct-lighting limitations.
+
 Checker texture: `{"kind":"checker","a":[1,1,1],"b":[0.1,0.1,0.1],"scale":[4,4]}`. The floor of each scaled UV selects alternating squares, including negative coordinates. Scale must be positive and at most 1e6.
 
 Color image texture: `{"kind":"image","path":"../assets/uv-grid.png","filter":"bilinear","wrap":"repeat"}`. PNG RGB is decoded through the sRGB transfer into linear color. `filter` is `nearest` or `bilinear` (default); `wrap` is `repeat` (default) or `clamp`. UV v=1 samples the top row, matching OBJ's usual bottom-origin UVs. Bilinear filtering uses texel centers and wraps/clamps neighbors consistently. Alpha is ignored; only base color is supported. No scalar maps, MTL import, normal maps, or anisotropic filtering are claimed.
 
-Point light: `{"kind":"point","position":[-3,7,5],"color":[1.2,1.1,0.95]}`. Color is an educational irradiance multiplier without inverse-square falloff. Glass blocks shadow rays. Background and light RGB may exceed one. Rectangular lights are supported; environment maps are pending.
+Point light: `{"kind":"point","position":[-3,7,5],"color":[1.2,1.1,0.95]}`. Color is an educational irradiance multiplier without inverse-square falloff in Whitted mode; physical mode uses it as radiant intensity with inverse-square attenuation. Glass blocks shadow rays. Background and light RGB may exceed one.
 
 Area light: `{"kind":"area","center":[-3,6,3],"edge_u":[3,0,0],"edge_v":[0,0,3],"radiance":[7,6.5,5.5],"two_sided":false}`. Full spans define the rectangle and cross-product normal. One sample per source is drawn at each shaded vertex per camera sample. Emitted radiance remains constant as area changes; set radiance inversely with area to compare fixed power. See [SAMPLING.md](SAMPLING.md) for PDFs, units/conventions, sample counts, and inspected comparisons.
+
+Physical environment: `{"kind":"hdr","path":"../assets/studio.hdr","intensity":1.0,"rotation_degrees":0.0}` or `{"kind":"constant","radiance":[1,1,1]}` in top-level `environment`. Intensity defaults to 1 and must be finite/nonnegative; rotation defaults to zero and must be finite. HDR radiance is linear; +Y is the top pole, u=0 faces +X and u=0.25 faces +Z; positive rotation moves +X toward +Z. The environment lights surfaces and supplies misses. Without an environment, `background` supplies misses only and does not illuminate surfaces. HDR input caps: 64 MiB, four megapixels, dimensions ≤8192. Lookup is nearest texel; sampling weights luminance by exact spherical texel area.
 
 ## OBJ support and resource limits
 

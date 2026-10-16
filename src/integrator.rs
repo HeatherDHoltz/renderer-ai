@@ -2,6 +2,20 @@
 use crate::{material::shade_sampled, ray::Ray, sampling::SampleKey, scene::Scene};
 use glam::Vec3;
 
+#[derive(Clone, Copy, Debug)]
+pub enum Integrator {
+    Whitted(Whitted),
+    Physical(crate::physical::PhysicalIntegrator),
+}
+impl Integrator {
+    pub fn trace_sampled(self, ray: &Ray, scene: &Scene, background: Vec3, key: SampleKey) -> Vec3 {
+        match self {
+            Self::Whitted(i) => i.trace_sampled(ray, scene, background, key),
+            Self::Physical(i) => i.trace_sampled(ray, scene, background, key),
+        }
+    }
+}
+
 pub fn reflect(incident: Vec3, normal: Vec3) -> Vec3 {
     incident - 2.0 * incident.dot(normal) * normal
 }

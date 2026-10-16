@@ -89,6 +89,10 @@ enum Command {
         preview_every: Option<u32>,
         #[arg(long, allow_hyphen_values = true)]
         exposure: Option<f32>,
+        #[arg(long)]
+        hdr_output: Option<PathBuf>,
+        #[arg(long)]
+        integrator: Option<String>,
     },
 }
 fn main() {
@@ -181,6 +185,8 @@ fn run() -> Result<(), Box<dyn Error>> {
             progressive,
             no_progressive,
             preview_every,
+            hdr_output,
+            integrator,
         } => {
             let start = Instant::now();
             let mut file = SceneFile::load(&scene)?;
@@ -223,6 +229,9 @@ fn run() -> Result<(), Box<dyn Error>> {
             if let Some(v) = preview_every {
                 file.render.preview_every = v;
             }
+            if let Some(v) = integrator {
+                file.render.integrator = v;
+            }
             let loaded = file.build(scene.parent().unwrap_or(Path::new(".")))?;
             let load_time = start.elapsed();
             if !output
@@ -243,6 +252,12 @@ fn run() -> Result<(), Box<dyn Error>> {
                 loaded.render.spp,
                 loaded.render.tile_size
             );
+            if hdr_output
+                .as_ref()
+                .is_some_and(|p| !p.extension().is_some_and(|e| e.eq_ignore_ascii_case("hdr")))
+            {
+                return Err("--hdr-output must use .hdr extension".into());
+            }
             let start = Instant::now();
             let mut write_time = std::time::Duration::ZERO;
             if loaded.render.progressive {
@@ -254,6 +269,11 @@ fn run() -> Result<(), Box<dyn Error>> {
                     |film, samples| {
                         let write_start = Instant::now();
                         render::save_preview(film, &loaded.render, &output)?;
+                        if samples == loaded.render.spp
+                            && let Some(path) = &hdr_output
+                        {
+                            film.save_hdr(path)?;
+                        }
                         write_time += write_start.elapsed();
                         eprintln!(
                             "Preview {samples}/{} spp -> {} ({:.2}s elapsed)",
@@ -268,6 +288,9 @@ fn run() -> Result<(), Box<dyn Error>> {
                 let film = loaded.render()?;
                 let write_start = Instant::now();
                 render::save_preview(&film, &loaded.render, &output)?;
+                if let Some(path) = &hdr_output {
+                    film.save_hdr(path)?;
+                }
                 write_time = write_start.elapsed();
             }
             let render_time = start.elapsed().saturating_sub(write_time);
@@ -319,6 +342,7 @@ fn smoke(width: u32, height: u32, output: PathBuf) -> Result<(), Box<dyn Error>>
         textures: vec![],
         area_lights: vec![],
         acceleration: None,
+        environment: None,
     };
     let camera = Camera::new(
         Vec3::new(4.0, 3.0, 7.0),

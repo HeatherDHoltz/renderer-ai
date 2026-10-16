@@ -24,6 +24,28 @@ pub struct LinearFilm {
 }
 
 impl LinearFilm {
+    pub fn save_hdr(&self, path: &std::path::Path) -> Result<(), String> {
+        if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
+            std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+        let mut pixels = Vec::with_capacity((self.width * self.height) as usize);
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let p = self.pixel(x, y);
+                if !p.is_finite() || p.min_element() < 0.0 || p.max_element() >= 2.0_f32.powi(127) {
+                    return Err("radiance exceeds Radiance RGBE output range".into());
+                }
+                pixels.push(image::Rgb(p.to_array()));
+            }
+        }
+        use std::io::Write;
+        let mut output =
+            std::io::BufWriter::new(std::fs::File::create(path).map_err(|e| e.to_string())?);
+        image::codecs::hdr::HdrEncoder::new(&mut output)
+            .encode(&pixels, self.width as usize, self.height as usize)
+            .map_err(|e| e.to_string())?;
+        output.flush().map_err(|e| e.to_string())
+    }
     pub(crate) fn accumulation(&self, x: u32, y: u32) -> (Vec3, u32) {
         let i = (y * self.width + x) as usize;
         (self.sums[i], self.counts[i])
