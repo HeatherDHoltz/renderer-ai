@@ -48,6 +48,7 @@ fn run() -> Result<(), Box<dyn Error>> {
         diffuse: color,
         specular: Vec3::splat(0.3),
         shininess: 48.0,
+        ..Default::default()
     };
     let scene = Scene {
         shapes: vec![

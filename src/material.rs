@@ -6,6 +6,61 @@ pub struct Material {
     pub diffuse: Vec3,
     pub specular: Vec3,
     pub shininess: f32,
+    pub reflection: Vec3,
+    pub transmission: Vec3,
+    pub ior: f32,
+}
+
+impl Default for Material {
+    fn default() -> Self {
+        Self {
+            diffuse: Vec3::splat(0.7),
+            specular: Vec3::ZERO,
+            shininess: 32.0,
+            reflection: Vec3::ZERO,
+            transmission: Vec3::ZERO,
+            ior: 1.5,
+        }
+    }
+}
+
+impl Material {
+    pub fn mirror(tint: Vec3) -> Self {
+        Self {
+            diffuse: Vec3::ZERO,
+            reflection: tint,
+            ..Self::default()
+        }
+    }
+    pub fn glass(tint: Vec3, ior: f32) -> Self {
+        Self {
+            diffuse: Vec3::ZERO,
+            transmission: tint,
+            ior,
+            ..Self::default()
+        }
+    }
+    pub fn validate(&self) -> Result<(), String> {
+        for color in [
+            self.diffuse,
+            self.specular,
+            self.reflection,
+            self.transmission,
+        ] {
+            if !color.is_finite() || color.min_element() < 0.0 || color.max_element() > 1.0 {
+                return Err("material coefficients must be finite RGB in [0,1]".into());
+            }
+        }
+        if !self.shininess.is_finite()
+            || self.shininess < 0.0
+            || !self.ior.is_finite()
+            || self.ior < 1.0
+            || self.ior > 4.0
+        {
+            return Err("material requires shininess >= 0 and IOR in [1,4]".into());
+        }
+        Ok(())
+    }
 }
 
 pub fn shade_pixel(hit: &Hit, view_ray: &Ray, scene: &Scene) -> Vec3 {
@@ -29,8 +84,10 @@ pub fn shade_linear(hit: &Hit, view_ray: &Ray, scene: &Scene) -> Vec3 {
             continue;
         }
 
-        let shadow_ray = Ray::new(hit.point, direction);
-        if scene.occluded(&shadow_ray, 0.001, distance - 0.001) {
+        let origin = crate::integrator::offset_origin(hit.point, hit.outward_normal, direction);
+        let to_sample = light.position - origin;
+        let shadow_ray = Ray::new(origin, to_sample.normalize());
+        if scene.occluded(&shadow_ray, 0.0, to_sample.length().next_down()) {
             continue;
         }
 
@@ -57,6 +114,7 @@ mod tests {
                 diffuse: Vec3::splat(0.4),
                 specular: Vec3::ZERO,
                 shininess: 32.0,
+                ..Default::default()
             },
             glam::Vec2::ZERO,
         )

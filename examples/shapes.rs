@@ -26,6 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         diffuse: color,
         specular: Vec3::splat(0.3),
         shininess: 64.0,
+        ..Default::default()
     };
     for (primitive, position, scale, color, angle) in [
         (

@@ -48,6 +48,7 @@ mod tests {
             diffuse: color,
             specular: Vec3::ZERO,
             shininess: 32.0,
+            ..Default::default()
         }
     }
 

@@ -39,6 +39,7 @@ mod tests {
             diffuse: Vec3::X,
             specular: Vec3::ONE,
             shininess: 32.0,
+            ..Default::default()
         }
     }
 

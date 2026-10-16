@@ -9,11 +9,15 @@ cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 ```
 
-Verified features: perspective/orthographic cameras; affine sphere, plane, box, capped cylinder, and capped cone instances; outward/oriented normals and UVs; educational Lambert/Blinn–Phong lighting; point-light hard shadows; floating-point accumulation; exposure, Reinhard tone mapping, and sRGB PNG output. A library backs the command-line application. Run `cargo run --release --locked --example shapes` to render both camera studies into `output/`.
+Verified features: perspective/orthographic cameras; affine sphere, plane, box, capped cylinder, and capped cone instances; outward/oriented normals and UVs; educational Lambert/Blinn–Phong lighting; point-light hard shadows; recursive mirrors/glass with Fresnel and total internal reflection; floating-point accumulation; exposure, Reinhard tone mapping, and sRGB PNG output. A library backs the command-line application. Run `cargo run --release --locked --example shapes` to render both camera studies into `output/`.
 
 ![Canonical shapes and nonuniform affine geometry](gallery/shapes.png)
 
 `cargo run --release --example legacy` reproduces the original five 1024×768 demonstrations in the current directory. Run it from an output directory using `--manifest-path` to keep generated files out of the repository root. Legacy output retains the original display convention for comparison.
+
+Run `cargo run --release --locked --example glass` for mirror/refraction and inside-glass studies. Glass uses an educational additive model with opaque shadow rays; physical materials, diffuse indirect light, and caustics remain future work.
+
+![Whitted mirror and glass study](gallery/glass.png)
 
 ![Original educational shading baseline](gallery/baseline.png)
 

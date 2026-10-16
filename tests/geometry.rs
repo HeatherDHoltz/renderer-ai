@@ -14,6 +14,7 @@ fn material() -> Material {
         diffuse: Vec3::splat(0.5),
         specular: Vec3::ZERO,
         shininess: 32.0,
+        ..Default::default()
     }
 }
 fn instance(primitive: Primitive) -> Instance {

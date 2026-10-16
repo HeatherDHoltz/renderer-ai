@@ -18,32 +18,38 @@ fn main() {
         diffuse: Vec3::new(0.03, 0.48, 0.42),
         specular: Vec3::splat(0.8),
         shininess: 100.0,
+        ..Default::default()
     };
     let coral = Material {
         diffuse: Vec3::new(0.8, 0.22, 0.12),
         specular: Vec3::ZERO,
         shininess: 8.0,
+        ..Default::default()
     };
     let cream = Material {
         diffuse: Vec3::new(0.8, 0.72, 0.5),
         specular: Vec3::splat(0.25),
         shininess: 24.0,
+        ..Default::default()
     };
     let navy = Material {
         diffuse: Vec3::new(0.09, 0.14, 0.28),
         specular: Vec3::splat(0.15),
         shininess: 12.0,
+        ..Default::default()
     };
     let ground = Material {
         diffuse: Vec3::new(0.48, 0.48, 0.5),
         specular: Vec3::ZERO,
         shininess: 1.0,
+        ..Default::default()
     };
 
     let wall = Material {
         diffuse: Vec3::new(0.3, 0.32, 0.38),
         specular: Vec3::ZERO,
         shininess: 1.0,
+        ..Default::default()
     };
 
     let shapes: Vec<Box<dyn Shape>> = vec![
@@ -83,26 +89,31 @@ fn main() {
         diffuse: Vec3::new(0.85, 0.32, 0.06),
         specular: Vec3::splat(0.45),
         shininess: 24.0,
+        ..Default::default()
     };
     let blue = Material {
         diffuse: Vec3::new(0.06, 0.3, 0.65),
         specular: Vec3::splat(0.7),
         shininess: 80.0,
+        ..Default::default()
     };
     let yellow = Material {
         diffuse: Vec3::new(0.85, 0.65, 0.12),
         specular: Vec3::ZERO,
         shininess: 1.0,
+        ..Default::default()
     };
     let pink = Material {
         diffuse: Vec3::new(0.65, 0.12, 0.25),
         specular: Vec3::ZERO,
         shininess: 1.0,
+        ..Default::default()
     };
     let sand = Material {
         diffuse: Vec3::new(0.6, 0.5, 0.35),
         specular: Vec3::ZERO,
         shininess: 1.0,
+        ..Default::default()
     };
     let shapes: Vec<Box<dyn Shape>> = vec![
         Box::new(Sphere::new(Vec3::new(-1.1, 0.25, -0.4), 1.65, orange)),
@@ -144,26 +155,31 @@ fn main() {
         diffuse: Vec3::splat(0.22),
         specular: Vec3::new(0.95, 0.95, 1.0),
         shininess: 12.0,
+        ..Default::default()
     };
     let copper = Material {
         diffuse: Vec3::new(0.38, 0.14, 0.07),
         specular: Vec3::new(1.0, 0.55, 0.32),
         shininess: 8.0,
+        ..Default::default()
     };
     let gold = Material {
         diffuse: Vec3::new(0.38, 0.25, 0.04),
         specular: Vec3::new(1.0, 0.78, 0.22),
         shininess: 10.0,
+        ..Default::default()
     };
     let bronze = Material {
         diffuse: Vec3::new(0.26, 0.13, 0.05),
         specular: Vec3::new(0.8, 0.46, 0.2),
         shininess: 20.0,
+        ..Default::default()
     };
     let dark_ground = Material {
         diffuse: Vec3::new(0.15, 0.18, 0.23),
         specular: Vec3::ZERO,
         shininess: 1.0,
+        ..Default::default()
     };
     let shapes: Vec<Box<dyn Shape>> = vec![
         Box::new(Sphere::new(Vec3::new(-1.35, 1.25, 0.0), 1.25, silver)),
@@ -209,6 +225,7 @@ fn main() {
             diffuse: Vec3::new(0.12, 0.38, 0.6),
             specular: Vec3::splat(0.65),
             shininess: *power,
+            ..Default::default()
         };
         let position = Vec3::new(-3.3 + i as f32 * 2.2, 0.9, 0.0);
         shapes.push(Box::new(Sphere::new(position, 0.9, material)));
@@ -247,6 +264,7 @@ fn main() {
         diffuse: Vec3::new(0.06, 0.35, 0.6),
         specular: Vec3::ZERO,
         shininess: 64.0,
+        ..Default::default()
     };
     let mut glossy_blue = matte_blue;
     glossy_blue.specular = Vec3::splat(0.7);
@@ -254,6 +272,7 @@ fn main() {
         diffuse: Vec3::new(0.7, 0.25, 0.06),
         specular: Vec3::ZERO,
         shininess: 64.0,
+        ..Default::default()
     };
     let mut glossy_orange = matte_orange;
     glossy_orange.specular = Vec3::splat(0.7);

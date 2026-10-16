@@ -23,3 +23,11 @@ Intersections are double-sided and intervals include both endpoints. Box/cap bou
 Implementation conventions: right-handed +Y-up world, camera local -Z, column-vector multiplication, object-to-world `T * R * S`. Finite bounds and immutable thread-safe scene data are the planned acceleration/parallel boundary.
 
 See [PLAN.md](../PLAN.md) and [STATUS.md](../STATUS.md) for verified capabilities. Design changes belong here when implemented.
+
+## Educational transport
+
+`Whitted` implements `local + km*reflection + kt*(F*reflection + (1-F)*transmission)` in linear RGB. Local ambient is 0.27*diffuse once, plus visible Lambert/Blinn–Phong point-light contributions with no distance attenuation in this educational mode. Reflection is shared when both km and kt need it. Glass presets set km=0 to avoid duplicate Fresnel reflection. Tint is applied per interface, not Beer–Lambert volume absorption.
+
+Front-face state selects air/material IOR; nested dielectric media are not supported. Schlick uses incident cosine when entering and transmitted cosine when exiting. True TIR suppresses transmission and sets F=1; a tolerance of eight f32 epsilons handles roundoff at the critical boundary. Equal IORs transmit unchanged with zero reflection.
+
+A centralized scale-aware geometric-normal offset plus representable f32 steps places spawned rays on the correct side. Shadow rays recompute their endpoint interval after offsetting. This is suitable for the tested 0.001–1000 origin-centered scales; it is not a formal error-bound method for arbitrary extreme world-coordinate/object-size ratios. Depth is bounded at 16; accumulated RGB maximum controls branch termination. Diffuse indirect light, physical BRDFs, nested media, caustics, and refractive shadows are absent. Glass occludes shadow rays.

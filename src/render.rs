@@ -7,6 +7,24 @@ pub fn render_linear(
     height: u32,
     background: glam::Vec3,
 ) -> Result<crate::film::LinearFilm, String> {
+    render_whitted(
+        camera,
+        scene,
+        width,
+        height,
+        background,
+        crate::integrator::Whitted::default(),
+    )
+}
+
+pub fn render_whitted(
+    camera: &Camera,
+    scene: &Scene,
+    width: u32,
+    height: u32,
+    background: glam::Vec3,
+    integrator: crate::integrator::Whitted,
+) -> Result<crate::film::LinearFilm, String> {
     let mut film = crate::film::LinearFilm::new(width, height)?;
     for y in 0..height {
         for x in 0..width {
@@ -14,11 +32,7 @@ pub fn render_linear(
                 (x as f32 + 0.5) / width as f32,
                 1.0 - (y as f32 + 0.5) / height as f32,
             );
-            let color = scene
-                .nearest_hit(&ray, 0.0001, f32::INFINITY)
-                .map_or(background, |hit| {
-                    crate::material::shade_linear(&hit, &ray, scene)
-                });
+            let color = integrator.trace(&ray, scene, background);
             film.add_sample(x, y, color)?;
         }
     }
@@ -65,6 +79,7 @@ mod tests {
             diffuse: color,
             specular: Vec3::ZERO,
             shininess: 32.0,
+            ..Default::default()
         }
     }
 
