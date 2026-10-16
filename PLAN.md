@@ -5,8 +5,8 @@ Acceptance criteria and full scope: [implementation handoff](IMPLEMENTATION_HAND
 | Milestone | State | Acceptance evidence |
 | --- | --- | --- |
 | M0 Foundation | verified | Preserve baseline, library/binary split, configurable smoke render, clean checks, class files unchanged |
-| M1 Geometry/math | active | Validated cameras/transforms, oriented hit records, all canonical shapes, linear film; analytic tests and inspected shape scene |
-| M2 Whitted/glass | pending | Reflection/refraction/Fresnel/TIR, centralized offsets, recursion limits; transport tests and inspected images |
+| M1 Geometry/math | verified | Validated cameras/transforms, oriented hit records, all canonical shapes, linear film; analytic tests and inspected shape scene |
+| M2 Whitted/glass | active | Reflection/refraction/Fresnel/TIR, centralized offsets, recursion limits; transport tests and inspected images |
 | M3 Scenes/meshes/textures | pending | Validated scene files and CLI, indexed OBJ, normals/UVs/textures, relative assets and useful errors |
 | M4 Acceleration | pending | AABB, binned-SAH BVH, reference octree, differential tests and real benchmark evidence |
 | M5 Sampling/area lights | pending | Deterministic sampling and correct area-light estimator; AA/penumbra comparisons |

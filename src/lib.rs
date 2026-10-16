@@ -2,6 +2,7 @@
 
 pub mod camera;
 pub mod film;
+pub mod geometry;
 pub mod material;
 pub mod plane;
 pub mod ray;
@@ -9,3 +10,4 @@ pub mod render;
 pub mod scene;
 pub mod shape;
 pub mod sphere;
+pub mod transform;

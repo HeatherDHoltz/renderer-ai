@@ -1,5 +1,30 @@
 use crate::{camera::Camera, film::Film, material::shade_pixel, scene::Scene};
 
+pub fn render_linear(
+    camera: &Camera,
+    scene: &Scene,
+    width: u32,
+    height: u32,
+    background: glam::Vec3,
+) -> Result<crate::film::LinearFilm, String> {
+    let mut film = crate::film::LinearFilm::new(width, height)?;
+    for y in 0..height {
+        for x in 0..width {
+            let ray = camera.ray(
+                (x as f32 + 0.5) / width as f32,
+                1.0 - (y as f32 + 0.5) / height as f32,
+            );
+            let color = scene
+                .nearest_hit(&ray, 0.0001, f32::INFINITY)
+                .map_or(background, |hit| {
+                    crate::material::shade_linear(&hit, &ray, scene)
+                });
+            film.add_sample(x, y, color)?;
+        }
+    }
+    Ok(film)
+}
+
 pub fn render(
     camera: &Camera,
     scene: &Scene,

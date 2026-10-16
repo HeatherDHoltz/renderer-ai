@@ -78,16 +78,9 @@ fn run() -> Result<(), Box<dyn Error>> {
     if let Some(parent) = output.parent().filter(|p| !p.as_os_str().is_empty()) {
         std::fs::create_dir_all(parent)?;
     }
-    render::render(
-        &camera,
-        &scene,
-        width,
-        height,
-        0.001,
-        f32::INFINITY,
-        [25, 30, 40],
-    )
-    .save(output.to_str().ok_or("output path is not UTF-8")?)?;
+    render::render_linear(&camera, &scene, width, height, Vec3::new(0.03, 0.04, 0.06))?
+        .display(0.0, renderer_project::film::ToneMap::Reinhard)?
+        .save(&output)?;
     println!("Rendered {width}x{height} -> {}", output.display());
     Ok(())
 }

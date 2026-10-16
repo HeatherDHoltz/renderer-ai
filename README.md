@@ -9,7 +9,11 @@ cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 ```
 
-Current foundation: perspective camera, sphere/plane intersections, educational Lambert/Blinn–Phong lighting, point-light hard shadows, and PNG output. A library backs the command-line application. Run `cargo run --release --example legacy` from an output directory to reproduce the original five 1024×768 demonstrations.
+Verified features: perspective/orthographic cameras; affine sphere, plane, box, capped cylinder, and capped cone instances; outward/oriented normals and UVs; educational Lambert/Blinn–Phong lighting; point-light hard shadows; floating-point accumulation; exposure, Reinhard tone mapping, and sRGB PNG output. A library backs the command-line application. Run `cargo run --release --locked --example shapes` to render both camera studies into `output/`.
+
+![Canonical shapes and nonuniform affine geometry](gallery/shapes.png)
+
+`cargo run --release --example legacy` reproduces the original five 1024×768 demonstrations in the current directory. Run it from an output directory using `--manifest-path` to keep generated files out of the repository root. Legacy output retains the original display convention for comparison.
 
 ![Original educational shading baseline](gallery/baseline.png)
 

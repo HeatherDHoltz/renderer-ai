@@ -1,4 +1,5 @@
 use crate::{
+    geometry::{Instance, Primitive},
     material::Material,
     ray::Ray,
     shape::{Hit, Shape},
@@ -6,50 +7,24 @@ use crate::{
 use glam::{Mat4, Quat, Vec3};
 
 pub struct Plane {
-    pub transform: Mat4,
-    pub material: Material,
+    instance: Instance,
 }
-
 impl Plane {
     pub fn new(position: Vec3, normal: Vec3, material: Material) -> Self {
         assert!(normal.is_finite() && normal.length_squared() > 0.0);
-        let normal = normal.normalize();
-        let rotation = Quat::from_rotation_arc(Vec3::Y, normal);
-        let translation = Mat4::from_translation(position);
-        let transform = translation * Mat4::from_quat(rotation);
-        Self {
-            transform,
-            material,
-        }
+        let model = Mat4::from_translation(position)
+            * Mat4::from_quat(Quat::from_rotation_arc(Vec3::Y, normal.normalize()));
+        Self::from_transform(model, material).expect("valid plane transform")
+    }
+    pub fn from_transform(model: Mat4, material: Material) -> Result<Self, String> {
+        Ok(Self {
+            instance: Instance::new(Primitive::Plane, model, material)?,
+        })
     }
 }
-
 impl Shape for Plane {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
-        // intersection of ray and plane
-        let mut normal = self.transform.transform_vector3(Vec3::Y).normalize();
-        let position = self.transform.transform_point3(Vec3::ZERO);
-        let denominator = ray.direction().dot(normal);
-        if denominator.abs() < 1e-6 {
-            // for rounding errors
-            return None;
-        }
-        let t = (position - ray.origin()).dot(normal) / denominator;
-
-        if t_min <= t && t <= t_max {
-            if denominator > 0.0 {
-                // camera on other side of plane
-                normal = -normal;
-            }
-            Some(Hit {
-                t,
-                point: ray.point(t),
-                normal,
-                material: self.material,
-            })
-        } else {
-            None
-        }
+        self.instance.hit(ray, t_min, t_max)
     }
 }
 

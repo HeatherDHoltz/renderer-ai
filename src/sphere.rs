@@ -1,71 +1,32 @@
-use crate::material::Material;
-use crate::ray::Ray;
-use crate::shape::{Hit, Shape};
+use crate::{
+    geometry::{Instance, Primitive},
+    material::Material,
+    ray::Ray,
+    shape::{Hit, Shape},
+};
 use glam::{Mat4, Vec3};
 
 pub struct Sphere {
-    pub transform: Mat4,
-    pub material: Material,
+    instance: Instance,
 }
-
 impl Sphere {
     pub fn new(position: Vec3, radius: f32, material: Material) -> Self {
         assert!(radius.is_finite() && radius > 0.0);
-        let scale = Mat4::from_scale(Vec3::splat(radius));
-        let translation = Mat4::from_translation(position);
-        let transform = translation * scale;
-        Self {
-            transform,
+        Self::from_transform(
+            Mat4::from_translation(position) * Mat4::from_scale(Vec3::splat(radius)),
             material,
-        }
+        )
+        .expect("valid sphere transform")
+    }
+    pub fn from_transform(model: Mat4, material: Material) -> Result<Self, String> {
+        Ok(Self {
+            instance: Instance::new(Primitive::Sphere, model, material)?,
+        })
     }
 }
-
 impl Shape for Sphere {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
-        let center = self.transform.transform_point3(Vec3::ZERO);
-        let radius = self.transform.transform_vector3(Vec3::X).length();
-
-        // quadratic equation in class
-        let offset = ray.origin() - center;
-        let a = ray.direction().length_squared();
-        let b = 2.0 * offset.dot(ray.direction());
-        let c = offset.length_squared() - radius * radius;
-        let discriminant = b * b - 4.0 * a * c;
-        if discriminant < 0.0 {
-            return None;
-        }
-        let root = discriminant.sqrt();
-        let near = (-b - root) / (2.0 * a);
-        let far = (-b + root) / (2.0 * a);
-
-        if t_max >= near && near >= t_min {
-            let mut normal = (ray.point(near) - center).normalize();
-            if normal.dot(ray.direction()) > 0.0 {
-                // camera inside sphere
-                normal = -normal;
-            }
-            Some(Hit {
-                t: near,
-                point: ray.point(near),
-                normal,
-                material: self.material,
-            })
-        } else if t_max >= far && far >= t_min {
-            let mut normal = (ray.point(far) - center).normalize();
-            if normal.dot(ray.direction()) > 0.0 {
-                // camera inside sphere
-                normal = -normal;
-            }
-            Some(Hit {
-                t: far,
-                point: ray.point(far),
-                normal,
-                material: self.material,
-            })
-        } else {
-            None
-        }
+        self.instance.hit(ray, t_min, t_max)
     }
 }
 

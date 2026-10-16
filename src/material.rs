@@ -9,6 +9,10 @@ pub struct Material {
 }
 
 pub fn shade_pixel(hit: &Hit, view_ray: &Ray, scene: &Scene) -> Vec3 {
+    shade_linear(hit, view_ray, scene).clamp(Vec3::ZERO, Vec3::ONE)
+}
+
+pub fn shade_linear(hit: &Hit, view_ray: &Ray, scene: &Scene) -> Vec3 {
     let mut color = 0.27 * hit.material.diffuse; // ambient default color
     let view = -view_ray.direction().normalize(); // view now points to camera
     let normal = hit.normal;
@@ -26,10 +30,7 @@ pub fn shade_pixel(hit: &Hit, view_ray: &Ray, scene: &Scene) -> Vec3 {
         }
 
         let shadow_ray = Ray::new(hit.point, direction);
-        if scene
-            .nearest_hit(&shadow_ray, 0.001, distance - 0.001)
-            .is_some()
-        {
+        if scene.occluded(&shadow_ray, 0.001, distance - 0.001) {
             continue;
         }
 
@@ -39,7 +40,7 @@ pub fn shade_pixel(hit: &Hit, view_ray: &Ray, scene: &Scene) -> Vec3 {
         let specular_color = light.color * hit.material.specular * specular;
         color += diffuse_color + specular_color;
     }
-    color.clamp(Vec3::ZERO, Vec3::ONE)
+    color
 }
 
 #[cfg(test)]
@@ -48,16 +49,17 @@ mod tests {
     use crate::{scene::PointLight, sphere::Sphere};
 
     fn surface() -> Hit {
-        Hit {
-            t: 1.0,
-            point: Vec3::ZERO,
-            normal: Vec3::Y,
-            material: Material {
+        Hit::new(
+            &Ray::new(Vec3::Y, -Vec3::Y),
+            1.0,
+            Vec3::Y,
+            Material {
                 diffuse: Vec3::splat(0.4),
                 specular: Vec3::ZERO,
                 shininess: 32.0,
             },
-        }
+            glam::Vec2::ZERO,
+        )
     }
 
     fn scene() -> Scene {

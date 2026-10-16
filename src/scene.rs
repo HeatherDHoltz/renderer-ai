@@ -18,15 +18,22 @@ impl Scene {
     pub fn nearest_hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit> {
         let mut closest_t = t_max;
         let mut closest_hit = None;
-        for shape in &self.shapes {
-            if let Some(hit) = shape.hit(ray, t_min, closest_t)
+        for (object_id, shape) in self.shapes.iter().enumerate() {
+            if let Some(mut hit) = shape.hit(ray, t_min, closest_t)
                 && (closest_hit.is_none() || hit.t < closest_t)
             {
                 closest_t = hit.t;
+                hit.object_id = object_id;
                 closest_hit = Some(hit);
             }
         }
         closest_hit
+    }
+
+    pub fn occluded(&self, ray: &Ray, t_min: f32, t_max: f32) -> bool {
+        self.shapes
+            .iter()
+            .any(|shape| shape.hit(ray, t_min, t_max).is_some())
     }
 }
 
