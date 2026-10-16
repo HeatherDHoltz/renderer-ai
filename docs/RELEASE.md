@@ -1,0 +1,34 @@
+# Release verification
+
+The release workflow uses a clean checkout, the checked lockfile, and included assets. No runtime service, API credential, external artwork, FFmpeg, Python package, or system graphics library is required for the renderer/examples. Python 3 standard library is used only by the example-check and asset-generation scripts. Cargo needs dependency access on the first build; after `cargo fetch --locked`, verification can run offline.
+
+```sh
+git clone https://github.com/HeatherDHoltz/renderer-ai.git
+cd renderer-ai
+cargo fetch --locked
+cargo fmt --check
+cargo clippy --locked --offline --all-targets -- -D warnings
+cargo test --locked --offline
+cargo build --release --locked --offline
+python3 scripts/check_examples.py
+```
+
+GitHub Actions runs this sequence on `ubuntu-latest` and `macos-latest` with stable Rust. Checkout is pinned to the verified v7.0.1 commit with read-only repository permissions; no deployment or publishing workflow is installed.
+
+The acceptance evidence is distributed by topic:
+
+| Requirement | Evidence |
+| --- | --- |
+| Affine geometry/cameras and linear film | `tests/geometry.rs`, original 37 preserved unit tests, inspected shapes gallery |
+| Meshes/UVs/relative assets | `tests/scene_mesh_texture.rs`, `tests/cli.rs`, included OBJ/PNG fixtures |
+| Educational reflection/refraction/TIR | `tests/transport.rs`, inspected glass/inside-glass studies |
+| Acceleration and measured performance | `tests/acceleration.rs`, [BENCHMARKS.md](BENCHMARKS.md), raw reports and backend image agreement |
+| AA, area lights, threads, progressive previews | `tests/sampling_lights.rs`, `tests/parallel_progressive.rs`, [SAMPLING.md](SAMPLING.md), [PARALLEL.md](PARALLEL.md) |
+| HDR and physical direct lighting | `tests/physical_hdr.rs`, `tests/physical_io.rs`, [PHYSICAL.md](PHYSICAL.md), inspected material studio and hero |
+| Hierarchical keyframes/frame output | `tests/animation.rs`, all 17 demonstration frames rendered, first/middle/last gallery |
+| Bounded procedural/AI scene authoring | `tests/procedural.rs`, [PROCEDURAL.md](PROCEDURAL.md), [AI_SCENE_AUTHORING.md](AI_SCENE_AUTHORING.md), schema and real example |
+| Reproducible assets/images and honest scope | [ASSETS.md](ASSETS.md), [GALLERY.md](GALLERY.md), explicit physical/IO limitations and AI disclosure |
+
+The final hero is 1200×800 at 512 spp, seed 116, physical mode, BVH, depth 12, auto (ten) workers, 16px tiles, and 64-spp preview batches. A local inspected run took 80.003 s rendering plus 0.333 s writing, with 0.008 s loading on Apple M1 Max. This is one showcase observation, not a repeated performance benchmark. Repeated benchmark claims retain their original clean engine commit identifiers and raw data rather than being relabeled as measurements of a newer release.
+
+No repository license is assigned. All included art/model/environment assets are project-generated; dependency licenses remain their own. The separate class renderer's source and Cargo files are checked against the initial SHA-256 baseline locally and are never copied back from this repository. No course documents or private assets are included.

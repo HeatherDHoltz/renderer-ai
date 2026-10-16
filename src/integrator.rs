@@ -1,4 +1,4 @@
-//! Educational Whitted recursion, kept separate from future physical shading.
+//! Explicit integrator dispatch and educational Whitted recursive transport.
 use crate::{material::shade_sampled, ray::Ray, sampling::SampleKey, scene::Scene};
 use glam::Vec3;
 

@@ -15,6 +15,7 @@
 - `gallery/scatter.png` and `garden.png`: actual procedural renders from the checked generator configs; all geometry is analytic, no external assets. Full commands/settings in PROCEDURAL.md.
 - `assets/torus.obj`: project-generated closed Y-axis torus (R=1, r=0.24), 2,304 positions / 4,608 triangles, vertex normals and independent seam UVs. Recreate with `python3 scripts/generate_torus.py` (Python standard library only).
 - `scenes/ai_gallery.json`: Codex-authored still-life scene following the documented constrained prompt; project-generated meshes, analytic shapes, and synthetic environment only. No external art or model service.
+- `gallery/hero.png`: inspected 1200×800, 512-spp render of that still life, using only the generated meshes and environment above. Exact command/settings are in GALLERY.md; raw HDR stays in ignored `output/`.
 - Course slides, handouts, syllabus, and class submission files are not redistributed here.
 
 No license has been assigned to project-authored files or images. Dependency licenses remain those declared by their respective packages.

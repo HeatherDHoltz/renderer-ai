@@ -10,7 +10,7 @@ One spp means one camera sample and **one uniform sample per rectangular light a
 
 An area-light definition uses `kind: area`, `center`, full spanning vectors `edge_u`/`edge_v`, emitted linear RGB `radiance`, and optional `two_sided` (false by default). Normal is normalize(edge_u×edge_v); area is the cross-product length. For u,v uniform in [0,1), sample position is center+(u-0.5)*edge_u+(v-0.5)*edge_v. Source orientation matters.
 
-For distance r and light-side cosine c, the area PDF is 1/A, the solid-angle PDF is r²/(c*A), and the returned radiance weight is Le*c*A/r². Surface shading supplies its receiver cosine/BRDF factors. The educational Whitted mode uses its existing empirical Lambert/Blinn–Phong coefficient convention; this area estimator does not turn that material into a physical BRDF. Physical shading is M7.
+For distance r and light-side cosine c, the area PDF is 1/A, the solid-angle PDF is r²/(c*A), and the returned radiance weight is Le*c*A/r². Surface shading supplies its receiver cosine/BRDF factors. The educational Whitted mode uses its existing empirical Lambert/Blinn–Phong coefficient convention; this area estimator does not turn that material into a physical BRDF. The separate physical model is defined in [PHYSICAL.md](PHYSICAL.md).
 
 Tests compare the irradiance integral to the analytic projected solid angle of a centered rectangle, check distance/area factors and sidedness, and verify that geometry beyond the sampled source does not shadow it. Geometric-normal offsets place visibility origins correctly, and shadow intervals are recomputed to end at the sampled source. Glass still occludes shadow rays. Area emitters illuminate surfaces but are not directly intersectable visible geometry in this milestone.
 
