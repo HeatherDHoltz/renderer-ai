@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "verified_date_local": "2026-10-15",
+  "timezone": "America/Los_Angeles",
+  "source_commit": "83bd4ced7e2a412dba15381ebf0d0a7c701298b1",
+  "clean_checkout": true,
+  "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+  "cargo": "cargo 1.98.0 (797e8a9bc 2026-08-05)",
+  "checks": {
+    "fmt": "passed",
+    "clippy_all_targets_deny_warnings": "passed",
+    "tests_passed": 91,
+    "tests_failed": 0,
+    "offline_release_build": "passed",
+    "checked_scenes": 12,
+    "generated_scenes": 2,
+    "animation_png_hdr_frames": 3,
+    "documentation_local_links": "passed",
+    "original_class_source_and_cargo_hashes": "unchanged"
+  },
+  "github_actions": {
+    "url": "https://github.com/HeatherDHoltz/renderer-ai/actions/runs/38854411241",
+    "ubuntu-latest": "success",
+    "macos-latest": "success"
+  }
+}

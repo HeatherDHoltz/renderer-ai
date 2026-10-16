@@ -1,6 +1,6 @@
 # Current status
 
-Updated October 15, 2026 (America/Los_Angeles). The full renderer is **not complete**.
+Updated October 15, 2026 (America/Los_Angeles). The full renderer scope in the handoff is **complete and verified**.
 
 ## Git and authorization
 
@@ -48,8 +48,10 @@ M8 verified: ordered complete TRS keyframes, shortest-arc quaternion interpolati
 
 M9 verified: seed-controlled scatter count/palette/size/XZ placement and bounded simultaneous L-system rewrites, branching quaternion turtle with cylinders/leaves, stack state restoration, strict grammar/resource limits, portable JSON generation, and CLI. **91 tests pass**, with format/strict Clippy checks. Same-seed scenes are byte-identical on this build; alternate seeds change output. Malformed brackets/parameters, explosive expansion, and excessive segment budgets fail predictably. Inspected full scatter (640×420/64 spp) and four-tree branching garden (800×560/128 spp, 2,745 nodes); retained real renders. Added structural Draft 2020-12 JSON schema, constrained AI authoring prompt, and a checked-in authored still life with generated indexed torus. All 12 current scene files and both generated outputs pass the independent jsonschema 4.23.0 check, and unknown-field probes fail. Rust semantic validation and actual preview rendering of the AI example also pass. Class source/package hashes remain unchanged.
 
-Next: M10 polish the hero render, curate concise README/gallery/reproduction commands, add CI, verify the entire release from a clean checkout, audit docs/claims/assets and benchmark context, and prepare honest AI-assisted resume bullets. Recheck the class boundary and remote state. No license choice is required; leave it unassigned.
+M10 verified: inspected the final 1200×800/512-spp hero and raw HDR export, curated gallery with reproduction settings, concise README feature matrix/limitations, honest AI-assisted portfolio/resume notes, pinned read-only GitHub CI, and a standard-library offline example checker. A clean GitHub clone at `83bd4ced7e2a412dba15381ebf0d0a7c701298b1` passed format, strict Clippy, **91 tests**, offline release build, all 12 included scene validations/renders, both generator outputs, and three PNG/HDR animation frames. The clone remained clean after checks. GitHub Actions run 38854411241 passed all checks on both ubuntu-latest and macos-latest. Documentation links resolve; no unfinished required stubs were found. Benchmark claims retain original clean engine commits and specific workloads. Class source/package SHA-256 checks remain unchanged; no course files or private assets were published. No repository license was assigned.
 
-## Remaining scope
+## Completion and known limits
 
-M10 acceptance criteria in [PLAN.md](PLAN.md) remain pending. All renderer feature milestones M0–M9 are verified. The full project remains incomplete until portfolio/release checks and documentation audit pass.
+All M0–M10 acceptance criteria in [PLAN.md](PLAN.md) are verified within the defined CPU-renderer scope. GitHub is authenticated, the public remote is configured, and verified milestone commits/pushes are authorized without repeated confirmation. No implementation milestone remains.
+
+This is a physical direct-light baseline with recursive ideal dielectric transport, not a general path tracer. Missing diffuse/glossy interobject transport, nested media, absorption, caustics, refractive shadows, texture prefiltering, full OBJ/MTL, camera/light tracks, and motion blur are explicit documented limitations, not unfinished required scope. License choice remains intentionally unassigned and optional. See docs/RELEASE.md for verification, docs/GALLERY.md for image commands, and docs/PORTFOLIO.md for honest resume wording.

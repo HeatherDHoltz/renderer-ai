@@ -1,5 +1,7 @@
 # Release verification
 
+Verified October 15, 2026 on a clean GitHub clone at engine/release commit `83bd4ced7e2a412dba15381ebf0d0a7c701298b1`: format, strict Clippy, 91 tests, offline release build, 12 checked scenes, two generator outputs, and three PNG/HDR animation frames all passed. The checkout remained clean. [GitHub Actions run 38854411241](https://github.com/HeatherDHoltz/renderer-ai/actions/runs/38854411241) also passed every job on Linux and macOS. Subsequent completion-record edits change documentation only. Local toolchain: rustc 1.98.0, Cargo 1.98.0, macOS 14.6.1 aarch64.
+
 The release workflow uses a clean checkout, the checked lockfile, and included assets. No runtime service, API credential, external artwork, FFmpeg, Python package, or system graphics library is required for the renderer/examples. Python 3 standard library is used only by the example-check and asset-generation scripts. Cargo needs dependency access on the first build; after `cargo fetch --locked`, verification can run offline.
 
 ```sh

@@ -20,7 +20,7 @@ Intersections are double-sided and intervals include both endpoints. Box/cap bou
 
 `examples/shapes.rs` demonstrates all five shapes, including a tilted nonuniform ellipsoid, in both camera types. It writes 960×540 renders with one center sample per pixel. These preserved diagnostic examples use center sampling; JSON scene renders can use jittered AA.
 
-Implementation conventions: right-handed +Y-up world, camera local -Z, column-vector multiplication, object-to-world `T * R * S`. Finite bounds and immutable thread-safe scene data are the planned acceleration/parallel boundary.
+Implementation conventions: right-handed +Y-up world, camera local -Z, column-vector multiplication, object-to-world `T * R * S`. Finite bounds and immutable thread-safe scene data form the shared acceleration/parallel boundary.
 
 See [PLAN.md](../PLAN.md) and [STATUS.md](../STATUS.md) for verified capabilities. Design changes belong here when implemented.
 

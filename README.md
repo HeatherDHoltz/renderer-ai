@@ -1,5 +1,7 @@
 # Rust CPU Renderer
 
+[![Rust renderer CI](https://github.com/HeatherDHoltz/renderer-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/HeatherDHoltz/renderer-ai/actions/workflows/ci.yml)
+
 A Rust ray tracer with affine geometry, indexed meshes, SAH acceleration, HDR lighting, glass, animation, and procedural scenes. An AI-assisted portfolio project directed by Heather Holtz, extending her early-semester renderer in a separate repository.
 
 ![Gold, glass, and ceramic still life rendered by this project](gallery/hero.png)

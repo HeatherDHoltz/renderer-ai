@@ -18,7 +18,7 @@ Working examples: [canonical geometry](../scenes/shapes.json), [mirror/glass](..
 | `materials` | Required map of names to materials |
 | `geometries` | Required map of names to geometry definitions |
 | `objects` | Required array of instances and transform groups |
-| `lights` | Optional array of point lights |
+| `lights` | Optional array of point and rectangular sources |
 | `environment` | Optional constant or Radiance HDR environment, physical mode only |
 
 All colors are linear RGB unless explicitly decoded from a color PNG texture. Positions use arbitrary consistent world units, right-handed +Y up. Arrays have exactly the indicated number of components. JSON does not accept NaN or infinity; computed values and numeric ranges are validated too.
