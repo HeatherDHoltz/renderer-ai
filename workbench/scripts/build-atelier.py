@@ -6,6 +6,7 @@ Only static scenery is baked. Cases, specimen, loupe and movable task light are
 created in the browser. Coordinates below use the application's +Y-up frame.
 """
 import math
+import os
 import random
 import runpy
 from pathlib import Path
@@ -21,7 +22,7 @@ bpy.ops.object.select_all(action="SELECT")
 bpy.ops.object.delete(use_global=False)
 scene = bpy.context.scene
 scene.render.engine = "CYCLES"
-scene.cycles.samples = 48
+scene.cycles.samples = 64
 scene.render.threads_mode = "FIXED"
 scene.render.threads = 8
 scene.cycles.use_denoising = True
@@ -29,8 +30,8 @@ scene.cycles.bake_type = "DIFFUSE"
 scene.render.bake.margin = 12
 scene.render.bake.use_clear = True
 scene.world.use_nodes = True
-scene.world.node_tree.nodes["Background"].inputs[0].default_value = (0.24, 0.30, 0.38, 1)
-scene.world.node_tree.nodes["Background"].inputs[1].default_value = 0.24
+scene.world.node_tree.nodes["Background"].inputs[0].default_value = (0.10, 0.14, 0.22, 1)
+scene.world.node_tree.nodes["Background"].inputs[1].default_value = 0.055
 scene.view_settings.view_transform = "AgX"
 static = []
 preview_only = []
@@ -54,7 +55,7 @@ def material(name, color, rough=.6, metal=0, grain=False):
     bsdf.inputs["Base Color"].default_value = (*c, 1)
     bsdf.inputs["Roughness"].default_value = rough
     # Static metal is represented by its diffuse, baked appearance. Real jewelry
-    # and task-lamp brass remain live PBR materials in the browser.
+    # remain live PBR materials in the browser.
     bsdf.inputs["Metallic"].default_value = metal
     if grain:
         tex = nodes.new("ShaderNodeTexNoise")
@@ -79,17 +80,23 @@ def material(name, color, rough=.6, metal=0, grain=False):
     return m
 
 
-walnut = material("oiled walnut", "73513b", .43, grain=True)
-edge = material("end grain", "44332a", .5, grain=True)
+walnut = material("oiled walnut", "512c1d", .43, grain=True)
+edge = material("end grain", "251911", .5, grain=True)
 paint = material("warm mineral paint", "e6dfd2", .88)
-linen = material("unbleached linen", "d5c7ae", .95)
+linen = material("unbleached linen", "4b3829", .95)
 ivory = material("ivory ceramic", "e9dfca", .33)
 brass = material("satin brass", "ab8754", .36)
 ink = material("charcoal", "292e2d", .55)
 steel = material("steel", "82908e", .35)
 wax = material("warm wax", "e9d5ad", .8)
 amber = material("amber glass body", "533b28", .22)
-paper = material("paper edges", "d6ccb5", .95)
+paper = material("paper edges", "b3a488", .95)
+panel = material("walnut inset panels", "613a25", .50, grain=True)
+marble = material("black marble slips", "292b28", .35)
+rib = material("shade ribs", "7b4d27", .7)
+shade_fabric = material("lit pleated silk", "cf9d59", .85)
+shade_fabric.node_tree.nodes.get("Principled BSDF").inputs["Emission Color"].default_value = (1.0,.52,.17,1)
+shade_fabric.node_tree.nodes.get("Principled BSDF").inputs["Emission Strength"].default_value = .9
 
 
 def finish(o, mat, bevel=0):
@@ -132,121 +139,165 @@ def area(name, p, target, energy, color, size, size_y=None):
     o.rotation_euler = (Vector(xyz(target)) - o.location).to_track_quat("-Z", "Y").to_euler()
 
 
-# The window and wall share the same opening and depth. Broad reveals, two
-# casements and a continuous sill remove the former floating-frame gap.
+# Edwardian jeweler's study: one coherent cabinetmaking vocabulary.
 back = -7.8
-box("left wall", (6, 15, .28), (-11, 4, back), paint)
-box("right wall", (15, 15, .28), (5.5, 4, back), paint)
-box("below window", (6, 2.7, .28), (-5, -.85, back), paint)
-box("above window", (6, 5, .28), (-5, 9.5, back), paint)
-box("left return", (.3, 15, 20), (-14, 4, 0), paint)
-box("right return", (.3, 15, 20), (13, 4, 0), paint)
-box("ceiling", (27, .25, 20), (-.5, 10, 0), paint)
-box("floor", (27, .2, 20), (-.5, -5, 0), edge)
-for x in (-8.02, -1.98):
-    box("window reveal", (.18, 6.6, .65), (x, 3.75, back), ivory)
-    box("oak architrave", (.14, 6.85, .1), (x, 3.75, back + .35), walnut)
-for y in (.45, 7.05):
-    box("window reveal", (6.2, .18, .65), (-5, y, back), ivory)
-    box("oak architrave", (6.35, .14, .1), (-5, y, back + .35), walnut)
-for x in (-7.84, -5, -2.16):
-    box("window upright", (.10, 6.4, .14), (x, 3.75, back + .16), ivory, .014)
-for y in (.64, 3.15, 6.88):
-    box("window rail", (5.7, .1, .14), (-5, y, back + .16), ivory, .014)
-box("deep sill", (6.65, .16, .92), (-5, .39, back + .25), walnut)
-for x in (-7.60, -2.40):
-    # Actual folded fabric geometry, intentionally no plant on the sill.
+box("left wall", (6, 15, .30), (-11, 4, back), edge)
+box("right wall", (15, 15, .30), (5.5, 4, back), edge)
+box("below window", (6, 3, .30), (-5, -1, back), edge)
+box("above window", (6, 5, .30), (-5, 9.5, back), edge)
+box("left return", (.3, 15, 38), (-14, 4, 6), walnut)
+box("right return", (.3, 15, 38), (13, 4, 6), walnut)
+box("ceiling", (27, .25, 38), (-.5, 9.8, 6), edge)
+box("floor", (27, .2, 38), (-.5, -5, 6), edge)
+# Recessed panels and several actual molding profiles catch light along edges.
+for x in [-12.5, -10.5, -.9, 1.1, 3.1, 5.1, 7.1, 9.1, 11.1]:
+    for y, h in [(-.25, 2.7), (4.1, 5.0)]:
+        box("raised walnut panel", (1.78,h,.06), (x,y,back+.18), panel, .035)
+        for xx in [-.90,.90]:
+            box("panel stile", (.07,h+.14,.10),(x+xx,y,back+.25),walnut,.016)
+            box("bead molding", (.025,h+.04,.025),(x+xx*.94,y,back+.32),brass,.006)
+        for yy in [-h/2,h/2]:
+            box("panel rail", (1.85,.075,.10),(x,y+yy,back+.25),walnut,.016)
+for y,h in [(-1.8,.22),(1.25,.18),(7.0,.18),(7.2,.10)]:
+    box("continuous cornice",(27,h,.22),(-.5,y,back+.25),walnut,.025)
+for x in [-12,-6,0,6,12]:
+    box("coffer beam",(.20,.26,38),(x,9.55,6),walnut)
+for z in [-6,0,6,12,18]:
+    box("coffer cross beam",(27,.26,.20),(-.5,9.55,z),walnut)
+# A room behind the seated viewer gives diamonds a dark, neutral reflection field.
+box("room behind the chair",(27,15,.25),(-.5,4,24),edge)
+for x in [-10,-5,0,5,10]:
+    box("rear cabinet panel",(4.5,6,.10),(x,3.5,23.8),panel)
+# Window jambs are flush with the same wall opening, with heavy gathered drapes.
+for x in [-8.02,-1.98]:
+    box("window reveal",(.20,6.6,.65),(x,3.75,back),edge)
+    box("molded window casing",(.23,6.9,.18),(x,3.75,back+.40),walnut)
+for y in [.45,7.05]:
+    box("window reveal",(6.3,.20,.65),(-5,y,back),edge)
+    box("molded window casing",(6.5,.21,.18),(-5,y,back+.4),walnut)
+for x in [-7.84,-5,-2.16]:
+    box("slender sash",(.09,6.4,.13),(x,3.75,back+.16),walnut,.012)
+for y in [.64,3.15,6.88]:
+    box("sash rail",(5.7,.09,.13),(-5,y,back+.16),walnut,.012)
+box("deep polished sill",(6.7,.19,1.05),(-5,.39,back+.32),walnut,.04)
+for x in [-7.45,-2.55]:
     vertices, faces = [], []
-    for j in range(33):
-        for i in range(49):
-            t, v = i / 48, j / 32
-            vertices.append(xyz((x + (t - .5) * .65, .72 + v * 6.4, back + .42 + .075 * math.cos(t * math.pi * 10))))
-    for j in range(32):
-        for i in range(48):
-            a = j * 49 + i
-            faces.append((a, a + 1, a + 50, a + 49))
-    mesh = bpy.data.meshes.new("linen folds")
-    mesh.from_pydata(vertices, [], faces)
-    o = bpy.data.objects.new("side curtain", mesh)
-    scene.collection.objects.link(o)
-    finish(o, linen)
-
-# Comfortable desk scale, clean routed edge and a small central presentation pad
-# (the pad is live in Three so its color can still be selected).
-box("walnut bench top", (16, .32, 9.2), (0, -1.57, -1.3), walnut, .10)
-box("routed edge", (15.85, .09, 9.05), (0, -1.78, -1.3), edge, .035)
-for x in (-6.8, 6.8):
-    box("desk leg", (.32, 3.0, .5), (x, -3.2, -3), edge)
-box("rear tool ledge", (15.0, .18, .65), (0, -1.30, -5.28), walnut)
-
-# Two quiet floating shelves, with individual book boards, paper blocks and
-# thin brass bookends. Restrained colors and deliberate negative space.
-book_colors = ["54625a", "a68d72", "6e3d45", "303e48", "aaa292", "4c4c43"]
-for shelf, y in enumerate((1.15, 3.45)):
-    box("floating walnut shelf", (5.8, .14, 1.0), (5.2, y, back + .65), walnut)
-    for x in (3.0, 7.4):
-        box("shelf bracket", (.045, .45, .7), (x, y - .22, back + .50), brass, .01)
-    x = 2.75
-    for i in range(8 if shelf == 0 else 5):
-        w = random.uniform(.23, .43)
-        h = random.uniform(1.05, 1.6)
-        m = material(f"book cloth {shelf} {i}", book_colors[(i + shelf) % len(book_colors)], .9)
-        box("book paper", (w - .035, h - .05, .62), (x + w / 2, y + h / 2 + .09, back + .66), paper, .008)
-        for side in (-1, 1):
-            box("book cover", (.022, h, .72), (x + w / 2 + side * w / 2, y + h / 2 + .09, back + .66), m, .006)
-        box("book spine", (w, h, .045), (x + w / 2, y + h / 2 + .09, back + 1.015), m, .012)
-        for offset in (.22, .30, h - .22):
-            box("spine rule", (w * .65, .012, .008), (x + w / 2, y + .09 + offset, back + 1.041), brass, .002)
-        x += w + .045
-    if shelf:
-        cylinder("ceramic vessel", .35, .68, (6.8, y + .42, back + .66), ivory, .30)
-        cylinder("vessel rim", .31, .045, (6.8, y + .78, back + .66), ink)
-
-# Framed mineral studies: geometry-backed mounts, simple cut diagrams.
-for x in (.15, 1.65):
-    box("walnut frame", (1.25, 1.6, .09), (x, 2.75, back + .2), walnut)
-    box("mat board", (1.09, 1.44, .02), (x, 2.75, back + .26), ivory)
-    for i in range(8):
-        a = i * math.pi / 4
-        bar = box("cut study", (.015, .64, .012), (x + .2 * math.cos(a), 2.75 + .2 * math.sin(a), back + .28), brass, .003)
-        bar.rotation_euler.y = a
-
-# Back-of-desk objects establish a working jeweler's station, not a dungeon.
-box("ring mandrel cradle", (2.0, .15, .7), (-4.8, -1.25, -3.5), edge)
-mandrel = cylinder("steel ring mandrel", .13, 2.35, (-4.8, -1.04, -3.5), steel, .05)
-mandrel.rotation_euler.y = math.pi / 2
+    for j in range(41):
+        for i in range(65):
+            t,v=i/64,j/40
+            gather=1+.22*math.sin(v*math.pi)
+            vertices.append(xyz((x+(t-.5)*1.38*gather,.45+v*6.6,back+.62+.15*math.cos(t*math.pi*14)+.045*math.sin(v*5+t*9))))
+    for j in range(40):
+        for i in range(64):
+            a=j*65+i;faces.append((a,a+1,a+66,a+65))
+    mesh=bpy.data.meshes.new("heavy pleats");mesh.from_pydata(vertices,[],faces)
+    o=bpy.data.objects.new("gathered damask curtain",mesh);scene.collection.objects.link(o);finish(o,linen)
+    box("curtain tie",(1.48,.11,.12),(x,2.25,back+.87),brass,.025)
+# A real cut-out bench top and drawer banks based on the reference's proportions.
+outline=[(-8,-5.8),(8,-5.8),(8,3.3),(1.5,3.3)]
+outline += [(1.5*math.cos(i*math.pi/32),3.3-1.3*math.sin(i*math.pi/32)) for i in range(1,33)]
+outline += [(-8,3.3)]
+mesh=bpy.data.meshes.new("jeweler bench top");mesh.from_pydata([xyz((x,-1.4,z))for x,z in outline],[],[tuple(reversed(range(len(outline))))])
+o=bpy.data.objects.new("routed jeweler bench",mesh);scene.collection.objects.link(o)
+o.data.materials.append(walnut);bpy.context.view_layer.objects.active=o
+mod=o.modifiers.new("solid walnut top","SOLIDIFY");mod.thickness=.30;mod.offset=-1;bpy.ops.object.modifier_apply(modifier=mod.name)
+mod=o.modifiers.new("rounded routed edge","BEVEL");mod.width=.055;mod.segments=3;bpy.ops.object.modifier_apply(modifier=mod.name);static.append(o)
+box("rear tool ledge",(15,.18,.65),(0,-1.30,-5.28),walnut)
+for x,width,rows,dh in [(6.25,2.55,8,.36),(-6.50,2.0,4,.58)]:
+    box("drawer carcass",(width,3.2,4.5),(x,-3.25,.25),edge)
+    for i in range(rows):
+        y=-1.95-i*dh
+        box("fitted drawer front",(width-.15,dh-.045,.12),(x,y,2.56),panel,.025)
+        for hx in [-.36,.36]:
+            cylinder("drawer brass escutcheon",.045,.04,(x+hx,y,2.65),brass).rotation_euler.x=math.pi/2
+        box("brass drawer pull",(.72,.035,.055),(x,y,2.72),brass,.014)
+    for sx in [-1,1]:
+        box("bench foot",(.19,.45,.24),(x+sx*(width/2-.17),-4.9,1.9),walnut)
+box("front apron",(9.4,.65,.16),(-.4,-2.0,2.60),panel)
+box("bench pin",(.44,.11,1.1),(0,-1.35,2.25),walnut)
+# Fireplace: dark cast iron, marble slips and a timber mantel, not rough stone.
+fx=2.15
+box("firebox backing",(2.65,2.35,.08),(fx,-.30,back+.62),ink)
+for sx in [-1,1]:
+    box("mantel pilaster",(.40,3.0,.52),(fx+sx*1.62,-.06,back+.56),walnut,.045)
+    box("marble slip",(.22,2.30,.45),(fx+sx*1.30,-.35,back+.65),marble,.025)
+    for dx in [-.085,.085]:box("pilaster flute",(.035,2.35,.04),(fx+sx*1.62+dx,-.10,back+.84),brass,.006)
+    box("mantel foot",(.56,.18,.65),(fx+sx*1.62,-1.60,back+.63),walnut)
+box("marble lintel",(2.85,.25,.44),(fx,.90,back+.64),marble)
+box("carved mantel frieze",(3.65,.45,.48),(fx,1.25,back+.58),panel,.04)
+box("mantel shelf",(4.05,.20,.92),(fx,1.60,back+.71),walnut,.055)
+box("mantel beading",(3.8,.055,.07),(fx,1.42,back+1.05),brass,.012)
+box("hearth slab",(3.9,.13,1.55),(fx,-1.75,back+.96),marble,.035)
+for i in range(9):
+    cylinder("iron grate bar",.018,.40,(fx-1.0+i*.25,-1.26,back+1.00),ink)
+box("iron grate front",(2.45,.055,.06),(fx,-1.10,back+1.00),ink,.015)
+# Inset landscape, a public-domain 1874 Met watercolor, supplies period artwork.
+box("gilt picture frame",(3.2,2.12,.12),(fx,3.30,back+.33),edge,.035)
+for sw,sh in [(3.14,2.06),(2.97,1.89)]:
+    for sx in [-1,1]:box("gilt frame side",(.055,sh,.09),(fx+sx*sw/2,3.30,back+.43),brass,.012)
+    for sy in [-1,1]:box("gilt frame rail",(sw,.055,.09),(fx,3.30+sy*sh/2,back+.43),brass,.012)
+painting=bpy.data.materials.new("Richards 1874 — Met Open Access");painting.use_nodes=True
+nodes,links=painting.node_tree.nodes,painting.node_tree.links
+tex=nodes.new("ShaderNodeTexImage");tex.image=bpy.data.images.load(str(OUT/"centre-harbor.jpg"));links.new(tex.outputs["Color"],nodes.get("Principled BSDF").inputs["Base Color"])
+bpy.ops.mesh.primitive_plane_add(size=1,location=xyz((fx,3.30,back+.45)))
+o=bpy.context.object;o.name="Sundown at Centre Harbor (1874)";o.rotation_euler.x=math.pi/2;o.scale=(2.85,1.84,1);bpy.ops.object.transform_apply(location=False,rotation=False,scale=True);finish(o,painting)
+box("picture light",(2.3,.075,.13),(fx,4.55,back+.70),brass)
+area("picture wash",(fx,4.48,back+.85),(fx,3.3,back+.4),36,"ffe0ab",2.1,.12)
+# Built-in bookcases and labeled drawers, with individual cloth/leather spines.
+book_colors=["2f3930","604035","512b32","243139","776346","423e2e"]
+for bx,width in [(-.90,1.55),(6.80,3.9)]:
+    box("bookcase back",(width,6.0,.12),(bx,1.55,back+.24),edge)
+    for sx in [-1,1]:box("bookcase stile",(.16,6.25,.95),(bx+sx*width/2,1.6,back+.66),walnut)
+    for y in [-1.4,.1,1.65,3.25,4.8]:
+        box("bookcase shelf",(width,.12,1.05),(bx,y,back+.68),walnut)
+    for row,y in enumerate([.17,1.72,3.32]):
+        x=bx-width/2+.15
+        while x<bx+width/2-.30:
+            w=random.uniform(.18,.30);h=random.uniform(.80,1.25)
+            m=material(f"leather book {bx} {row} {x:.2f}",random.choice(book_colors),.68)
+            box("book paper",(w-.025,h-.055,.64),(x+w/2,y+h/2,back+.64),paper,.006)
+            for sx in [-1,1]:box("book board",(.018,h,.72),(x+w/2+sx*w/2,y+h/2,back+.66),m,.005)
+            box("rounded leather spine",(w,h,.055),(x+w/2,y+h/2,back+1.04),m,.012)
+            for sy in [.13,.20,h-.13]:box("gold spine tooling",(w*.68,.012,.009),(x+w/2,y+sy,back+1.071),brass,.002)
+            x+=w+.035
+    for i in range(3):
+        box("cabinet drawer",(width-.15,.42,.18),(bx,-1.13+i*.45,back+1.08),panel)
+        box("cabinet label plate",(.27,.10,.025),(bx,-1.13+i*.45,back+1.19),brass,.01)
+# Two fixed shaded period lights. The movable examination source has no mesh.
+def shaded_lamp(x,z,stem):
+    base=-1.4
+    cylinder("lamp foot",.39,.11,(x,base+.055,z),brass)
+    profile=[(.22,0),(.24,.10),(.13,.18),(.10,.42),(.20,.54),(.13,.65),(.10,.95),(.19,1.08),(.12,1.18)]
+    for (r1,h1),(r2,h2) in zip(profile,profile[1:]):
+        cylinder("turned lamp stem",r1,(h2-h1)*stem,(x,base+.11+(h1+h2)*stem/2,z),walnut,r2)
+    cy=base+.11+1.18*stem+.55
+    # Slightly tapered shade with real ribs and fabric, not a glowing solid ball.
+    bpy.ops.mesh.primitive_cone_add(vertices=64,radius1=.69,radius2=.56,depth=1.08,end_fill_type="NOTHING",location=xyz((x,cy,z)))
+    finish(bpy.context.object,shade_fabric)
+    for yy,rr in [(cy-.54,.69),(cy+.54,.56)]:
+        bpy.ops.mesh.primitive_torus_add(major_radius=rr,minor_radius=.018,major_segments=64,minor_segments=8,location=xyz((x,yy,z)));finish(bpy.context.object,brass)
+    for i in range(24):
+        a=i*math.pi*2/24
+        lower=Vector(xyz((x+math.cos(a)*.695,cy-.54,z+math.sin(a)*.695)))
+        upper=Vector(xyz((x+math.cos(a)*.565,cy+.54,z+math.sin(a)*.565)))
+        mid=(lower+upper)/2
+        o=box("shade rib",(.013,(upper-lower).length,.013),(mid.x,mid.z,-mid.y),rib,.003)
+        o.rotation_euler=(upper-lower).to_track_quat("Z","Y").to_euler()
+    area("warm shaded pool",(x,cy-.40,z),(x,-1.4,z+.2),240,"ffd49a",1.0)
+    area("shade wall glow",(x,cy,z-.10),(x,cy,back),110,"ffcc8b",.8)
+shaded_lamp(-5.9,-3.6,1.20)
+shaded_lamp(5.35,-4.5,2.15)
+# Small tools and a ledger, kept low so jewelry stays visually dominant.
+box("mandrel cradle",(1.8,.13,.55),(-4.9,-1.25,-2.9),edge)
+o=cylinder("steel ring mandrel",.13,2.1,(-4.9,-1.05,-2.9),steel,.05);o.rotation_euler.y=math.pi/2
 for i in range(2):
-    tool = box("tweezer arm", (.035, .045, 1.65), (-3.55 + i * .085, -1.36, -2.9), steel, .008)
-    tool.rotation_euler.z = -.24 + i * .04
-box("leather notebook", (1.55, .17, 1.9), (4.7, -1.30, -3.35), ink, .045)
-box("notebook paper", (1.44, .12, 1.77), (4.7, -1.21, -3.35), paper, .02)
-box("notebook cover", (1.55, .035, 1.9), (4.7, -1.13, -3.35), ink)
-cylinder("ceramic tea cup", .28, .43, (6.05, -1.18, -3.3), ivory, .31)
-cylinder("tea", .265, .015, (6.05, -.958, -3.3), amber)
-
-# Low glass votives with a recessed wax surface; flames are emissive teardrops.
-flame = material("warm flame", "fff0c9")
-fbsdf = flame.node_tree.nodes.get("Principled BSDF")
-fbsdf.inputs["Emission Color"].default_value = (1, .40, .075, 1)
-fbsdf.inputs["Emission Strength"].default_value = 7
-for x, z, height in [(-6.55, -3.5, .48), (6.5, -4.8, .67)]:
-    glass_body = cylinder("preview glass votive", .34, height, (x, -1.4 + height / 2, z), amber)
-    static.remove(glass_body)
-    preview_only.append(glass_body)
-    cylinder("votive upper lip", .335, .035, (x, -1.4 + height, z), brass)
-    cylinder("recessed wax", .29, .035, (x, -1.46 + height, z), wax)
-    cylinder("cotton wick", .012, .06, (x, -1.40 + height, z), ink)
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=20, ring_count=12, location=xyz((x, -1.30 + height, z)))
-    o = bpy.context.object
-    o.name = "small flame"
-    o.scale = (.035, .035, .10)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    finish(o, flame)
-    area("candle pool", (x, -1.19 + height, z), (x, -1.4, z + .3), 12, "ffc58a", .22)
-
-area("cool window", (-5, 4, back + .48), (0, -1.0, 0), 1600, "dce7f1", 5.2, 5.8)
-area("warm studio bounce", (4.5, 6, -1), (0, 0, -2), 1250, "ffdeb2", 5)
-area("rear shelf wash", (5, 4.9, back + 1.9), (5, 2.3, back), 130, "ffe2bd", 4, .4)
+    o=box("tweezer arm",(.03,.035,1.65),(-3.8+i*.08,-1.36,-2.7),steel,.007);o.rotation_euler.z=-.24+i*.04
+box("leather ledger",(1.5,.17,1.8),(4.5,-1.29,-3.1),ink,.04)
+box("ledger pages",(1.4,.12,1.7),(4.5,-1.19,-3.1),paper,.01)
+box("ledger cover",(1.5,.035,1.8),(4.5,-1.10,-3.1),ink,.02)
+area("moon through window",(-5,4,back+.48),(0,-1,0),115,"9ab5d5",4.8,5.5)
+area("quiet warm fill",(1,6,2),(0,-1,-2),360,"ffe0b4",4)
+area("fire bounce",(fx,-.3,back+.8),(0,-1.3,0),175,"ff8b38",1.8,.8)
 
 # A real Cycles still is useful for diagnosing art direction independently of
 # runtime color management. It is kept in ignored output, not used as a backdrop.
@@ -256,10 +307,11 @@ camera.rotation_euler = (Vector(xyz((0, .3, -.3))) - camera.location).to_track_q
 camera.data.lens = 23.8
 scene.camera = camera
 scene.render.resolution_x, scene.render.resolution_y, scene.render.resolution_percentage = 1280, 720, 100
-preview = ROOT / "output/atelier-research/atelier-cycles.png"
+preview = ROOT / "output/study-research/study-cycles.png"
 scene.render.filepath = str(preview)
-bpy.ops.wm.save_as_mainfile(filepath=str(ROOT / "output/atelier-research/atelier.blend"))
-bpy.ops.render.render(write_still=True)
+bpy.ops.wm.save_as_mainfile(filepath=str(ROOT / "output/study-research/study.blend"))
+if os.environ.get("SKIP_PREVIEW") != "1":
+    bpy.ops.render.render(write_still=True)
 for o in preview_only:
     o.hide_render = True
 
@@ -278,7 +330,7 @@ bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=.006)
 bpy.ops.object.mode_set(mode="OBJECT")
 
 
-def bake(name, passes, fmt):
+def bake(name, passes, fmt, kind="DIFFUSE"):
     image = bpy.data.images.new(name, 2048, 2048, alpha=False, float_buffer=fmt == "HDR")
     image.colorspace_settings.name = "Non-Color" if fmt == "HDR" else "sRGB"
     for slot in room.material_slots:
@@ -289,7 +341,7 @@ def bake(name, passes, fmt):
     scene.render.bake.use_pass_color = "COLOR" in passes
     scene.render.bake.use_pass_direct = "DIRECT" in passes
     scene.render.bake.use_pass_indirect = "INDIRECT" in passes
-    bpy.ops.object.bake(type="DIFFUSE")
+    bpy.ops.object.bake(type=kind)
     image.file_format = fmt
     image.filepath_raw = str(OUT / name)
     image.save()
@@ -298,6 +350,7 @@ def bake(name, passes, fmt):
 
 color = bake("atelier-color.png", {"COLOR"}, "PNG")
 bake("atelier-light.hdr", {"DIRECT", "INDIRECT"}, "HDR")
+bake("atelier-emission.hdr", set(), "HDR", "EMIT")
 denoiser = runpy.run_path(str(Path(__file__).with_name("denoise-atelier.py")))
 denoiser["denoise_atlas"](OUT / "atelier-light.hdr")
 export_material = material("baked atelier", "ffffff", .72)

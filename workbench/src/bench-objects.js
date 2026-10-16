@@ -408,109 +408,6 @@ export function makeBenchObjects(
   targets.push(loupeHit);
   label("THE LOUPE", 1, [1.5, -1.19, 1.4]);
 
-  // A jointed brass bench lamp. Its head is the actual light position.
-  const lamp = new THREE.Group();
-  group.add(lamp);
-  const base = new THREE.Vector3(3.3, -1.16, -2.4);
-  mesh(
-    new THREE.CylinderGeometry(0.48, 0.55, 0.14, 40),
-    brass,
-    base.toArray(),
-    lamp,
-  );
-  const armA = mesh(
-    new THREE.CylinderGeometry(0.045, 0.045, 1, 16),
-    brass,
-    [0, 0, 0],
-    lamp,
-  );
-  const armB = mesh(
-    new THREE.CylinderGeometry(0.04, 0.04, 1, 16),
-    brass,
-    [0, 0, 0],
-    lamp,
-  );
-  const joint = mesh(
-    new THREE.SphereGeometry(0.11, 20, 16),
-    brass,
-    [0, 0, 0],
-    lamp,
-  );
-  const head = new THREE.Group();
-  lamp.add(head);
-  const shade = mesh(
-    new THREE.CylinderGeometry(0.15, 0.43, 0.45, 48, 1, true),
-    new THREE.MeshStandardMaterial({
-      color: "#355044",
-      metalness: 0.55,
-      roughness: 0.34,
-      side: THREE.DoubleSide,
-    }),
-    [0, 0.17, 0],
-    head,
-  );
-  mesh(
-    new THREE.TorusGeometry(0.43, 0.025, 12, 48),
-    brass,
-    [0, -0.055, 0],
-    head,
-  ).rotation.x = Math.PI / 2;
-  const bulb = mesh(
-    new THREE.SphereGeometry(0.12, 20, 16),
-    new THREE.MeshBasicMaterial({
-      color: new THREE.Color(160, 138, 107),
-      toneMapped: false,
-    }),
-    [0, 0, 0],
-    head,
-  );
-  bulb.castShadow = false;
-  const diffuser = mesh(
-    new THREE.CircleGeometry(0.29, 48),
-    new THREE.MeshBasicMaterial({
-      color: new THREE.Color(80, 69, 54),
-      toneMapped: false,
-      side: THREE.DoubleSide,
-    }),
-    [0, -0.045, 0],
-    head,
-  );
-  diffuser.rotation.x = Math.PI / 2;
-  diffuser.castShadow = false;
-  const lampHit = mesh(
-    new THREE.SphereGeometry(0.57, 16, 12),
-    new THREE.MeshBasicMaterial({ visible: false }),
-    [0, 0, 0],
-    head,
-  );
-  lampHit.userData.action = {
-    kind: "lamp",
-    label: "Bench lamp · drag the shade",
-  };
-  targets.push(lampHit);
-  function link(o, a, b) {
-    o.position.copy(a).lerp(b, 0.5);
-    o.scale.y = a.distanceTo(b);
-    o.quaternion.setFromUnitVectors(
-      new THREE.Vector3(0, 1, 0),
-      b.clone().sub(a).normalize(),
-    );
-  }
-  function setLamp(position) {
-    head.position.copy(position);
-    head.quaternion.setFromUnitVectors(
-      new THREE.Vector3(0, -1, 0),
-      new THREE.Vector3(0, 0.7, 0).sub(position).normalize(),
-    );
-    const elbow = new THREE.Vector3(
-      base.x + 0.12,
-      Math.max(3.3, position.y + 0.5),
-      base.z - 0.1,
-    );
-    link(armA, base, elbow);
-    link(armB, elbow, position);
-    joint.position.copy(elbow);
-  }
   return {
     targets,
     cases,
@@ -529,7 +426,6 @@ export function makeBenchObjects(
     baffle,
     restPosition,
     restQuaternion,
-    setLamp,
     select(kind, value, finish = 14) {
       for (const s of samples)
         if (s.kind === kind)

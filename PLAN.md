@@ -31,3 +31,6 @@ Browser interaction refinement: bounded cursor gaze, physical felt selection box
 
 
 Contemporary atelier extension (October 16): Blender/Cycles static-lighting bake, 12 researched gemstone presets, finite-girdle cut families, adapted solitaire shank, and two-layer red/green cases with camera inspection are verified and published. See docs/GEM-COLOR.md and the atelier_revision evidence in docs/workbench-verification.json. All 26 web tests and 98 Rust tests pass; remaining optical differences from offline reference renderers are documented limitations, not completed spectral/volume features.
+
+
+After-hours study revision (October 16): dark period-inspired Blender room/fireplace, credited Met landscape, fixture-free movable light and directly intersected finite gem-light apertures are locally verified with 29 web tests, 98 Rust tests, actual desktop/portrait scene inspection and unchanged class hashes. Same owner-private Site publication pending; evidence and approximation limits are in the study_revision record in docs/workbench-verification.json.

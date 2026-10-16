@@ -1,6 +1,6 @@
 {
-  "generator": "Blender 4.5.14 LTS / Cycles / 48 samples / 2048-square UV atlas / compositor irradiance denoising",
-  "room": "Project-created geometry and procedural base materials; static lighting only; no movable lamp baked.",
+  "generator": "Blender 4.5.14 LTS / Cycles / 64 samples / 2048-square color, diffuse irradiance and emission atlases / compositor irradiance denoising",
+  "room": "Project-created circa-1905 study geometry and procedural base materials: walnut paneling, coffered ceiling, fitted bookcases, jeweler bench, period shades and fireplace. Fixed lighting only; live examination light is not baked.",
   "ring": {
     "author": "Paul Wortmann",
     "source": "https://opengameart.org/content/ring-0",
@@ -15,16 +15,16 @@
   },
   "files": {
     "atelier/atelier.glb": {
-      "bytes": 3940132,
-      "sha256": "ca2a35a2a726c43598a544f8babc3f93d003922b279bfaf15f78beac641a55b1"
+      "bytes": 15499904,
+      "sha256": "5f303a2a09b756aea5fe5e14f35bcee60eee7ea1f6c98e7084e86986fd876410"
     },
     "atelier/atelier-color.png": {
-      "bytes": 783350,
-      "sha256": "6351f9c941505dd156a75559b5bf4ddd2ea71d16a4a2f8abc7afb3833421c915"
+      "bytes": 1326547,
+      "sha256": "5520773cfa2035678c81c9c7f09158ff29a629eadfe4ad37178b449479db3a3f"
     },
     "atelier/atelier-light.hdr": {
-      "bytes": 8406469,
-      "sha256": "a54b9977ccf9a2179bc96c485263c97c6d9c3c0da3aec719a004af49ce64f9fd"
+      "bytes": 4786595,
+      "sha256": "c04bc6c5e95aeee2ae99cc0550d92bca4062f53811af4074685935abf8f21c66"
     },
     "solitaire-shank.obj": {
       "bytes": 31660,
@@ -33,6 +33,26 @@
     "gem-color-study.json": {
       "bytes": 1468,
       "sha256": "c7f6740d8a18e90129a01b7e20861cdbf3b5393708e3fb7db9444f7a6eb25f22"
+    },
+    "atelier/atelier-emission.hdr": {
+      "bytes": 290842,
+      "sha256": "dbff5566d9d8f5da651ba91f57a1947bd81e3829cbb8c3d125572a506108924b"
+    },
+    "atelier/centre-harbor.jpg": {
+      "bytes": 70110,
+      "sha256": "67ddc1f2a4e1375110a84eb81e210109db03b94383e282981ed0289143b92f49"
     }
+  },
+  "painting": {
+    "title": "Sundown at Centre Harbor, New Hampshire",
+    "artist": "William Trost Richards",
+    "date": "1874",
+    "institution": "The Metropolitan Museum of Art",
+    "object_id": 11909,
+    "source": "https://www.metmuseum.org/art/collection/search/11909",
+    "metadata": "https://collectionapi.metmuseum.org/public/collection/v1/objects/11909",
+    "download": "https://images.metmuseum.org/CRDImages/ad/web-large/ap80.1.1.jpg",
+    "rights": "Public domain; Met Open Access metadata isPublicDomain=true.",
+    "adaptation": "Resized only by atlas bake; reproduced in a project-created gilt mantel frame."
   }
 }

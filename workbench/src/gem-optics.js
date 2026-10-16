@@ -53,6 +53,16 @@ export function makeFacetMaterial(
       environment: { value: environment },
       inverseObject: { value: new THREE.Matrix4() },
       objectRotation: { value: new THREE.Matrix3() },
+      objectWorld: { value: new THREE.Matrix4() },
+      lightDisks: {
+        value: Array.from({ length: 4 }, () => new THREE.Vector4()),
+      },
+      lightNormals: {
+        value: Array.from({ length: 4 }, () => new THREE.Vector3(0, -1, 0)),
+      },
+      lightRadiance: {
+        value: Array.from({ length: 4 }, () => new THREE.Vector3()),
+      },
       eyeLocal: { value: new THREE.Vector3() },
       ior: { value: ior },
       dispersion: { value: dispersion },
@@ -64,21 +74,42 @@ export function makeFacetMaterial(
     fragmentShader: `precision highp float;
       uniform vec4 facets[${planes.length}];uniform samplerCube environment;
       uniform vec3 eyeLocal;uniform mat3 objectRotation;uniform float ior;uniform float dispersion;uniform vec3 absorption;uniform vec3 lampLocal;
+      uniform mat4 objectWorld;uniform vec4 lightDisks[4];uniform vec3 lightNormals[4];uniform vec3 lightRadiance[4];
       varying vec3 pointLocal;varying vec3 facetNormal;
       vec3 environmentAt(vec3 d){return textureCube(environment,normalize(objectRotation*d)).rgb;}
+      vec3 externalRadiance(vec3 localOrigin,vec3 localDirection){
+        vec3 result=environmentAt(localDirection);
+        vec3 origin=(objectWorld*vec4(localOrigin,1.)).xyz;
+        vec3 direction=normalize(objectRotation*localDirection);
+        for(int i=0;i<4;i++){
+          float den=dot(direction,lightNormals[i]);
+          if(den<-.00001){
+            float t=dot(lightDisks[i].xyz-origin,lightNormals[i])/den;
+            if(t>.00001){
+              float distance=length(origin+direction*t-lightDisks[i].xyz);
+              float radius=lightDisks[i].w;
+              // Facet paths diverge between neighboring pixels. Screen-space
+              // derivatives here are undefined and can light entire boundaries.
+              float feather=max(radius*.035,.0001);
+              result+=lightRadiance[i]*(1.-smoothstep(radius-feather,radius+feather,distance));
+            }
+          }
+        }
+        return result;
+      }
       float fresnel(float ci,float ni,float nt){ci=abs(ci);float s2=ni*ni/(nt*nt)*(1.-ci*ci);if(s2>=1.)return 1.;float ct=sqrt(1.-s2);float rs=(ni*ci-nt*ct)/(ni*ci+nt*ct);float rp=(nt*ci-ni*ct)/(nt*ci+ni*ct);return .5*(rs*rs+rp*rp);}
       float exitFacet(vec3 o,vec3 d,out vec3 normal){float nearest=1e6;normal=vec3(0,1,0);
         for(int i=0;i<${planes.length};i++){vec4 p=facets[i];float den=dot(p.xyz,d);if(den>1e-6){float t=-(dot(p.xyz,o)+p.w)/den;if(t>1e-5&&t<nearest){nearest=t;normal=p.xyz;}}}return nearest;}
       vec3 traceStone(vec3 incident,vec3 n,float eta){
         float f=fresnel(-dot(incident,n),1.,eta);
-        vec3 result=f*environmentAt(reflect(incident,n));
+        vec3 result=f*externalRadiance(pointLocal,reflect(incident,n));
         vec3 d=refract(incident,n,1./eta),o=pointLocal+d*.00008;vec3 throughput=vec3(1.-f);
         for(int bounce=0;bounce<12;bounce++){
           vec3 normal;float distance=exitFacet(o,d,normal);if(distance>1e5)break;
           throughput*=exp(-absorption*distance);vec3 hit=o+d*distance;
           float reflected=fresnel(dot(d,normal),eta,1.);
           vec3 transmitted=refract(d,-normal,eta);
-          if(reflected<.999999)result+=throughput*(1.-reflected)*environmentAt(transmitted);
+          if(reflected<.999999)result+=throughput*(1.-reflected)*externalRadiance(hit,transmitted);
           throughput*=reflected;if(max(throughput.r,max(throughput.g,throughput.b))<.002)break;
           d=reflect(d,normal);o=hit+d*.00008;
         }
@@ -102,6 +133,7 @@ export function makeFacetMaterial(
     object.worldToLocal(camera.getWorldPosition(u.eyeLocal.value));
     object.worldToLocal(light.getWorldPosition(u.lampLocal.value));
     u.objectRotation.value.setFromMatrix4(object.matrixWorld);
+    u.objectWorld.value.copy(object.matrixWorld);
   };
   return material;
 }

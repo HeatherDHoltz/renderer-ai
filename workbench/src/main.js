@@ -2,7 +2,7 @@ import { GEMS } from "./gems.js";
 import { METALS } from "./metals.js";
 const $ = (id) => document.getElementById(id);
 const state = {
-  gem: "tiger",
+  gem: "diamond",
   box: null,
   metal: "gold",
   setting: "ring",
@@ -123,7 +123,7 @@ function description() {
   if (state.source === "softbox" && state.tool !== "loupe") {
     text[0] = "A softer kind of sparkle.";
     text[1] =
-      "The broad softbox makes wider reflections. Try it on both the stone and its metal setting.";
+      "The broad light makes wider reflections. Try it on both the stone and its metal setting.";
   }
   const p = $("discovery-text");
   p.replaceChildren();
@@ -161,7 +161,7 @@ function updateLabels() {
   $("tray-tip").hidden = state.tool === "loupe";
   const hint = {
     turn: "Look around with your cursor · touch the objects on the bench",
-    light: "Drag the lamp shade · arrow keys also move the light",
+    light: "Drag across the view to move the light · arrow keys also work",
     loupe: "Drag to turn the stone · scroll to magnify",
   }[state.tool];
   $("interaction-hint").textContent = hint;
@@ -183,7 +183,7 @@ function setTool(value) {
   app?.setTool(value);
   updateLabels();
   announce(
-    `${value === "turn" ? "Turn" : value === "light" ? "Penlight" : "Loupe"} selected. ${value === "loupe" ? "Drag to turn the jewelry inside the eyepiece. Escape returns to the bench." : ""}`,
+    `${value === "turn" ? "Turn" : value === "light" ? "Examination light" : "Loupe"} selected. ${value === "loupe" ? "Drag to turn the jewelry inside the eyepiece. Escape returns to the bench." : ""}`,
   );
 }
 function updateLight() {
@@ -225,7 +225,10 @@ for (const button of document.querySelectorAll("[data-source]"))
     choose("source", state.source);
     app?.setSource(state.source);
     updateLabels();
-    announce(state.source + " selected.");
+    announce(
+      (state.source === "penlight" ? "Focused light" : "Broad light") +
+        " selected.",
+    );
   });
 for (const button of document.querySelectorAll("[data-background]"))
   button.addEventListener("click", () => {
@@ -323,7 +326,7 @@ function hoverAt(event) {
   const action = app.pick(p.x, p.y);
   app.hover(action);
   host.style.cursor = action
-    ? ["jewelry", "lamp"].includes(action.kind)
+    ? ["jewelry", "light"].includes(action.kind)
       ? "grab"
       : "pointer"
     : "default";
@@ -343,7 +346,7 @@ host.addEventListener("pointerdown", (event) => {
     action = app.pick(p.x, p.y);
   if (!action) return;
   app.holdLook();
-  if (action.kind === "lamp") app.beginLampDrag(p.x, p.y);
+  if (action.kind === "light") app.beginLightDrag(p.x, p.y);
   pressed = action;
   grab = action.kind;
   travel = 0;
@@ -356,7 +359,7 @@ host.addEventListener("pointerdown", (event) => {
   updateLabels();
   host.setPointerCapture(event.pointerId);
   host.focus({ preventScroll: true });
-  host.style.cursor = ["jewelry", "lamp"].includes(grab)
+  host.style.cursor = ["jewelry", "light"].includes(grab)
     ? "grabbing"
     : "pointer";
 });
@@ -383,9 +386,9 @@ host.addEventListener("pointermove", (event) => {
       else app.zoom(d > pinchDistance ? 0.9 : 1.1);
     }
     pinchDistance = d;
-  } else if (grab === "lamp") {
+  } else if (grab === "light") {
     const p = point(event);
-    const values = app.dragLamp(p.x, p.y);
+    const values = app.dragLight(p.x, p.y);
     state.angle = values.angle;
     state.height = values.height;
     updateLabels();

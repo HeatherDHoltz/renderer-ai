@@ -7,7 +7,7 @@
   },
   "checks": {
     "web_tests": {
-      "passed": 22,
+      "passed": 29,
       "failed": 0,
       "command": "npm test --prefix workbench"
     },
@@ -203,6 +203,41 @@
       "hosted_checks": "Ready scene without console warnings/errors; actual twelve-gem unfolded case inspected; physical Ruby selection updated header and returned smoothly to bench.",
       "initial_loading_note": "First automated readiness wait timed out; the next snapshot showed the ready scene without a reload. No console warning/error was recorded.",
       "hosted_evidence": "output/atelier-research/hosted-atelier.jpg"
+    }
+  },
+  "study_revision": {
+    "date": "2026-10-16",
+    "direction": "Early-1900s-inspired after-hours jeweler study: dark walnut panels/coffered ceiling, fitted bookcases, drapes, old drawer bench, fabric shades and fireplace.",
+    "room": "Project-modeled in Blender 4.5.14 LTS; Cycles color/irradiance/emission 2048 atlases at 64 samples, irradiance denoised. Export has 186326 triangles, 372998 GPU vertices after UV/normal splits. Shared atlas material; fixed bounced firelight is baked. Live fire uses layered cards/embers and a small flicker light.",
+    "reused_work": "William Trost Richards, Sundown at Centre Harbor, New Hampshire (1874), Met object 11909, public domain per official Open Access metadata. Existing credited Poly Haven velvet/HDRs and Paul Wortmann ring shank retained.",
+    "examination_light": "Visible movable task lamp removed. Move light / 2 then drag anywhere in the view or use arrow keys/sliders. Fixed shaded lamps remain scenery. Four finite one-sided apertures are evaluated directly along external gem rays, with a focused/broad movable source and three fixed fill cards. Uniform updates do not wait for the 10 Hz room probe.",
+    "diamond": "Brilliant lower pavilion tier corrected; actual outward normal slopes approximately 40.3\u201341.5 degrees. White facet flashes observed under finite apertures in default and rotated loupe views. No procedural glitter, bloom or stochastic sampling added. Fixed radial feather replaces undefined derivative filtering inside divergent paths.",
+    "local_checks": [
+      "29 Node tests pass; standalone offline-input build; clean diff whitespace.",
+      "Cargo format check, all 98 Rust tests and strict all-target Clippy pass.",
+      "All 12 original class baseline hashes unchanged.",
+      "Actual 1280x720 scene: complete room, hearth fire, fixed shades; no movable fixture.",
+      "Actual physical diamond drag in loupe changes orientation and white facet flashes.",
+      "Move light viewport drag changes position 48 to 100 and height 28 to 48; focused/broad source buttons work.",
+      "Unfolded red case selection of Pink spinel updates specimen/header.",
+      "430x850 portrait: no horizontal overflow; both cases available; physical wood click enters case view and frames both trays.",
+      "Loupe pickup/return preserves world-space tool and settled eyepiece framing.",
+      "No console warnings/errors observed after final ready load."
+    ],
+    "evidence": [
+      "gallery/workbench/study.jpg",
+      "gallery/workbench/study-diamond.jpg",
+      "output/study-research/portrait.jpg"
+    ],
+    "limits": [
+      "Period-inspired art direction, not a historical reconstruction. Procedural wood/baked atlases, not a scanned interior.",
+      "Aperture sources are an art-directed unoccluded lighting model; external room rays remain environment sampled. No spectral/caustic/full-scene transport.",
+      "Fire is layered animated surface geometry, not volumetric combustion; bounced firelight is static.",
+      "No device GPU frame-time benchmark; portrait tested in desktop browser viewport, not on mobile hardware.",
+      "Reduced-motion branch reviewed in code, preference not emulated in browser."
+    ],
+    "publication": {
+      "status": "pending"
     }
   }
 }

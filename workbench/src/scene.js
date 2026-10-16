@@ -93,6 +93,10 @@ function tigerMaterial() {
 
 import { loadSurfaces } from "./surfaces.js";
 import { makeFacetMaterial, convexFacetHull } from "./gem-optics.js";
+import {
+  examinationLights,
+  bindExaminationLights,
+} from "./examination-light.js";
 import { GEMS } from "./gems.js";
 import { cutGeometry } from "./cuts.js";
 import { applyMetal } from "./metals.js";
@@ -120,7 +124,7 @@ export async function createWorkbench(host, onFatalError) {
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.95;
+  renderer.toneMappingExposure = 0.9;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.transmissionResolutionScale = 0.75;
@@ -131,11 +135,11 @@ export async function createWorkbench(host, onFatalError) {
     onFatalError(new Error("Graphics context interrupted"));
   });
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color("#b6b3a6");
-  scene.fog = new THREE.Fog("#b6b3a6", 30, 65);
+  scene.background = new THREE.Color("#120d0a");
+  scene.fog = new THREE.Fog("#120d0a", 32, 65);
   const surfaces = await loadSurfaces(renderer);
   scene.environment = surfaces.environment.texture;
-  scene.environmentIntensity = 0.6;
+  scene.environmentIntensity = 0.22;
   const reflectionTarget = new THREE.WebGLCubeRenderTarget(256, {
     type: THREE.HalfFloatType,
   });
@@ -212,7 +216,7 @@ export async function createWorkbench(host, onFatalError) {
         reflectionTarget.texture,
         gem,
       );
-  const key = new THREE.PointLight("#fff3dc", 75, 17, 2);
+  const key = new THREE.PointLight("#fffaf0", 120, 17, 2);
   key.castShadow = true;
   key.shadow.mapSize.set(512, 512);
   key.shadow.bias = -0.0002;
@@ -222,13 +226,13 @@ export async function createWorkbench(host, onFatalError) {
   key.shadow.autoUpdate = false;
   key.shadow.needsUpdate = true;
   scene.add(key);
-  const softbox = new THREE.RectAreaLight("#fff0dc", 7, 3.2, 2.2);
+  const softbox = new THREE.RectAreaLight("#fffaf0", 12, 2.2, 1.7);
   scene.add(softbox);
-  scene.add(new THREE.HemisphereLight("#e8eee7", "#6d4e31", 0.28));
-  const fill = new THREE.DirectionalLight("#e9efff", 0.28);
+  scene.add(new THREE.HemisphereLight("#b9c5d5", "#402214", 0.07));
+  const fill = new THREE.DirectionalLight("#cad6ed", 0.1);
   fill.position.set(-3, 4, -2);
   scene.add(fill);
-  const benchBounce = new THREE.RectAreaLight("#ffe8c9", 1.2, 7, 4);
+  const benchBounce = new THREE.RectAreaLight("#ffe8c9", 0.32, 7, 4);
   benchBounce.position.set(0, 2.0, 5);
   benchBounce.lookAt(0, -0.3, 0);
   scene.add(benchBounce);
@@ -420,13 +424,16 @@ export async function createWorkbench(host, onFatalError) {
     key.position.set(
       THREE.MathUtils.clamp(angle / 100, -1, 1) * 3.2,
       2.1 + THREE.MathUtils.clamp((height - 8) / 77, 0, 1) * 1.7,
-      -1,
+      2.2,
     );
-    objects?.setLamp(key.position);
+    bindExaminationLights(
+      Object.values(materials),
+      examinationLights(key.position, source === "softbox"),
+    );
     softbox.position.copy(key.position);
     softbox.lookAt(0, 0.7, 0);
-    key.intensity = source === "penlight" ? 75 : 0;
-    softbox.intensity = source === "softbox" ? 7 : 0;
+    key.intensity = source === "penlight" ? 120 : 0;
+    softbox.intensity = source === "softbox" ? 12 : 0;
     tiger.userData.fiberUniforms.fiberSoftness.value =
       source === "softbox" ? 0.11 : 0.014;
   }
@@ -435,7 +442,6 @@ export async function createWorkbench(host, onFatalError) {
   updateLight();
   const workshop = await buildWorkshop(scene, surfaces);
   objects = makeBenchObjects(scene, geometries, materials, surfaces, key);
-  objects.setLamp(key.position);
   objects.select("gem", selectedGem);
   objects.select("metal", "gold");
   const updateSpecimenEnvironment = specimenEnvironment(
@@ -463,7 +469,7 @@ export async function createWorkbench(host, onFatalError) {
     host.dataset.reflectionRevision = String(++reflectionRevision);
   }
   const raycaster = new THREE.Raycaster();
-  const lampPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 1);
+  const lampPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2.2);
   const lampGrip = new THREE.Vector3();
   function lampPoint(x, y) {
     camera.updateMatrixWorld(true);
@@ -476,6 +482,8 @@ export async function createWorkbench(host, onFatalError) {
       return inspection === 1
         ? { kind: "jewelry", label: "Turn the stone · drag" }
         : null;
+    if (tool === "light" && !boxFlight)
+      return { kind: "light", label: "Drag to sweep the examination light" };
     scene.updateMatrixWorld(true);
     const hits = benchIntersections(raycaster, camera, x, y, [
       ...objects.targets,
@@ -901,11 +909,11 @@ export async function createWorkbench(host, onFatalError) {
         !!(boxFlight && boxFlight.progress < 1)
       );
     },
-    beginLampDrag(x, y) {
+    beginLightDrag(x, y) {
       const point = lampPoint(x, y);
       if (point) lampGrip.copy(key.position).sub(point);
     },
-    dragLamp(x, y) {
+    dragLight(x, y) {
       const point = lampPoint(x, y);
       if (point) {
         const controls = lampControls(point.add(lampGrip));

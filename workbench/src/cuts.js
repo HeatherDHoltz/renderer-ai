@@ -41,7 +41,12 @@ export function cutGeometry(kind) {
     ring(0.61, 1.16, 8);
   } else {
     points.push(0, 0, 0);
-    ring(0.65, 0.3, 8, Math.PI / 8);
+    ring(
+      kind === "brilliant" ? 0.55 : 0.65,
+      kind === "brilliant" ? 0.45 : 0.3,
+      8,
+      Math.PI / 8,
+    );
     ring(1, 0.84, 16);
     ring(1, 0.88, 16);
     ring(0.76, 1.08, 8, Math.PI / 8);

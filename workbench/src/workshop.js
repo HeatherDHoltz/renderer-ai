@@ -3,34 +3,47 @@ import { GLTFLoader } from "../vendor/addons/loaders/GLTFLoader.js";
 import { HDRLoader } from "../vendor/addons/loaders/HDRLoader.js";
 
 export async function buildWorkshop(scene, surfaces) {
-  const [asset, irradiance] = await Promise.all([
+  const [asset, irradiance, emission] = await Promise.all([
     new GLTFLoader().loadAsync(
       new URL("../assets/atelier/atelier.glb", import.meta.url).href,
     ),
     new HDRLoader().loadAsync(
       new URL("../assets/atelier/atelier-light.hdr", import.meta.url).href,
     ),
+    new HDRLoader().loadAsync(
+      new URL("../assets/atelier/atelier-emission.hdr", import.meta.url).href,
+    ),
   ]);
   irradiance.flipY = false;
   irradiance.channel = 0;
   irradiance.mapping = THREE.UVMapping;
   const workshop = asset.scene;
-  workshop.name = "Walnut and ivory atelier — Cycles baked lighting";
+  workshop.name = "Edwardian jeweler’s study — Cycles baked lighting";
   workshop.traverse((o) => {
     if (!o.isMesh) return;
     o.material.lightMap = irradiance;
-    o.material.lightMapIntensity = 0.85;
-    o.material.envMapIntensity = 0.08;
-    o.material.roughness = 0.72;
+    o.material.lightMapIntensity = 1.0;
+    o.material.envMapIntensity = 0.06;
+    o.material.roughness = 0.56;
     o.material.side = THREE.DoubleSide;
     o.castShadow = true;
     o.receiveShadow = true;
+  });
+  emission.flipY = false;
+  emission.channel = 0;
+  emission.mapping = THREE.UVMapping;
+  workshop.traverse((o) => {
+    if (o.isMesh) {
+      o.material.emissive.set("#ffffff");
+      o.material.emissiveMap = emission;
+    }
   });
   scene.add(workshop);
   const exterior = new THREE.Mesh(
     new THREE.SphereGeometry(32, 48, 24),
     new THREE.MeshBasicMaterial({
       map: surfaces.forest,
+      color: new THREE.Color(0.035, 0.055, 0.09),
       side: THREE.BackSide,
       fog: false,
     }),
@@ -72,9 +85,9 @@ export async function buildWorkshop(scene, surfaces) {
   mat.position.set(0, -1.39, 0.1);
   mat.receiveShadow = true;
   scene.add(mat);
-  // Only the live task light is positional. Fixed window/shelf/candle light is
+  // Only the live task light is positional. Fixed window, shaded lamp and bounced firelight is
   // already in the atlas; this weak fill gives moving objects a soft key.
-  const sun = new THREE.DirectionalLight("#e5edf3", 0.65);
+  const sun = new THREE.DirectionalLight("#9eb5de", 0.15);
   sun.position.set(-5, 6, -6);
   sun.target.position.set(0, 0, 0);
   sun.castShadow = true;
@@ -92,68 +105,86 @@ export async function buildWorkshop(scene, surfaces) {
   sun.shadow.autoUpdate = false;
   sun.shadow.needsUpdate = true;
   scene.add(sun, sun.target);
-  const flames = [];
-  const amberGlass = new THREE.MeshPhysicalMaterial({
-    color: "#b58a54",
-    roughness: 0.15,
-    metalness: 0,
-    transmission: 0.65,
-    thickness: 0.055,
-    ior: 1.5,
-    transparent: true,
-    opacity: 0.7,
-    envMapIntensity: 0.6,
-    side: THREE.DoubleSide,
+  const hearth = new THREE.Group();
+  hearth.name = "Cast-iron fireplace and low fire";
+  hearth.position.set(2.15, -1.4, -6.95);
+  scene.add(hearth);
+  const charcoal = new THREE.MeshStandardMaterial({
+    color: "#17110c",
+    roughness: 0.98,
   });
-  const waxMaterial = new THREE.MeshStandardMaterial({
-    color: "#e8d4ac",
-    roughness: 0.85,
-  });
-  for (const [x, z, h] of [
-    [-6.55, -3.5, 0.48],
-    [6.5, -4.8, 0.67],
-  ]) {
-    const vessel = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.335, 0.335, h, 48, 1, true),
-      amberGlass,
+  for (let i = 0; i < 5; i++) {
+    const log = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.1, 0.14, 0.95, 14),
+      charcoal,
     );
-    vessel.position.set(x, -1.4 + h / 2, z);
-    scene.add(vessel);
-    for (const y of [-1.4, -1.4 + h]) {
-      const rim = new THREE.Mesh(
-        new THREE.TorusGeometry(0.335, 0.018, 8, 48),
-        amberGlass,
-      );
-      rim.rotation.x = Math.PI / 2;
-      rim.position.set(x, y, z);
-      scene.add(rim);
-    }
-    const wax = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.282, 0.282, h - 0.1, 40),
-      waxMaterial,
-    );
-    wax.position.set(x, -1.4 + (h - 0.1) / 2, z);
-    scene.add(wax);
-    const flame = new THREE.Mesh(
-      new THREE.SphereGeometry(1, 16, 12),
-      new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 1.5, 0.25) }),
-    );
-    flame.position.set(x, -1.3 + h, z);
-    flame.scale.set(0.035, 0.1, 0.035);
-    scene.add(flame);
-    flames.push(flame);
+    log.position.set((i - 2) * 0.3, 0.09 + (i % 2) * 0.08, 0);
+    log.rotation.set(0, 0.25 * (i - 2), Math.PI / 2 - 0.12 * (i % 2));
+    log.castShadow = true;
+    hearth.add(log);
   }
+  for (let i = 0; i < 19; i++) {
+    const coal = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(0.055 + (i % 3) * 0.012, 1),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(3.2, 0.34, 0.025) }),
+    );
+    coal.position.set(
+      Math.sin(i * 4.7) * 0.91,
+      0.04,
+      Math.cos(i * 3.1) * 0.18 + 0.1,
+    );
+    coal.scale.y = 0.45;
+    hearth.add(coal);
+  }
+  const fireUniforms = { time: { value: 0 } };
+  const fireMaterial = new THREE.ShaderMaterial({
+    uniforms: fireUniforms,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    vertexShader: `uniform float time;varying vec2 fireUV;void main(){fireUV=uv;vec3 p=position;p.x*=1.-.78*uv.y;p.x+=sin(uv.y*8.+time*2.7+position.z*4.)*.075*uv.y;p.y+=sin(time*3.1+uv.x*5.)*.025*uv.y;gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}`,
+    fragmentShader: `uniform float time;varying vec2 fireUV;void main(){float h=fireUV.y;float edge=abs(fireUV.x-.5)*2.;float curl=.68+.22*sin(h*18.-time*3.+fireUV.x*9.);float alpha=(1.-smoothstep(.12,.98,edge))*pow(max(0.,1.-h),.55)*curl*.30;vec3 color=mix(vec3(1.,.38,.025),vec3(.9,.035,.002),h)*5.;gl_FragColor=vec4(color,alpha);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+    }`,
+  });
+  for (let i = 0; i < 9; i++) {
+    const plume = new THREE.Group();
+    plume.position.set((i - 4) * 0.21, 0.07, 0.12 + Math.sin(i) * 0.08);
+    hearth.add(plume);
+    for (let j = 0; j < 3; j++) {
+      const h = 0.48 + 0.35 * (0.5 + 0.5 * Math.sin(i * 2.8));
+      const sheet = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.27, h, 6, 14),
+        fireMaterial,
+      );
+      sheet.position.y = h / 2;
+      sheet.rotation.y = (j * Math.PI) / 3 + 0.2 * i;
+      plume.add(sheet);
+    }
+  }
+  const fireLight = new THREE.PointLight("#ff8b38", 8, 7, 2);
+  fireLight.position.set(2.15, -0.65, -6.75);
+  scene.add(fireLight);
   return {
     mat,
     sun,
     animate(t, motion) {
-      for (const [i, f] of flames.entries())
-        f.scale.y = 0.1 * (motion ? 1 + 0.06 * Math.sin(t * 3.2 + i) : 1);
+      fireUniforms.time.value = motion ? t : 0;
+      fireLight.intensity =
+        8 *
+        (motion
+          ? 1 + 0.025 * Math.sin(t * 5.1) + 0.018 * Math.sin(t * 8.7)
+          : 1);
     },
     dispose() {
       irradiance.dispose();
+      emission.dispose();
       exterior.geometry.dispose();
       exterior.material.dispose();
+      fireMaterial.dispose();
+      charcoal.dispose();
     },
   };
 }

@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#f6f4ed" />
     <meta
       name="description"
-      content="A candlelit jeweler’s workshop by Heather Holtz. Turn the jewelry, move the light, and examine gemstones through a 3D loupe."
+      content="An after-hours jeweler’s study, circa 1905, by Heather Holtz. Turn the jewelry, move the light, and examine gemstones through a 3D loupe."
     />
     <title>The Little Jeweler · Heather Holtz</title>
     <link
@@ -52,11 +52,11 @@
           >GitHub ↗</a
         >
       </nav>
-      <span class="header-note">A quiet moment at the bench.</span>
+      <span class="header-note">After hours, circa 1905.</span>
     </header>
     <main>
       <h1 class="sr-only" id="page-title">
-        The Little Jeweler — a candlelit workshop
+        The Little Jeweler — a jeweler’s study, circa 1905
       </h1>
       <section
         class="workspace"
@@ -69,7 +69,7 @@
               <span class="live-dot"></span>
               <span id="mode-label">AT THE BENCH</span>
               <span class="scene-label-divider">/</span>
-              <span id="scene-name">TIGER’S EYE & GOLD</span>
+              <span id="scene-name">DIAMOND & GOLD</span>
             </div>
             <div class="viewer-tools">
               <button
@@ -97,7 +97,7 @@
               id="render-host"
               tabindex="0"
               role="region"
-              aria-label="A seated jeweler’s view. Move the cursor to look slightly around. Click stones and metals in their felt boxes. Drag the jewelry to turn it or the lamp shade to move the light. Click the loupe to pick it up. Arrow keys turn jewelry; 2 and arrows move the lamp; 3 lifts the loupe; Escape returns it."
+              aria-label="A seated jeweler’s view. Move the cursor to look slightly around. Click stones and metals in their felt boxes. Drag the jewelry to turn it. Select Move light and drag to position the examination light. Click the loupe to pick it up. Arrow keys turn jewelry; 2 and arrows move the light; 3 lifts the loupe; Escape returns it."
             ></div>
             <div id="object-hint" class="object-hint" hidden></div>
             <div class="loading" id="loading">
@@ -149,14 +149,14 @@
                 type="button"
                 class="tool"
                 data-tool="light"
-                aria-label="Adjust lamp"
+                aria-label="Move light"
                 aria-pressed="false"
               >
                 <svg viewBox="0 0 28 28" aria-hidden="true">
                   <path
                     d="m8 23 7-12 5 3-7 12ZM14 10l2-5 7 4-3 5M20 3l2-2m2 7 3-1M15 2V0"
                   /></svg
-                ><span>Adjust lamp</span><kbd>2</kbd>
+                ><span>Move light</span><kbd>2</kbd>
               </button>
               <button
                 type="button"
@@ -194,8 +194,8 @@
           <div class="discovery">
             <span aria-hidden="true">✧</span>
             <p id="discovery-text">
-              <strong>Find the little ribbon of light.</strong> Move the
-              penlight across the tiger’s eye and watch its silky band follow.
+              <strong>Find the little ribbon of light.</strong> Move the light
+              across the tiger’s eye and watch its silky band follow.
             </p>
           </div>
         </div>
@@ -330,13 +330,13 @@
                 data-source="penlight"
                 aria-pressed="true"
               >
-                Penlight</button
+                Focused light</button
               ><button type="button" data-source="softbox" aria-pressed="false">
-                Softbox
+                Broad light
               </button>
             </div>
             <label class="range-label" for="light-angle"
-              >Lamp reach <output id="light-value">48%</output></label
+              >Light position <output id="light-value">48%</output></label
             ><input
               type="range"
               min="-100"
@@ -345,7 +345,7 @@
               value="45"
               id="light-angle"
             /><label class="range-label" for="light-height"
-              >Lamp height <output id="height-value">28%</output></label
+              >Light height <output id="height-value">28%</output></label
             ><input
               type="range"
               min="8"
@@ -465,23 +465,26 @@
           light-dependent directional highlight, and a single polished
           dielectric surface. The faceted gems trace refraction and internal
           reflection through their actual facets, with RGB dispersion and
-          absorption. A live reflection probe captures the room and movable lamp
-          for the jewelry. This remains an environment-based approximation
-          without caustics or full scene path tracing. The seated view follows
-          the cursor within a small limit while the jewelry turns independently.
-          The loupe lifts from the bench along a clear path before the camera
-          leans into its 3D brass eyepiece. Its magnification comes from the
-          camera projection, rather than a full optical lens simulation. These
-          are real-time approximations. Ruby and sapphire use three-channel fits
-          to published absorption measurements; the other color presets are
-          appearance studies.
+          absorption. A live reflection probe captures the room; finite
+          examination lights are also traced directly for the jewelry. Room
+          reflections remain an environment-based approximation without caustics
+          or full scene path tracing. The seated view follows the cursor within
+          a small limit while the jewelry turns independently. The loupe lifts
+          from the bench along a clear path before the camera leans into its 3D
+          brass eyepiece. Its magnification comes from the camera projection,
+          rather than a full optical lens simulation. These are real-time
+          approximations. Ruby and sapphire use three-channel fits to published
+          absorption measurements; the other color presets are appearance
+          studies.
         </p>
         <p>
-          The contemporary room is project-modeled in Blender, with Cycles-baked
-          fixed lighting. Jewelry, velvet cases, task lamp and loupe remain
-          live. Photographed velvet and HDR panoramas are credited to Poly
-          Haven. The shank adapts Paul Wortmann’s CC0 ring band; the setting and
-          live gemstone cuts are project-created.
+          The circa-1905 study is project-modeled in Blender, with Cycles-baked
+          fixed lighting. Jewelry, velvet cases, examination light and loupe
+          remain live. Photographed velvet and HDR panoramas are credited to
+          Poly Haven. The shank adapts Paul Wortmann’s CC0 ring band; the
+          setting and live gemstone cuts are project-created. The mantel
+          painting is William Trost Richards’ public-domain 1874 landscape, from
+          the Met’s Open Access collection.
           <a
             href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/GEM-COLOR.md"
             target="_blank"
