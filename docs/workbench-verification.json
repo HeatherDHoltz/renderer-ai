@@ -7,7 +7,7 @@
   },
   "checks": {
     "web_tests": {
-      "passed": 13,
+      "passed": 14,
       "failed": 0,
       "command": "npm test --prefix workbench"
     },
@@ -42,6 +42,7 @@
     "layout_css_widths_checked": [
       255,
       430,
+      672,
       1280
     ],
     "horizontal_overflow_at_checked_widths": false,
@@ -49,7 +50,8 @@
     "evidence": [
       "gallery/workbench/workshop.jpg",
       "gallery/workbench/loupe-pickup.jpg",
-      "gallery/workbench/loupe.jpg"
+      "gallery/workbench/loupe.jpg",
+      "gallery/workbench/workshop-live.jpg"
     ],
     "png_export_retained": "output/workshop-photo-check.png",
     "pickup_reversal_observed": {
@@ -64,7 +66,17 @@
     "png_export_dimensions": [
       1280,
       720
-    ]
+    ],
+    "live_qa": {
+      "url": "https://heathers-little-jeweler.zoeholtz2000.chatgpt.site",
+      "viewport": [
+        672,
+        669
+      ],
+      "diamond_box_click": "passed",
+      "animated_loupe_pickup_and_return": "passed",
+      "console_errors": false
+    }
   },
   "background_assets": {
     "models": 5,
@@ -74,12 +86,12 @@
   },
   "deployment": {
     "project_id": "appgprj_6ad1d1ee181c819186c337d3573bdaea",
-    "source_commit": "1b6a053533ce4e40b3d5eb874a8998d542026d8c",
-    "deployment_id": "appgdep_6ad1e1fa89f481918603092963d505e2",
+    "source_commit": "fecc88ef3d2a9079b769e43794f31c2d4a29566e",
+    "deployment_id": "appgdep_6ad1e2cb8d50819199a9b1867b8a82f5",
     "status": "succeeded",
     "url": "https://heathers-little-jeweler.zoeholtz2000.chatgpt.site",
     "audience": "owner-private",
-    "browser_handoff": "Owner-private access preserved. Native Sites deployment succeeded; full UI QA used the identical local source. Hosted preview requires ChatGPT sign-in."
+    "browser_handoff": "Authenticated hosted UI verified at the production URL: physical diamond selection, complete loupe pickup/return, no console errors. Local QA additionally covered lamp/metal controls and other layouts."
   },
   "limits": [
     "No measured device FPS benchmark",

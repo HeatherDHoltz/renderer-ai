@@ -8,6 +8,7 @@ import {
   loupeCorridor,
   advanceProgress,
   lampControls,
+  benchFraming,
 } from "../src/interaction.js";
 
 test("seated gaze has finite angular limits and returns to center", () => {
@@ -147,4 +148,18 @@ test("lamp drag maps its physical plane into bounded controls", () => {
     angle: 100,
     height: 8,
   });
+});
+
+test("bench framing keeps the two felt boxes in reach at portrait, square and wide aspects", () => {
+  for (const aspect of [0.45, 0.65, 1, 1.78, 2.4]) {
+    const pose = benchFraming(aspect);
+    const halfWidth =
+      (pose.z - 1.4) *
+      Math.tan(THREE.MathUtils.degToRad(pose.fov / 2)) *
+      aspect;
+    assert.ok(halfWidth >= 3.7 - 1e-10, `horizontal work area at ${aspect}`);
+    assert.ok(pose.fov >= 46 && pose.fov <= 60);
+  }
+  for (const aspect of [0, -1, NaN, Infinity])
+    assert.throws(() => benchFraming(aspect));
 });

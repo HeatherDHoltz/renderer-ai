@@ -56,3 +56,17 @@ export function lampControls(point) {
     height: 8 + clamp((point.y - 2.1) / 1.7) * 77,
   };
 }
+
+export function benchFraming(aspect) {
+  if (!Number.isFinite(aspect) || aspect <= 0)
+    throw new RangeError("Invalid viewport aspect");
+  const fov = THREE.MathUtils.lerp(60, 46, clamp((aspect - 0.55) / 1.1));
+  const z = Math.max(
+    6.4,
+    Math.min(
+      18,
+      1.4 + 3.7 / (Math.tan(THREE.MathUtils.degToRad(fov / 2)) * aspect),
+    ),
+  );
+  return { fov, z, y: 2.6 + (z - 6.4) * 0.37 };
+}

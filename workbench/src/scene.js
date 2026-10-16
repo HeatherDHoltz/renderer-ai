@@ -151,6 +151,7 @@ import {
   loupeCorridor,
   advanceProgress,
   lampControls,
+  benchFraming,
 } from "./interaction.js";
 
 export async function createWorkbench(host, onFatalError) {
@@ -188,6 +189,7 @@ export async function createWorkbench(host, onFatalError) {
   scene.add(inspectionCamera);
   const benchPosition = camera.position.clone();
   const benchQuaternion = camera.quaternion.clone();
+  let benchFov = 46;
   const gaze = new THREE.Vector2(),
     gazeTarget = new THREE.Vector2();
   let inspection = 0,
@@ -503,7 +505,7 @@ export async function createWorkbench(host, onFatalError) {
             new THREE.Euler(-offset.y, -offset.x, 0, "YXZ"),
           ),
         );
-      camera.fov = width < heightPx ? 60 : 46;
+      camera.fov = benchFov;
     } else if (flight) {
       // The tool visibly lifts first. The seated camera then leans toward it.
       const t = ease(THREE.MathUtils.clamp((inspection - 0.45) / 0.55, 0, 1));
@@ -512,7 +514,7 @@ export async function createWorkbench(host, onFatalError) {
         .copy(flight.benchQuaternion)
         .slerp(flight.quaternion, t);
       camera.fov = THREE.MathUtils.lerp(
-        width < heightPx ? 60 : 46,
+        benchFov,
         inspectionFieldOfView(zoom),
         t,
       );
@@ -578,6 +580,7 @@ export async function createWorkbench(host, onFatalError) {
   function resize() {
     width = host.clientWidth;
     heightPx = host.clientHeight;
+    if (width < 1 || heightPx < 1) return;
     renderer.setSize(width, heightPx, false);
     const ratio = renderer.getPixelRatio();
     target.setSize(Math.round(width * ratio), Math.round(heightPx * ratio));
@@ -585,14 +588,15 @@ export async function createWorkbench(host, onFatalError) {
       1 / (width * ratio),
       1 / (heightPx * ratio),
     );
-    const benchZ = 6.4 + Math.min(9, Math.max(0, heightPx / width - 1) * 6.5);
-    benchPosition.set(0, 2.6 + (benchZ - 6.4) * 0.37, benchZ);
+    const framingPose = benchFraming(width / heightPx);
+    benchFov = framingPose.fov;
+    benchPosition.set(0, framingPose.y, framingPose.z);
     const framing = new THREE.PerspectiveCamera();
     framing.position.copy(benchPosition);
     framing.lookAt(0, 0.3, -0.3);
     benchQuaternion.copy(framing.quaternion);
     camera.aspect = width / heightPx;
-    camera.fov = width < heightPx ? 60 : 46;
+    camera.fov = benchFov;
     camera.updateProjectionMatrix();
     inspectionCamera.aspect = width / heightPx;
     updateOptics();
