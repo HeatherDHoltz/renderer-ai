@@ -425,7 +425,14 @@
       "All prior RGB/probe/loupe/caustic approximations remain"
     ],
     "publication": {
-      "status": "pending"
+      "project_id": "appgprj_6ad1d1ee181c819186c337d3573bdaea",
+      "source_commit": "bd699b2c7412516783e184499b61f2eeb7b928fe",
+      "deployment_id": "appgdep_6ad2b3d28390819192231fec2eb6babf",
+      "status": "succeeded",
+      "url": "https://heathers-little-jeweler.zoeholtz2000.chatgpt.site",
+      "audience": "owner-private",
+      "github_implementation_commit": "ddc8888",
+      "browser_handoff": "Canonical hosted page reloaded and left open at normal ChatGPT sign-in. No new hosted WebGL interaction QA claimed; local desktop/portrait verification is recorded above."
     }
   }
 }
