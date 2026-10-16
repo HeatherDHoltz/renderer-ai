@@ -1,4 +1,5 @@
 import * as THREE from "../vendor/three.module.js";
+import { buildFacetBVH, facetBVHGLSL } from "./facet-bvh.js";
 
 // Convex, outward facet planes. Reject concavity instead of silently tracing an
 // unrelated convex hull. The CPU check and GPU share these exact mesh planes.
@@ -47,9 +48,19 @@ export function makeFacetMaterial(
   { ior = 2.417, dispersion = 0.018, absorption = [0.004, 0.004, 0.004] } = {},
 ) {
   const planes = facetPlanes(geometry);
+  const hierarchy = buildFacetBVH(geometry);
+  const tree = new THREE.DataTexture(
+    hierarchy.data,
+    hierarchy.data.length / 4,
+    1,
+    THREE.RGBAFormat,
+    THREE.FloatType,
+  );
+  tree.needsUpdate = true;
   const material = new THREE.ShaderMaterial({
     uniforms: {
       facets: { value: planes },
+      facetTree: { value: tree },
       environment: { value: environment },
       inverseObject: { value: new THREE.Matrix4() },
       objectRotation: { value: new THREE.Matrix3() },
@@ -97,11 +108,12 @@ export function makeFacetMaterial(
         }
         return result;
       }
-      ${convexOpticsGLSL(planes.length)}
+      ${convexOpticsGLSL(planes.length).split("      float exitFacet")[0]}
+      ${facetBVHGLSL(hierarchy.nodes.length)}
       vec3 traceStone(vec3 incident,vec3 n,float eta){
         float f=fresnel(-dot(incident,n),1.,eta);
         vec3 result=f*externalRadiance(pointLocal,reflect(incident,n));
-        vec3 d=refract(incident,n,1./eta),o=pointLocal+d*.00008;vec3 throughput=vec3(1.-f);
+        vec3 d=refract(incident,n,1./eta),o=pointLocal;vec3 throughput=vec3(1.-f);
         for(int bounce=0;bounce<12;bounce++){
           vec3 normal;float distance=exitFacet(o,d,normal);if(distance>1e5)break;
           throughput*=exp(-absorption*distance);vec3 hit=o+d*distance;
@@ -109,7 +121,7 @@ export function makeFacetMaterial(
           vec3 transmitted=refract(d,-normal,eta);
           if(reflected<.999999)result+=throughput*(1.-reflected)*externalRadiance(hit,transmitted);
           throughput*=reflected;if(max(throughput.r,max(throughput.g,throughput.b))<.002)break;
-          d=reflect(d,normal);o=hit+d*.00008;
+          d=reflect(d,normal);o=hit;
         }
         return result;
       }
@@ -123,6 +135,7 @@ export function makeFacetMaterial(
       }`,
   });
   material.userData.facetCount = planes.length;
+  material.addEventListener("dispose", () => tree.dispose());
   material.userData.update = (object, camera, light) => {
     material.uniformsNeedUpdate = true;
     const u = material.uniforms;
@@ -221,6 +234,6 @@ export function convexFacetHull(geometry) {
 export function convexOpticsGLSL(count) {
   return `      float fresnel(float ci,float ni,float nt){ci=abs(ci);float s2=ni*ni/(nt*nt)*(1.-ci*ci);if(s2>=1.)return 1.;float ct=sqrt(1.-s2);float rs=(ni*ci-nt*ct)/(ni*ci+nt*ct);float rp=(nt*ci-ni*ct)/(nt*ci+ni*ct);return .5*(rs*rs+rp*rp);}
       float exitFacet(vec3 o,vec3 d,out vec3 normal){float nearest=1e6;normal=vec3(0,1,0);
-        for(int i=0;i<${count};i++){vec4 p=facets[i];float den=dot(p.xyz,d);if(den>1e-6){float t=-(dot(p.xyz,o)+p.w)/den;if(t>1e-5&&t<nearest){nearest=t;normal=p.xyz;}}}return nearest;}
+        for(int i=0;i<${count};i++){vec4 p=facets[i];float den=dot(p.xyz,d);if(den>1e-6){float t=-(dot(p.xyz,o)+p.w)/den;if(t>1e-7&&t<nearest){nearest=t;normal=p.xyz;}}}return nearest;}
 `;
 }

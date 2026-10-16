@@ -27,11 +27,6 @@ export const ease = (x) => {
   return t * t * t * (t * (t * 6 - 15) + 10);
 };
 
-// A small seated head movement, never an orbit or a full camera turn.
-export function gazeOffset(x, y) {
-  return new THREE.Vector2(clamp(x, -1, 1) * 0.105, clamp(y, -1, 1) * 0.055);
-}
-
 // Each leg eases to rest. Straight segments cannot overshoot the safe corridor.
 export function corridorPoint(points, progress) {
   const t = clamp(progress) * (points.length - 1);

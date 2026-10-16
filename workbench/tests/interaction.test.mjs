@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import * as THREE from "../vendor/three.module.js";
 import {
   caseInspectionView,
-  gazeOffset,
   ease,
   corridorPoint,
   loupeCorridor,
@@ -13,13 +12,6 @@ import {
   benchIntersections,
 } from "../src/interaction.js";
 
-test("seated gaze has finite angular limits and returns to center", () => {
-  const right = gazeOffset(12, -8),
-    left = gazeOffset(-12, 8);
-  assert.deepEqual(right.toArray(), [0.105, -0.055]);
-  assert.ok(right.clone().add(left).length() < 1e-12);
-  assert.equal(gazeOffset(0, 0).length(), 0);
-});
 test("pickup advances by elapsed time and reverses without a pose jump", () => {
   const points = [
     new THREE.Vector3(2, -1, 1),

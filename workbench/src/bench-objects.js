@@ -381,6 +381,18 @@ export function makeBenchObjects(
     [0, 0, 0.065],
     loupe,
   );
+  const baffleDepth = new THREE.Mesh(
+    baffle.geometry,
+    new THREE.MeshBasicMaterial({
+      colorWrite: false,
+      depthWrite: true,
+      side: THREE.DoubleSide,
+    }),
+  );
+  baffleDepth.position.copy(baffle.position);
+  baffleDepth.renderOrder = -1000;
+  baffleDepth.visible = false;
+  loupe.add(baffleDepth);
   baffle.visible = false;
   baffle.castShadow = false;
   loupe.position.set(1.45, -1.04, 0.8);
@@ -424,6 +436,7 @@ export function makeBenchObjects(
       .map((s) => s.object.material),
     loupe,
     baffle,
+    baffleDepth,
     restPosition,
     restQuaternion,
     select(kind, value, finish = 14) {
@@ -436,6 +449,7 @@ export function makeBenchObjects(
                 Math.min(...FINISHES.map((f) => Math.abs(f.value - finish))));
     },
     animate(time, hover, motion = true) {
+      let moving = false;
       for (const c of Object.values(cases)) {
         c.progress = THREE.MathUtils.damp(
           c.progress,
@@ -445,6 +459,7 @@ export function makeBenchObjects(
         );
         if (Math.abs(c.progress - c.destination) < 0.001)
           c.progress = c.destination;
+        moving ||= c.progress !== c.destination;
         const p = ease(c.progress);
         c.lower.position.y = 0.06 + 0.5 * p;
         c.upper.position.x = c.sign * (c.width + 0.16) * p;
@@ -471,13 +486,18 @@ export function makeBenchObjects(
           hover?.kind === s.kind &&
           hover.value === s.id &&
           (s.kind !== "metal" || hover.finish === s.finish);
+        const destination = s.baseY + (active ? 0.07 : 0);
         s.object.position.y = THREE.MathUtils.damp(
           s.object.position.y,
-          s.baseY + (active ? 0.07 : 0),
+          destination,
           14,
           time,
         );
+        if (Math.abs(s.object.position.y - destination) < 0.0001)
+          s.object.position.y = destination;
+        else moving = true;
       }
+      return moving;
     },
   };
 }

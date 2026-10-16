@@ -7,7 +7,7 @@
   },
   "checks": {
     "web_tests": {
-      "passed": 31,
+      "passed": 34,
       "failed": 0,
       "command": "npm test --prefix workbench"
     },
@@ -92,7 +92,8 @@
       1034,
       1035
     ],
-    "png_export_note": "1035\u00d7669 CSS viewport, capped device pixel ratio 1.5; actual PNG is 1552\u00d71003 pixels."
+    "png_export_note": "1035\u00d7669 CSS viewport, capped device pixel ratio 1.5; actual PNG is 1552\u00d71003 pixels.",
+    "historical_note": "Earlier milestone evidence below is retained. Current controls and performance are described in orbit_revision."
   },
   "background_assets": {
     "models": 5,
@@ -112,24 +113,25 @@
     "browser_handoff": "New polished tiger eye verified live at 2x, visible body bands and retained highlights. Owner-private audience preserved."
   },
   "limits": [
-    "No measured device FPS benchmark",
+    "No mobile FPS or laptop-temperature measurement; M1 Max steady-draw comparison is in orbit_revision",
     "Tiger eye is an artist-tuned surface model, not measured volume optics",
     "Loupe uses camera projection and a 3D eyepiece, not ray tracing through a designed optical lens",
     "Live browser GPU, Rust CPU, and external Mitsuba outputs are credited separately",
     "Pickup clearance uses conservative proxies and mounted-gem bounds, not general rigid-body collision physics",
-    "Faceted gem external rays sample a room cube probe; no near-field setting reflection, caustics or full scene path tracing",
+    "Faceted gem external rays sample a room cube probe; no near-field setting reflection or full scene path tracing; bounded bench caustics are separate",
     "Alloy colors and dispersion/scattering parameters are artist tuned; not measured gemstone/alloy optics",
     "Reflection capture refresh is limited to 10 Hz during lamp changes; frame rate has not been benchmarked on mobile"
   ],
   "optics": {
-    "diamond_mesh": "Same Zsky Jewel 01 OBJ as Rust panel, CC BY 3.0, 21 facet planes",
+    "diamond_mesh": "Project brilliant cut, 89 outward supporting planes, finite girdle; accelerated eye-ray facet exits",
     "emerald_mesh": "Project step mesh repaired to closed convex hull, 42 facet planes",
     "internal_bounce_limit": 12,
     "diamond_ior": 2.417,
     "dispersion": "Three RGB refraction indices, not full spectral integration",
     "reflection_probe": "256-square half-float cube; cached max 10 Hz while dirty; main jewelry/loupe excluded; raw cube for faceted gems, explicit filtered material envMaps for main metal, tiger eye and ring samples. Room keeps its stable HDR environment.",
     "sample_case": "Six artist-tuned metal presets \u00d7 three finish rows = 18 rings",
-    "msaa": "Up to four samples in offscreen target"
+    "msaa": "Up to four samples in offscreen target",
+    "legacy_reference_mesh": "Same Zsky Jewel 01 OBJ as Rust panel, CC BY 3.0, 21 facet planes"
   },
   "ring_drag_regression": {
     "cause": "Jewelry moved to layer 1 for reflection capture exclusion, but pointer raycaster still used only layer 0. Keyboard/loupe movement worked and earlier QA missed direct bench dragging.",
@@ -292,6 +294,138 @@
       "audience": "Existing owner-private audience preserved.",
       "browser_handoff": "Canonical site reloaded and left open; ChatGPT sign-in required. No hosted WebGL/interaction QA claimed. Actual rendering, controls and GPU queries verified locally.",
       "implementation_github_commit": "e5fd69c"
+    }
+  },
+  "orbit_revision": {
+    "date": "2026-10-16",
+    "interaction": [
+      "Drag-only seated orbit around a movable pivot; no cursor-follow camera",
+      "Pointer/touch-midpoint dolly, continuous trackpad deltas and pinch-wheel handling",
+      "Double-click / F focuses an actual room or jewelry surface; Home resets",
+      "Independent Turn jewelry tool; case and loupe transitions preserve/restore view"
+    ],
+    "rendering": [
+      "Demand rendering rests completely after camera, cases, hover and caustics settle; explicit slow turn stays active",
+      "950k moving pixels / 700k moving loupe pixels; final still <=2M pixels / DPR1.5; up to2x offscreen MSAA",
+      "Baked architectural lighting; static room excluded from six dynamic point-shadow faces",
+      "Stackless facet-bound hierarchy; same absorption, RGB dispersion, Fresnel/TIR and 12-bounce limit",
+      "Internal boundary origins eliminate the old direction-offset corner skip",
+      "Opaque depth-only physical eyepiece baffle skips hidden gem fragments once fully raised"
+    ],
+    "checks": {
+      "web_tests": 34,
+      "rust_tests": 98,
+      "cargo_fmt": "passed",
+      "strict_clippy": "passed",
+      "class_files_unchanged": 12,
+      "reference_facet_exits": 96000
+    },
+    "performance": {
+      "viewport": [
+        1280,
+        720
+      ],
+      "method": "M1 Max / IAB WebGL2; each metric is 60 steady draw intervals with photons cached, measured in the optional diagnostic build. No competing continuous scene. Uncontrolled thermal state; not rotation FPS, mobile FPS or temperature.",
+      "results": [
+        {
+          "mode": "loupe",
+          "samples": 60,
+          "drawIntervalMedianMs": 16.800000071525574,
+          "dpr": 0.8715208609729954,
+          "canvas": [
+            1115,
+            627
+          ],
+          "flags": [
+            "interactive"
+          ]
+        },
+        {
+          "mode": "loupe",
+          "samples": 60,
+          "drawIntervalMedianMs": 18.199999928474426,
+          "dpr": 1,
+          "canvas": [
+            1280,
+            720
+          ],
+          "flags": [
+            "interactive",
+            "dpr1"
+          ]
+        },
+        {
+          "mode": "loupe",
+          "samples": 60,
+          "drawIntervalMedianMs": 49,
+          "dpr": 1,
+          "canvas": [
+            1280,
+            720
+          ],
+          "flags": [
+            "interactive",
+            "dpr1",
+            "planes"
+          ]
+        }
+      ],
+      "idleBench": {
+        "start": 14,
+        "end": 14,
+        "additionalDraws": 0
+      },
+      "comparison": "At the same1280x720 internal pixels in the final scene: full plane scan49.0ms versus hierarchy18.2ms median steady draw. Shipping adaptive loupe1115x627:16.8ms. Includes full-view rendering and postprocessing; cached photons; no active turn/light workload or universal FPS claim."
+    },
+    "qa": {
+      "desktop": [
+        1280,
+        720
+      ],
+      "portrait": [
+        430,
+        850
+      ],
+      "horizontal_overflow": false,
+      "desktop_controls": "Native drag orbit, pointer wheel zoom, double-click focus, F, Home, keyboard loupe turn, pickup/return, case orbit then loupe transition passed",
+      "portrait_controls": "Four-tool tray and loupe magnification controls visible within430px; scene and lens inspected",
+      "pinch_note": "Pointer pinch and ctrl-wheel branches implemented; unit-tested ratio/delta behavior. No physical Mac trackpad gesture or mobile-device FPS measurement claimed.",
+      "reduced_motion": "Existing preference respected, not browser-emulated this milestone",
+      "idle_bench_draws": {
+        "before": 14,
+        "after": 14,
+        "additional": 0
+      },
+      "evidence": [
+        "gallery/workbench/orbit-workshop.jpg",
+        "gallery/workbench/orbit-loupe.jpg",
+        "gallery/workbench/orbit-cases.jpg"
+      ],
+      "final_console_errors": false,
+      "direct_ring_drag": "Native band drag visibly turned the ring while camera yaw remained0.0000; caustic revision advanced to20.",
+      "light_drag": {
+        "before": [
+          -20,
+          65
+        ],
+        "after": [
+          -5,
+          73
+        ],
+        "fixture_visible": false
+      },
+      "console_note": "One development shader-string compilation error at23:19 was corrected. Subsequent final ready loads, desktop and portrait interaction checks showed no new console errors and no error overlay."
+    },
+    "limits": [
+      "Steady draw cadence forces continuous frames with a fixed camera and cached photons; it does not benchmark active stone/light movement",
+      "GPU/CPU thermal state uncontrolled; no universal60fps or temperature reduction claim",
+      "Camera uses bounded navigation, not general collision physics",
+      "Adaptive detail changes pixel density while moving; it preserves the optical model",
+      "Fire animation pauses with the resting view; normal input wakes it",
+      "All prior RGB/probe/loupe/caustic approximations remain"
+    ],
+    "publication": {
+      "status": "pending"
     }
   }
 }

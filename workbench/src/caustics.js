@@ -88,16 +88,16 @@ function photonMaterial(planes, textureUniforms) {
         float seed=position.x*4713.+position.y*797.;
         bool outside=random(seed)<f;
         d=outside?reflect(d,n):refract(d,n,1./eta);
-        o=hit+d*.00008;float throughput=1.;
+        o=hit;float throughput=1.;
         if(!outside){
           for(int bounce=0;bounce<12;bounce++){
             float distance=exitFacet(o,d,n);if(distance>1.e5)return;
             throughput*=exp(-dot(absorption,position.z<.5?vec3(1,0,0):position.z<1.5?vec3(0,1,0):vec3(0,0,1))*distance);
             hit=o+d*distance;f=fresnel(dot(d,n),eta,1.);
             if(f<.999999&&random(seed+float(bounce)*17.31+1.2)>=f){
-              d=refract(d,-n,eta);o=hit+d*.00008;outside=true;break;
+              d=refract(d,-n,eta);o=hit;outside=true;break;
             }
-            d=reflect(d,n);o=hit+d*.00008;
+            d=reflect(d,n);o=hit;
           }
         }
         if(!outside)return;

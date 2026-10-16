@@ -2099,3 +2099,41 @@ dialog h2 {
   border-radius: 5px;
   text-align: left;
 }
+
+/* Four tactile tools stay within a narrow phone view. */
+@media (max-width: 600px) {
+  .workshop-game .tool-tray {
+    max-width: calc(100vw - 24px);
+    padding: 7px;
+    gap: 7px;
+  }
+  .workshop-game .tool-buttons {
+    gap: 4px;
+  }
+  .workshop-game .tool {
+    padding: 8px 7px;
+    gap: 4px;
+  }
+  .workshop-game .tool kbd {
+    display: none;
+  }
+  .workshop-game .tool.active {
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+  .workshop-game .tool span {
+    font-size: 9px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workshop-game .tool-tray {
+    backdrop-filter: none;
+  }
+}
+.workshop-game #interaction-hint {
+  color: #ede0c5;
+  background: #171c16d9;
+  border-color: #c2aa7440;
+  opacity: 1;
+  text-shadow: none;
+}

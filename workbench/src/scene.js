@@ -97,6 +97,7 @@ import {
   examinationLights,
   bindExaminationLights,
 } from "./examination-light.js";
+import { BenchOrbit } from "./orbit.js";
 import { GEMS } from "./gems.js";
 import { cutGeometry } from "./cuts.js";
 import { applyMetal } from "./metals.js";
@@ -106,7 +107,6 @@ import { createCaustics } from "./caustics.js";
 import { makeBenchObjects } from "./bench-objects.js";
 import {
   ease,
-  gazeOffset,
   corridorPoint,
   loupeCorridor,
   advanceProgress,
@@ -121,7 +121,7 @@ export async function createWorkbench(host, onFatalError) {
     antialias: true,
     alpha: false,
     preserveDrawingBuffer: true,
-    powerPreference: "high-performance",
+    powerPreference: "default",
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -160,9 +160,10 @@ export async function createWorkbench(host, onFatalError) {
   scene.add(inspectionCamera);
   const benchPosition = camera.position.clone();
   const benchQuaternion = camera.quaternion.clone();
-  let benchFov = 46;
-  const gaze = new THREE.Vector2(),
-    gazeTarget = new THREE.Vector2();
+  let benchFov = 46,
+    orbitFov = 46;
+  const orbit = new BenchOrbit(benchPosition, new THREE.Vector3(0, 0.3, -0.3));
+  let collectionReturn = null;
   let inspection = 0,
     inspectionDestination = 0,
     flight = null,
@@ -259,10 +260,9 @@ export async function createWorkbench(host, onFatalError) {
     source = "penlight",
     angle = 45,
     height = 45,
-    tool = "turn",
+    tool = "explore",
     auto = false,
     zoom = 3,
-    proximity = 0,
     selectedMetal = "gold",
     finishLevel = 14;
   const neutral = new THREE.Quaternion().setFromEuler(
@@ -440,7 +440,8 @@ export async function createWorkbench(host, onFatalError) {
     tiger.userData.fiberUniforms.fiberSoftness.value =
       source === "softbox" ? 0.11 : 0.014;
   }
-  let objects;
+  let objects,
+    objectsMoving = false;
   updateMount();
   updateLight();
   const workshop = await buildWorkshop(scene, surfaces);
@@ -473,6 +474,9 @@ export async function createWorkbench(host, onFatalError) {
     host.dataset.reflectionRevision = String(++reflectionRevision);
   }
   const raycaster = new THREE.Raycaster();
+  let zoomAnchor = null,
+    zoomAt = -Infinity;
+  const zoomPointer = new THREE.Vector2();
   const lampPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -1.2);
   const lampGrip = new THREE.Vector3();
   function lampPoint(x, y) {
@@ -498,9 +502,29 @@ export async function createWorkbench(host, onFatalError) {
     return hits.length
       ? hits[0].object.userData.action || {
           kind: "jewelry",
-          label: "Turn the jewelry · drag",
+          label:
+            tool === "explore"
+              ? "Jewelry · double-click to focus"
+              : "Turn the jewelry · drag",
         }
       : null;
+  }
+  function releaseCollectionCamera() {
+    if (!boxFlight) return;
+    orbit.adopt(camera.position, boxFlight.center);
+    orbitFov = camera.fov;
+    boxFlight = null;
+  }
+  function focusPoint(x, y) {
+    scene.updateMatrixWorld(true);
+    const hits = benchIntersections(raycaster, camera, x, y, [
+      workshop.focusTargets,
+      spin,
+      ...objects.targets,
+      support,
+      workshop.mat,
+    ]);
+    return hits.find((h) => !h.object.userData.blockPointer)?.point || null;
   }
   function focusBox(id) {
     if (inspection > 0 || inspectionDestination) {
@@ -511,22 +535,35 @@ export async function createWorkbench(host, onFatalError) {
     }
     const view = id
       ? objects.boxView(id, camera.aspect)
-      : { position: benchPosition, quaternion: benchQuaternion };
+      : {
+          position: collectionReturn?.position || benchPosition,
+          quaternion: collectionReturn?.quaternion || benchQuaternion,
+          center: collectionReturn?.center || orbit.target,
+        };
+    if (id && !collectionReturn)
+      collectionReturn = {
+        position: camera.position.clone(),
+        quaternion: camera.quaternion.clone(),
+        center: orbit.target.clone(),
+        fov: camera.fov,
+      };
     boxFlight = {
       id,
       progress: 0,
       fromPosition: camera.position.clone(),
       fromQuaternion: camera.quaternion.clone(),
       fromFov: camera.fov,
+      fov: id ? 40 : collectionReturn?.fov || benchFov,
       position: view.position.clone(),
       quaternion: view.quaternion.clone(),
       center: view.center || new THREE.Vector3(0, 0.3, 0),
     };
     objects.focusBox(id);
-    gazeTarget.set(0, 0);
+
     invalidate();
   }
   function prepareFlight() {
+    orbit.adopt(camera.position, orbit.target);
     scene.updateMatrixWorld(true);
     const center = stone.localToWorld(
       stone.geometry.boundingBox.getCenter(new THREE.Vector3()),
@@ -546,6 +583,7 @@ export async function createWorkbench(host, onFatalError) {
       points: loupeCorridor(objects.restPosition, eye, bounds),
       benchPosition: camera.position.clone(),
       benchQuaternion: camera.quaternion.clone(),
+      benchFov: camera.fov,
     };
   }
   function updateCamera(dt) {
@@ -563,8 +601,6 @@ export async function createWorkbench(host, onFatalError) {
         .applyQuaternion(flight.quaternion)
         .add(flight.position);
     }
-    gaze.x = THREE.MathUtils.damp(gaze.x, gazeTarget.x, 7, dt);
-    gaze.y = THREE.MathUtils.damp(gaze.y, gazeTarget.y, 7, dt);
     if (boxFlight) {
       boxFlight.progress = advanceProgress(
         boxFlight.progress,
@@ -577,13 +613,12 @@ export async function createWorkbench(host, onFatalError) {
       camera.quaternion
         .copy(boxFlight.fromQuaternion)
         .slerp(boxFlight.quaternion, t);
-      camera.fov = THREE.MathUtils.lerp(
-        boxFlight.fromFov,
-        boxFlight.id ? 40 : benchFov,
-        t,
-      );
+      camera.fov = THREE.MathUtils.lerp(boxFlight.fromFov, boxFlight.fov, t);
       host.dataset.box = boxFlight.id || "returning";
       if (boxFlight.progress === 1 && !boxFlight.id) {
+        orbit.adopt(camera.position, boxFlight.center);
+        orbitFov = boxFlight.fov;
+        collectionReturn = null;
         boxFlight = null;
         host.dataset.box = "";
         if (pendingLoupe) {
@@ -593,27 +628,8 @@ export async function createWorkbench(host, onFatalError) {
         }
       }
     } else if (inspection === 0 && inspectionDestination === 0) {
-      const offset = reduced.matches
-        ? new THREE.Vector2()
-        : gazeOffset(gaze.x, gaze.y);
-      const destination = benchPosition
-        .clone()
-        .add(
-          new THREE.Vector3(
-            reduced.matches ? 0 : gaze.x * 0.09,
-            reduced.matches ? 0 : gaze.y * 0.035,
-            -proximity,
-          ),
-        );
-      camera.position.lerp(destination, 1 - Math.exp(-dt * 8));
-      camera.quaternion
-        .copy(benchQuaternion)
-        .multiply(
-          new THREE.Quaternion().setFromEuler(
-            new THREE.Euler(-offset.y, -offset.x, 0, "YXZ"),
-          ),
-        );
-      camera.fov = benchFov;
+      orbit.update(camera, dt);
+      camera.fov = orbitFov;
     } else if (flight) {
       // The tool visibly lifts first. The seated camera then leans toward it.
       const t = ease(THREE.MathUtils.clamp((inspection - 0.45) / 0.55, 0, 1));
@@ -622,7 +638,7 @@ export async function createWorkbench(host, onFatalError) {
         .copy(flight.benchQuaternion)
         .slerp(flight.quaternion, t);
       camera.fov = THREE.MathUtils.lerp(
-        benchFov,
+        flight.benchFov,
         inspectionFieldOfView(zoom),
         t,
       );
@@ -641,16 +657,22 @@ export async function createWorkbench(host, onFatalError) {
         Math.tan(THREE.MathUtils.degToRad(19));
       const size = THREE.MathUtils.lerp(1, scale, ease(inspection));
       lens.scale.set(size, size, 1);
+      objects.baffleDepth.visible = inspection === 1;
       objects.baffle.visible = inspection > 0.88;
       objects.baffle.material.opacity = ease((inspection - 0.88) / 0.12);
     }
     host.dataset.inspection = inspection.toFixed(3);
-    host.dataset.viewYaw = (reduced.matches ? 0 : gaze.x * 0.105).toFixed(4);
+    host.dataset.viewYaw = orbit.spherical.theta.toFixed(4);
+    host.dataset.viewRadius = orbit.spherical.radius.toFixed(4);
+    host.dataset.viewTarget = orbit.target
+      .toArray()
+      .map((v) => v.toFixed(3))
+      .join(",");
   }
   // A light depth-of-field pass: room props soften while the specimen stays crisp.
   const target = new THREE.WebGLRenderTarget(1, 1, {
     type: THREE.HalfFloatType,
-    samples: Math.min(4, renderer.capabilities.maxSamples),
+    samples: Math.min(2, renderer.capabilities.maxSamples),
   });
   target.depthTexture = new THREE.DepthTexture(1, 1, THREE.UnsignedIntType);
   const postScene = new THREE.Scene(),
@@ -684,26 +706,36 @@ export async function createWorkbench(host, onFatalError) {
     stopped = false,
     scheduled = 0,
     lastDraw = 0,
-    needsFrame = true;
+    needsFrame = true,
+    interactionUntil = 0,
+    draws = 0,
+    quality = "";
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   function resize() {
     width = host.clientWidth;
     heightPx = host.clientHeight;
     if (width < 1 || heightPx < 1) return;
-    renderer.setSize(width, heightPx, false);
-    const ratio = renderer.getPixelRatio();
-    target.setSize(Math.round(width * ratio), Math.round(heightPx * ratio));
-    postMaterial.uniforms.pixel.value.set(
-      1 / (width * ratio),
-      1 / (heightPx * ratio),
-    );
+    setQuality(false, true);
     const framingPose = benchFraming(width / heightPx);
     benchFov = framingPose.fov;
+    orbitFov = benchFov;
     benchPosition.set(0, framingPose.y, framingPose.z);
     const framing = new THREE.PerspectiveCamera();
     framing.position.copy(benchPosition);
     framing.lookAt(0, 0.3, -0.3);
     benchQuaternion.copy(framing.quaternion);
+    if (flight) {
+      flight.benchPosition.copy(benchPosition);
+      flight.benchQuaternion.copy(benchQuaternion);
+      flight.benchFov = benchFov;
+    }
+    if (collectionReturn) {
+      collectionReturn.position.copy(benchPosition);
+      collectionReturn.quaternion.copy(benchQuaternion);
+      collectionReturn.center.set(0, 0.3, -0.3);
+      collectionReturn.fov = benchFov;
+    }
+    orbit.adopt(benchPosition, new THREE.Vector3(0, 0.3, -0.3));
     camera.aspect = width / heightPx;
     camera.fov = benchFov;
     camera.updateProjectionMatrix();
@@ -729,28 +761,42 @@ export async function createWorkbench(host, onFatalError) {
       ? active.position.distanceTo(boxFlight.center)
       : inspection > 0 && flight
         ? active.position.distanceTo(flight.center)
-        : active.position.distanceTo(new THREE.Vector3(0, 0.3, 0));
+        : active.position.distanceTo(orbit.target);
     renderer.setRenderTarget(target);
     renderer.render(scene, active);
     renderer.setRenderTarget(null);
     renderer.render(postScene, postCamera);
+    host.dataset.draws = String(++draws);
+  }
+  function setQuality(moving, force = false) {
+    const loupeActive = inspection > 0 || inspectionDestination > 0;
+    const next = moving
+      ? loupeActive
+        ? "interactive-loupe"
+        : "interactive"
+      : "still";
+    if (!force && quality === next) return;
+    quality = next;
+    const pixels = moving ? (loupeActive ? 700000 : 950000) : 2000000;
+    const ratio = Math.min(
+      devicePixelRatio || 1,
+      moving ? 1 : 1.5,
+      Math.sqrt(pixels / Math.max(1, width * heightPx)),
+    );
+    renderer.setPixelRatio(ratio);
+    renderer.setSize(width, heightPx, false);
+    target.setSize(Math.round(width * ratio), Math.round(heightPx * ratio));
+    postMaterial.uniforms.pixel.value.set(
+      1 / (width * ratio),
+      1 / (heightPx * ratio),
+    );
+    host.dataset.renderQuality = next;
+    needsFrame = true;
   }
   function frame(now) {
     scheduled = 0;
     if (stopped || paused || !visible || document.hidden) return;
-    const benchMoving =
-      inspection === 0 &&
-      camera.position.distanceTo(
-        benchPosition
-          .clone()
-          .add(
-            new THREE.Vector3(
-              reduced.matches ? 0 : gaze.x * 0.09,
-              reduced.matches ? 0 : gaze.y * 0.035,
-              -proximity,
-            ),
-          ),
-      ) > 0.001;
+    const benchMoving = !boxFlight && inspection === 0 && orbit.moving;
     const aiming =
       inspection === 1 &&
       flight &&
@@ -764,36 +810,46 @@ export async function createWorkbench(host, onFatalError) {
       aiming ||
       benchMoving ||
       auto ||
-      !reduced.matches ||
+      objectsMoving ||
+      (!inspectionDestination &&
+        spin.position.distanceToSquared(new THREE.Vector3(0, 0.2, 0)) > 1e-8) ||
+      (boxFlight && boxFlight.progress < 1) ||
+      Object.values(objects.cases).some((c) => c.progress !== c.destination) ||
       inspection !== inspectionDestination ||
-      gaze.distanceTo(gazeTarget) > 0.001;
-    if (needsFrame || now - lastDraw > 33) {
+      now < interactionUntil;
+    setQuality(moving);
+    if (needsFrame || now - lastDraw > 16) {
       if (auto && inspection === 0) {
         const q = new THREE.Quaternion().setFromAxisAngle(
           new THREE.Vector3(0, 1, 0),
-          Math.min((now - lastDraw) / 1000, 0.05) * 0.22,
+          Math.min((now - lastDraw) / 1000, 0.1) * 0.22,
         );
         spin.quaternion.premultiply(q).normalize();
         key.shadow.needsUpdate = true;
         workshop.sun.shadow.needsUpdate = true;
       }
-      const dt = Math.min((now - lastDraw) / 1000, 0.05);
-      if (inspection !== inspectionDestination) key.shadow.needsUpdate = true;
+      const dt = Math.min((now - lastDraw) / 1000, 0.1);
       inspection = advanceProgress(
         inspection,
         inspectionDestination,
         dt,
         reduced.matches ? 0.65 : 2.4,
       );
-      if (!inspectionDestination)
+      if (
+        !inspectionDestination &&
+        spin.position.distanceToSquared(new THREE.Vector3(0, 0.2, 0)) > 1e-8
+      ) {
         spin.position.lerp(new THREE.Vector3(0, 0.2, 0), 1 - Math.exp(-dt * 8));
+        key.shadow.needsUpdate = true;
+        workshop.sun.shadow.needsUpdate = true;
+      }
       if (inspection === 0 && pendingBox) {
         const next = pendingBox;
         pendingBox = null;
         focusBox(next);
       }
       updateCamera(dt);
-      objects.animate(dt, hover, !reduced.matches);
+      objectsMoving = objects.animate(dt, hover, !reduced.matches);
       if (
         boxFlight?.progress < 1 ||
         Object.values(objects.cases).some((c) => c.progress !== c.destination)
@@ -808,13 +864,16 @@ export async function createWorkbench(host, onFatalError) {
       needsFrame = false;
       lastDraw = now;
     }
-    if (moving || caustics.settling) requestFrame();
+    host.dataset.renderState =
+      moving || objectsMoving || caustics.settling ? "settling" : "resting";
+    if (moving || objectsMoving || caustics.settling) requestFrame();
   }
   function requestFrame() {
     if (!scheduled && !stopped) scheduled = requestAnimationFrame(frame);
   }
   function invalidate(shadows = true) {
     needsFrame = true;
+    interactionUntil = performance.now() + 220;
     if (shadows) {
       key.shadow.needsUpdate = true;
       workshop.sun.shadow.needsUpdate = true;
@@ -890,7 +949,7 @@ export async function createWorkbench(host, onFatalError) {
     focusBox,
     setTool(value) {
       tool = value;
-      if (boxFlight) {
+      if (boxFlight || collectionReturn) {
         pendingLoupe = value === "loupe";
         focusBox(null);
         return;
@@ -901,17 +960,15 @@ export async function createWorkbench(host, onFatalError) {
       invalidate();
     },
     pick,
-    look(x, y) {
-      if (inspection > 0 || inspectionDestination || boxFlight) return;
-      gazeTarget.set(x * 2 - 1, y * 2 - 1);
-      invalidate(false);
-    },
     hover(action) {
+      if (
+        hover?.kind === action?.kind &&
+        hover?.value === action?.value &&
+        hover?.finish === action?.finish
+      )
+        return;
       hover = action;
       invalidate(false);
-    },
-    holdLook() {
-      gazeTarget.copy(gaze);
     },
     get transitioning() {
       return (
@@ -935,17 +992,32 @@ export async function createWorkbench(host, onFatalError) {
       return { angle: Math.round(angle), height: Math.round(height) };
     },
     setLoupe(_x, _y, value) {
+      if (zoom === value) return;
       zoom = value;
       updateOptics();
       invalidate();
     },
     setAutoTurn(value) {
+      if (auto === value) return;
       auto = value;
-      invalidate();
+      invalidate(false);
     },
     reset() {
       spin.quaternion.copy(neutral);
-      ((proximity = 0), (selectedMetal = "gold"), (finishLevel = 14));
+      orbit.adopt(benchPosition, new THREE.Vector3(0, 0.3, -0.3));
+      orbitFov = benchFov;
+      collectionReturn = null;
+      boxFlight = null;
+      pendingBox = null;
+      pendingLoupe = false;
+      objects.focusBox(null);
+      inspectionDestination = 0;
+      if (flight) {
+        flight.benchPosition.copy(benchPosition);
+        flight.benchQuaternion.copy(benchQuaternion);
+        flight.benchFov = benchFov;
+      }
+      host.dataset.box = "";
       updatePivot();
       invalidate();
     },
@@ -967,16 +1039,55 @@ export async function createWorkbench(host, onFatalError) {
       }
       invalidate();
     },
-    zoom(factor) {
-      proximity = THREE.MathUtils.clamp(
-        proximity + (factor < 1 ? 0.2 : -0.2),
-        -0.4,
-        1.3,
-      );
-      if (!inspection) updatePivot();
-      invalidate();
+    orbit(dx, dy) {
+      if (
+        inspection ||
+        inspectionDestination ||
+        (boxFlight && boxFlight.progress < 1)
+      )
+        return;
+      releaseCollectionCamera();
+      zoomAt = -Infinity;
+      orbit.drag(dx, dy);
+      invalidate(false);
+    },
+    focus(x, y) {
+      if (
+        inspection ||
+        inspectionDestination ||
+        (boxFlight && boxFlight.progress < 1)
+      )
+        return;
+      const point = focusPoint(x, y);
+      if (!point) return;
+      releaseCollectionCamera();
+      orbit.focus(point, 3.6);
+      invalidate(false);
+    },
+    zoom(factor, x = 0.5, y = 0.5) {
+      if (
+        inspection ||
+        inspectionDestination ||
+        (boxFlight && boxFlight.progress < 1)
+      )
+        return;
+      const now = performance.now();
+      // Reuse a world-space gesture anchor instead of raycasting the entire
+      // static room on every tiny trackpad delta.
+      if (
+        now - zoomAt > 150 ||
+        zoomPointer.distanceToSquared(new THREE.Vector2(x, y)) > 0.0025
+      ) {
+        zoomAnchor = focusPoint(x, y);
+        zoomPointer.set(x, y);
+      }
+      zoomAt = now;
+      releaseCollectionCamera();
+      orbit.zoom(factor, zoomAnchor);
+      invalidate(false);
     },
     async photo() {
+      setQuality(false);
       draw();
       return new Promise((resolve) =>
         renderer.domElement.toBlob(resolve, "image/png"),

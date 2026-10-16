@@ -1,5 +1,6 @@
 import { GEMS } from "./gems.js";
 import { METALS } from "./metals.js";
+import { wheelScale } from "./orbit.js";
 const $ = (id) => document.getElementById(id);
 const state = {
   gem: "diamond",
@@ -11,7 +12,7 @@ const state = {
   height: 65,
   source: "penlight",
   background: "cream",
-  tool: "turn",
+  tool: "explore",
   auto: false,
   caustics: true,
   zoom: 2,
@@ -79,11 +80,12 @@ for (const [id, label] of [
 function openBox(id) {
   if (!$("cabinet").hidden) setDrawer(false);
   state.box = id;
-  state.tool = "turn";
+  state.tool = "explore";
   state.auto = false;
   app?.setAutoTurn(false);
+  app?.setTool("explore");
   app?.focusBox(id);
-  choose("tool", "turn");
+  choose("tool", "explore");
   updateLabels();
   announce(
     id === "gems"
@@ -161,7 +163,9 @@ function updateLabels() {
   $("loupe-controls").hidden = state.tool !== "loupe";
   $("tray-tip").hidden = state.tool === "loupe";
   const hint = {
-    turn: "Look around with your cursor · touch the objects on the bench",
+    explore:
+      "Drag to look around · scroll / pinch to zoom · double-click to focus",
+    turn: "Drag jewelry to turn it · drag the room to look around",
     light: "Drag across the view to move the light · arrow keys also work",
     loupe: "Drag to turn the stone · scroll to magnify",
   }[state.tool];
@@ -184,7 +188,7 @@ function setTool(value) {
   app?.setTool(value);
   updateLabels();
   announce(
-    `${value === "turn" ? "Turn" : value === "light" ? "Examination light" : "Loupe"} selected. ${value === "loupe" ? "Drag to turn the jewelry inside the eyepiece. Escape returns to the bench." : ""}`,
+    `${value === "explore" ? "Explore" : value === "turn" ? "Turn" : value === "light" ? "Examination light" : "Loupe"} selected. ${value === "loupe" ? "Drag to turn the jewelry inside the eyepiece. Escape returns to the bench." : ""}`,
   );
 }
 function updateLight() {
@@ -273,6 +277,7 @@ $("loupe-less").addEventListener("click", () => {
 $("reset-view").addEventListener("click", () => {
   state.auto = false;
   app?.setAutoTurn(false);
+  setTool("explore");
   app?.reset();
   state.loupeX = 0.5;
   state.loupeY = state.setting === "ring" ? 0.35 : 0.49;
@@ -307,7 +312,6 @@ $("save-photo").addEventListener("click", async () => {
     button.disabled = false;
   }
 });
-let lastPoint = { x: 0, y: 0 };
 const pointers = new Map();
 let pinchDistance = 0;
 function point(event) {
@@ -337,7 +341,7 @@ function hoverAt(event) {
     ? ["jewelry", "light"].includes(action.kind)
       ? "grab"
       : "pointer"
-    : "default";
+    : "grab";
   $("object-hint").textContent = action?.label || "";
   $("object-hint").hidden = !action;
   return action;
@@ -347,51 +351,59 @@ host.addEventListener("pointerdown", (event) => {
   if (pointers.size) {
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     pinchDistance = distance();
+    pressed = null;
     host.setPointerCapture(event.pointerId);
     return;
   }
   const p = point(event),
     action = app.pick(p.x, p.y);
-  if (!action) return;
-  app.holdLook();
-  if (action.kind === "light") app.beginLightDrag(p.x, p.y);
+
+  if (action?.kind === "light") app.beginLightDrag(p.x, p.y);
   pressed = action;
-  grab = action.kind;
+  grab =
+    action?.kind === "light"
+      ? "light"
+      : action?.kind === "jewelry" && state.tool !== "explore"
+        ? "jewelry"
+        : "camera";
   travel = 0;
   dragging = true;
-  lastPoint = { x: event.clientX, y: event.clientY };
-  pointers.set(event.pointerId, lastPoint);
+  pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
   pinchDistance = distance();
   state.auto = false;
   app.setAutoTurn(false);
   updateLabels();
   host.setPointerCapture(event.pointerId);
   host.focus({ preventScroll: true });
-  host.style.cursor = ["jewelry", "light"].includes(grab)
-    ? "grabbing"
-    : "pointer";
+  host.style.cursor = "grabbing";
 });
 host.addEventListener("pointermove", (event) => {
   if (!app) return;
   if (!dragging) {
-    if (event.pointerType !== "touch") {
-      const p = point(event);
-      app.look(p.x, p.y);
-    }
     hoverAt(event);
     return;
   }
+  if (!pointers.has(event.pointerId)) return;
   const next = { x: event.clientX, y: event.clientY };
-  const dx = next.x - lastPoint.x,
-    dy = next.y - lastPoint.y;
+  const previous = pointers.get(event.pointerId);
+  const dx = next.x - previous.x,
+    dy = next.y - previous.y;
   travel += Math.hypot(dx, dy);
   pointers.set(event.pointerId, next);
   if (pointers.size === 2) {
     const d = distance();
-    if (pinchDistance) {
+    if (pinchDistance && d > 0) {
       if (state.tool === "loupe")
         changeMagnification((d - pinchDistance) * 0.015);
-      else app.zoom(d > pinchDistance ? 0.9 : 1.1);
+      else {
+        const pair = [...pointers.values()],
+          rect = host.getBoundingClientRect();
+        app.zoom(
+          pinchDistance / d,
+          ((pair[0].x + pair[1].x) / 2 - rect.left) / rect.width,
+          ((pair[0].y + pair[1].y) / 2 - rect.top) / rect.height,
+        );
+      }
     }
     pinchDistance = d;
   } else if (grab === "light") {
@@ -401,13 +413,12 @@ host.addEventListener("pointermove", (event) => {
     state.height = values.height;
     updateLabels();
   } else if (grab === "jewelry") app.rotate(dx * 0.008, dy * 0.008);
-  lastPoint = next;
+  else if (grab === "camera") app.orbit(dx * 0.004, dy * 0.004);
 });
 function release(event) {
   if (!pointers.has(event.pointerId)) return;
   pointers.delete(event.pointerId);
   if (pointers.size) {
-    lastPoint = [...pointers.values()][0];
     pinchDistance = 0;
     return;
   }
@@ -440,7 +451,6 @@ host.addEventListener("pointercancel", release);
 host.addEventListener("lostpointercapture", release);
 host.addEventListener("pointerleave", () => {
   if (!dragging) {
-    app?.look(0.5, 0.5);
     app?.hover(null);
     $("object-hint").hidden = true;
   }
@@ -452,10 +462,25 @@ host.addEventListener(
     if (!app) return;
     if (state.tool === "loupe")
       changeMagnification(event.deltaY < 0 ? 0.2 : -0.2);
-    else if (!app.transitioning) app.zoom(event.deltaY < 0 ? 0.9 : 1.1);
+    else if (!app.transitioning) {
+      const p = point(event);
+      app.zoom(
+        wheelScale(event.deltaY, event.deltaMode, event.ctrlKey),
+        p.x,
+        p.y,
+      );
+    }
   },
   { passive: false },
 );
+host.addEventListener("dblclick", (event) => {
+  if (!app || app.transitioning || state.tool === "loupe") return;
+  const p = point(event);
+  app.focus(p.x, p.y);
+  announce(
+    "View focused. Drag to orbit this point; scroll or pinch to move closer.",
+  );
+});
 host.addEventListener("keydown", (event) => {
   if (!app) return;
   const arrows = {
@@ -471,13 +496,18 @@ host.addEventListener("keydown", (event) => {
       state.angle = Math.max(-100, Math.min(100, state.angle + dx * 5));
       state.height = Math.max(8, Math.min(85, state.height - dy * 5));
       updateLight();
-    } else app.rotate(dx * 0.12, dy * 0.12);
+    } else if (state.tool === "explore") app.orbit(dx * 0.08, dy * 0.08);
+    else app.rotate(dx * 0.12, dy * 0.12);
   }
   if (["+", "=", "-", "_"].includes(event.key)) {
     event.preventDefault();
     const more = event.key === "+" || event.key === "=";
     if (state.tool === "loupe") changeMagnification(more ? 1 : -1);
     else app.zoom(more ? 0.9 : 1.1);
+  }
+  if (event.key.toLowerCase() === "f" && state.tool !== "loupe") {
+    event.preventDefault();
+    app.focus(0.5, 0.5);
   }
   if (event.key === "Home") {
     event.preventDefault();
@@ -493,7 +523,7 @@ document.addEventListener("keydown", (event) => {
     event.target.closest("input,textarea,select")
   )
     return;
-  const tool = { 1: "turn", 2: "light", 3: "loupe" }[event.key];
+  const tool = { 1: "explore", 2: "turn", 3: "light", 4: "loupe" }[event.key];
   if (tool) {
     setTool(tool);
     host.focus({ preventScroll: true });
@@ -501,7 +531,7 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     if (!$("cabinet").hidden) setDrawer(false);
     else if (state.box) boxExit.click();
-    else if (state.tool !== "turn") setTool("turn");
+    else if (state.tool !== "explore") setTool("explore");
   }
 });
 
@@ -583,7 +613,7 @@ $("close-cabinet").addEventListener("click", () => {
   setDrawer(false);
   $("toggle-cabinet").focus();
 });
-$("exit-loupe").addEventListener("click", () => setTool("turn"));
+$("exit-loupe").addEventListener("click", () => setTool("explore"));
 notes.addEventListener("close", () => {
   app?.pause(false);
   $("open-notes").focus();

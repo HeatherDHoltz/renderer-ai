@@ -28,7 +28,9 @@ export async function buildWorkshop(scene, surfaces) {
     o.material.envMapIntensity = 0.16;
     o.material.roughness = 0.56;
     o.material.side = THREE.DoubleSide;
-    o.castShadow = true;
+    // Architectural shadows are already baked. Avoid redrawing 186k room
+    // triangles into all six task-light shadow faces on each jewelry turn.
+    o.castShadow = false;
     o.receiveShadow = true;
   });
   emission.flipY = false;
@@ -172,6 +174,7 @@ export async function buildWorkshop(scene, surfaces) {
   return {
     mat,
     sun,
+    focusTargets: workshop,
     causticReceivers: [mat.material, ...roomMaterials],
     animate(t, motion) {
       fireUniforms.time.value = motion ? t : 0;
