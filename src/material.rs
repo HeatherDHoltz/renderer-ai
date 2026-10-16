@@ -9,6 +9,7 @@ pub struct Material {
     pub reflection: Vec3,
     pub transmission: Vec3,
     pub ior: f32,
+    pub texture: Option<usize>,
 }
 
 impl Default for Material {
@@ -20,6 +21,7 @@ impl Default for Material {
             reflection: Vec3::ZERO,
             transmission: Vec3::ZERO,
             ior: 1.5,
+            texture: None,
         }
     }
 }
@@ -68,7 +70,12 @@ pub fn shade_pixel(hit: &Hit, view_ray: &Ray, scene: &Scene) -> Vec3 {
 }
 
 pub fn shade_linear(hit: &Hit, view_ray: &Ray, scene: &Scene) -> Vec3 {
-    let mut color = 0.27 * hit.material.diffuse; // ambient default color
+    let diffuse_color = hit.material.diffuse
+        * hit
+            .material
+            .texture
+            .map_or(Vec3::ONE, |id| scene.textures[id].sample(hit.uv));
+    let mut color = 0.27 * diffuse_color; // ambient default color
     let view = -view_ray.direction().normalize(); // view now points to camera
     let normal = hit.normal;
 
@@ -93,7 +100,7 @@ pub fn shade_linear(hit: &Hit, view_ray: &Ray, scene: &Scene) -> Vec3 {
 
         let halfway = (view + direction).normalize_or_zero();
         let specular = normal.dot(halfway).max(0.0).powf(hit.material.shininess);
-        let diffuse_color = light.color * hit.material.diffuse * diffuse;
+        let diffuse_color = light.color * diffuse_color * diffuse;
         let specular_color = light.color * hit.material.specular * specular;
         color += diffuse_color + specular_color;
     }
@@ -127,6 +134,7 @@ mod tests {
                 position: 4.0 * Vec3::Y,
                 color: Vec3::ONE,
             }],
+            textures: vec![],
         }
     }
 

@@ -21,6 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 color: Vec3::new(0.15, 0.25, 0.45),
             },
         ],
+        textures: vec![],
     };
     let material = |color| Material {
         diffuse: color,

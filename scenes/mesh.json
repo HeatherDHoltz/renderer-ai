@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "camera": {
+    "position": [
+      4,
+      3,
+      8
+    ],
+    "target": [
+      0,
+      1.2,
+      0
+    ],
+    "fov": 40
+  },
+  "render": {
+    "width": 640,
+    "height": 420
+  },
+  "materials": {
+    "floor": {
+      "diffuse": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "texture": "grid"
+    },
+    "mesh": {
+      "diffuse": [
+        1,
+        1,
+        1
+      ],
+      "specular": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "shininess": 64,
+      "texture": "atlas"
+    }
+  },
+  "textures": {
+    "grid": {
+      "kind": "checker",
+      "a": [
+        0.7,
+        0.7,
+        0.7
+      ],
+      "b": [
+        0.3,
+        0.32,
+        0.36
+      ],
+      "scale": [
+        1,
+        1
+      ]
+    },
+    "atlas": {
+      "kind": "image",
+      "path": "../assets/uv-grid.png",
+      "filter": "bilinear",
+      "wrap": "repeat"
+    }
+  },
+  "geometries": {
+    "plane": {
+      "kind": "plane"
+    },
+    "mesh": {
+      "kind": "mesh",
+      "path": "../assets/uv-sphere.obj"
+    }
+  },
+  "objects": [
+    {
+      "name": "floor",
+      "geometry": "plane",
+      "material": "floor"
+    },
+    {
+      "name": "flat",
+      "geometry": "mesh",
+      "material": "mesh",
+      "smooth": false,
+      "transform": {
+        "translation": [
+          -1.35,
+          1.15,
+          0
+        ],
+        "scale": [
+          1.15,
+          1.15,
+          1.15
+        ]
+      }
+    },
+    {
+      "name": "smooth",
+      "geometry": "mesh",
+      "material": "mesh",
+      "smooth": true,
+      "transform": {
+        "translation": [
+          1.35,
+          1.15,
+          0
+        ],
+        "scale": [
+          1.15,
+          1.15,
+          1.15
+        ]
+      }
+    }
+  ],
+  "lights": [
+    {
+      "kind": "point",
+      "position": [
+        -3,
+        7,
+        5
+      ],
+      "color": [
+        1.2,
+        1.1,
+        0.95
+      ]
+    },
+    {
+      "kind": "point",
+      "position": [
+        5,
+        5,
+        -2
+      ],
+      "color": [
+        0.2,
+        0.3,
+        0.5
+      ]
+    }
+  ]
+}

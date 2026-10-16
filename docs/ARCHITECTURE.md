@@ -24,6 +24,14 @@ Implementation conventions: right-handed +Y-up world, camera local -Z, column-ve
 
 See [PLAN.md](../PLAN.md) and [STATUS.md](../STATUS.md) for verified capabilities. Design changes belong here when implemented.
 
+## Scene IO, meshes, and textures
+
+Serde/serde_json implement strict versioned JSON loading; clap implements CLI parsing. Original glam/image versions are unchanged. Scene IO validates named references, resource counts, material ranges, cameras, and composed transforms before rendering. An iterative parent walk detects cycles without unbounded recursion. Instances share an Arc of each indexed mesh. This graph supports static groups now; keyframe evaluation remains M8.
+
+The focused OBJ loader retains separate position/normal/UV corner indices and resolves negative indices during loading. Triangles intersect with double-sided Möller–Trumbore using f64 intermediates, a relative determinant tolerance, and barycentric edge tolerance 1e-8. Flat normals and interpolated shading normals remain distinct. Missing smooth normals use an area-weighted sum. No acceleration is claimed yet: each mesh instance loops over its triangles.
+
+Textures are immutable scene data referenced by small material IDs; hits still copy only a small material value. PNG color texels are decoded to linear RGB once. Checker sampling and nearest/bilinear filtering happen at the hit UV. OBJ v=1 corresponds to the image top. Canonical primitive UV formulas retain the conventions documented above. Wrapping includes bilinear neighbors at the seam. All image radiance remains linear until output conversion.
+
 ## Educational transport
 
 `Whitted` implements `local + km*reflection + kt*(F*reflection + (1-F)*transmission)` in linear RGB. Local ambient is 0.27*diffuse once, plus visible Lambert/Blinn–Phong point-light contributions with no distance attenuation in this educational mode. Reflection is shared when both km and kt need it. Glass presets set km=0 to avoid duplicate Fresnel reflection. Tint is applied per interface, not Beer–Lambert volume absorption.

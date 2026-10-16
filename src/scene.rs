@@ -9,9 +9,11 @@ pub struct PointLight {
     pub color: Vec3,
 }
 
+#[derive(Default)]
 pub struct Scene {
     pub shapes: Vec<Box<dyn Shape>>,
     pub lights: Vec<PointLight>,
+    pub textures: Vec<crate::texture::Texture>,
 }
 
 impl Scene {
@@ -57,6 +59,7 @@ mod tests {
         let scene = Scene {
             lights: vec![],
             shapes: vec![],
+            textures: vec![],
         };
         let ray = Ray::new(Vec3::ZERO, -Vec3::Z);
         assert!(scene.nearest_hit(&ray, 0.001, 100.0).is_none());
@@ -74,6 +77,7 @@ mod tests {
                 )),
                 Box::new(Plane::new(-Vec3::Y, Vec3::Y, material(Vec3::Y))),
             ],
+            textures: vec![],
         };
         let ray = Ray::new(Vec3::new(0.0, 0.0, 5.0), -Vec3::Z);
         assert!(scene.nearest_hit(&ray, 0.001, 100.0).is_none());
@@ -87,6 +91,7 @@ mod tests {
                 Box::new(Sphere::new(Vec3::ZERO, 1.0, material(Vec3::X))),
                 Box::new(Sphere::new(2.0 * Vec3::Z, 1.0, material(Vec3::Y))),
             ],
+            textures: vec![],
         };
         let ray = Ray::new(5.0 * Vec3::Z, -Vec3::Z);
         for _ in 0..2 {
@@ -107,6 +112,7 @@ mod tests {
                 Box::new(Plane::new(Vec3::ZERO, Vec3::Y, material(Vec3::Y))),
                 Box::new(Sphere::new(2.0 * Vec3::Y, 1.0, material(Vec3::X))),
             ],
+            textures: vec![],
         };
         let above_sphere = Ray::new(5.0 * Vec3::Y, -Vec3::Y);
         let hit = scene.nearest_hit(&above_sphere, 0.001, 100.0).unwrap();
@@ -127,6 +133,7 @@ mod tests {
                 Box::new(Plane::new(3.0 * Vec3::Y, Vec3::Y, material(Vec3::X))),
                 Box::new(Plane::new(Vec3::ZERO, Vec3::Y, material(Vec3::Y))),
             ],
+            textures: vec![],
         };
         let ray = Ray::new(5.0 * Vec3::Y, -Vec3::Y);
         assert!(scene.nearest_hit(&ray, 0.001, 1.0).is_none());

@@ -72,7 +72,11 @@ fn main() {
         },
     ];
 
-    let scene1 = Scene { shapes, lights };
+    let scene1 = Scene {
+        shapes,
+        lights,
+        textures: vec![],
+    };
     let camera1 = Camera::new(Vec3::new(0.0, 4.0, 10.0), target, Vec3::Y, aspect, 45.0);
     let film = render::render(
         &camera1,
@@ -132,7 +136,11 @@ fn main() {
             color: Vec3::new(0.25, 0.35, 0.55),
         },
     ];
-    let scene2 = Scene { shapes, lights };
+    let scene2 = Scene {
+        shapes,
+        lights,
+        textures: vec![],
+    };
     let camera2 = Camera::new(
         Vec3::new(4.5, 7.0, 9.0),
         Vec3::new(-0.4, 0.1, 0.3),
@@ -199,7 +207,11 @@ fn main() {
             color: Vec3::splat(0.8),
         },
     ];
-    let scene3 = Scene { shapes, lights };
+    let scene3 = Scene {
+        shapes,
+        lights,
+        textures: vec![],
+    };
     let camera3 = Camera::new(
         Vec3::new(-3.0, 2.8, 11.0),
         Vec3::new(0.0, 1.1, 0.0),
@@ -241,7 +253,11 @@ fn main() {
             color: Vec3::splat(0.25),
         },
     ];
-    let scene4 = Scene { shapes, lights };
+    let scene4 = Scene {
+        shapes,
+        lights,
+        textures: vec![],
+    };
     let camera4 = Camera::new(
         Vec3::new(0.0, 4.5, 13.0),
         Vec3::new(0.0, 0.65, 0.0),
@@ -293,7 +309,11 @@ fn main() {
             color: Vec3::splat(0.25),
         },
     ];
-    let scene5 = Scene { shapes, lights };
+    let scene5 = Scene {
+        shapes,
+        lights,
+        textures: vec![],
+    };
     let film = render::render(
         &camera4,
         &scene5,

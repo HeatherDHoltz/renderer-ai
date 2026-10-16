@@ -4,12 +4,21 @@ An AI-assisted graphics portfolio project extending Heather's early-semester Rus
 
 ```sh
 cargo run --release --locked -- smoke --width 640 --height 480 --output output/smoke.png
+cargo run --release --locked -- validate scenes/mesh.json
+cargo run --release --locked -- render scenes/mesh.json --output output/mesh.png
+cargo run --release --locked -- render scenes/glass.json --output output/glass.png
 cargo test --locked
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 ```
 
 Verified features: perspective/orthographic cameras; affine sphere, plane, box, capped cylinder, and capped cone instances; outward/oriented normals and UVs; educational Lambert/Blinn–Phong lighting; point-light hard shadows; recursive mirrors/glass with Fresnel and total internal reflection; floating-point accumulation; exposure, Reinhard tone mapping, and sRGB PNG output. A library backs the command-line application. Run `cargo run --release --locked --example shapes` to render both camera studies into `output/`.
+
+Versioned JSON scenes now support named materials/textures, reusable OBJ meshes, transform groups, relative asset paths, checker/image textures, and flat/smooth triangle shading. See the [scene format](docs/SCENE_FORMAT.md). All example assets are included and work offline after dependencies are installed.
+
+![Imported textured mesh, flat and smooth shading](gallery/mesh.png)
+
+Current limits: one center sample per pixel, serial brute-force traversal, hard point-light shadows, and educational materials. Acceleration, antialiasing, physical HDR lighting, animation, and procedural generation remain in progress. No performance speedup is claimed yet.
 
 ![Canonical shapes and nonuniform affine geometry](gallery/shapes.png)
 
