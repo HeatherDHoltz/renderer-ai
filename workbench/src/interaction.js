@@ -70,3 +70,12 @@ export function benchFraming(aspect) {
   );
   return { fov, z, y: 2.6 + (z - 6.4) * 0.37 };
 }
+
+// Picking must see the same object layers as the seated camera. Jewelry lives
+// on its own layer so it can be omitted from room reflection captures.
+export function benchIntersections(raycaster, camera, x, y, objects) {
+  camera.updateWorldMatrix(true, false);
+  raycaster.layers.mask = camera.layers.mask;
+  raycaster.setFromCamera(new THREE.Vector2(x * 2 - 1, 1 - y * 2), camera);
+  return raycaster.intersectObjects(objects, true);
+}

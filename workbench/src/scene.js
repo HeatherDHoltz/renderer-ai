@@ -103,6 +103,7 @@ import {
   advanceProgress,
   lampControls,
   benchFraming,
+  benchIntersections,
 } from "./interaction.js";
 
 export async function createWorkbench(host, onFatalError) {
@@ -457,16 +458,11 @@ export async function createWorkbench(host, onFatalError) {
         ? { kind: "jewelry", label: "Turn the stone · drag" }
         : null;
     scene.updateMatrixWorld(true);
-    camera.updateMatrixWorld(true);
-    raycaster.setFromCamera(new THREE.Vector2(x * 2 - 1, 1 - y * 2), camera);
-    const hits = raycaster.intersectObjects(
-      [
-        ...objects.targets,
-        stone,
-        ...(setting.visible ? [band, ...mount.children] : []),
-      ],
-      true,
-    );
+    const hits = benchIntersections(raycaster, camera, x, y, [
+      ...objects.targets,
+      stone,
+      ...(setting.visible ? [band, ...mount.children] : []),
+    ]);
     if (hits[0]?.object.userData.blockPointer) return null;
     return hits.length
       ? hits[0].object.userData.action || {

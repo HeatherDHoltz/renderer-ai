@@ -7,7 +7,7 @@
   },
   "checks": {
     "web_tests": {
-      "passed": 19,
+      "passed": 20,
       "failed": 0,
       "command": "npm test --prefix workbench"
     },
@@ -51,7 +51,8 @@
       "gallery/workbench/loupe.jpg",
       "gallery/workbench/workshop-live.jpg",
       "gallery/workbench/workshop-realism.jpg",
-      "gallery/workbench/diamond-facets.jpg"
+      "gallery/workbench/diamond-facets.jpg",
+      "gallery/workbench/ring-drag-fixed.jpg"
     ],
     "png_export_retained": "output/workshop-realism-photo.png",
     "pickup_reversal_observed": {
@@ -101,12 +102,12 @@
   },
   "deployment": {
     "project_id": "appgprj_6ad1d1ee181c819186c337d3573bdaea",
-    "source_commit": "b79d43cc3674679140cb9394a07e79a737b78353",
-    "deployment_id": "appgdep_6ad1ec324d908191b9e7ae44749ee483",
+    "source_commit": "3fdb7f0017f0265bbeb19252352c97ffa9507fc5",
+    "deployment_id": "appgdep_6ad1edc9c06c81918020d126a073d65e",
     "status": "succeeded",
     "url": "https://heathers-little-jeweler.zoeholtz2000.chatgpt.site",
     "audience": "owner-private",
-    "browser_handoff": "Authenticated new hosted room, physical diamond selection, lamp-probe change and top-view loupe verified. Original owner-private audience preserved."
+    "browser_handoff": "Hosted direct ring drag visibly rotates band and stone after reload; hover label restored. Owner-private audience preserved."
   },
   "limits": [
     "No measured device FPS benchmark",
@@ -127,5 +128,14 @@
     "reflection_probe": "256-square half-float cube; cached, max 10 Hz while dirty; main jewelry and loupe excluded; filtered PMREM for metals",
     "sample_case": "Six artist-tuned metal presets \u00d7 three finish rows = 18 rings",
     "msaa": "Up to four samples in offscreen target"
+  },
+  "ring_drag_regression": {
+    "cause": "Jewelry moved to layer 1 for reflection capture exclusion, but pointer raycaster still used only layer 0. Keyboard/loupe movement worked and earlier QA missed direct bench dragging.",
+    "fix": "Bench intersection helper copies the viewing camera layer mask before testing targets.",
+    "regression_test": "Failed before mask synchronization; passes with jewelry on layer 1, ordinary foreground bench target on layer 0, and excluded layer 2 ignored.",
+    "local_browser": "Direct band drag visibly rotates jewelry and shows Turn the jewelry hover label.",
+    "checks": "20 web tests, standalone build, Rust fmt, 98 Rust tests and strict Clippy; 12 original class hashes unchanged.",
+    "hosted_browser": "Passed: pointer drag from (604,379) to (720,402) visibly turns the band and stone; Turn the jewelry hover label present.",
+    "evidence": "gallery/workbench/ring-drag-fixed.jpg"
   }
 }

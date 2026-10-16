@@ -9,6 +9,7 @@ import {
   advanceProgress,
   lampControls,
   benchFraming,
+  benchIntersections,
 } from "../src/interaction.js";
 
 test("seated gaze has finite angular limits and returns to center", () => {
@@ -171,4 +172,38 @@ test("bench framing keeps the two felt boxes in reach at portrait, square and wi
   }
   for (const aspect of [0, -1, NaN, Infinity])
     assert.throws(() => benchFraming(aspect));
+});
+
+test("pointer picking reaches the visible ring layer and preserves ordinary bench targets", () => {
+  const camera = new THREE.PerspectiveCamera(46, 1, 0.01, 50);
+  camera.position.set(0, 0, 6);
+  camera.lookAt(0, 0, 0);
+  camera.layers.enable(1);
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.91, 0.12, 16, 64));
+  band.layers.set(1);
+  band.updateMatrixWorld(true);
+  const raycaster = new THREE.Raycaster();
+  const point = new THREE.Vector3(0.91, 0, 0).project(camera);
+  const x = (point.x + 1) / 2,
+    y = (1 - point.y) / 2;
+  assert.equal(
+    benchIntersections(raycaster, camera, x, y, [band])[0]?.object.uuid,
+    band.uuid,
+  );
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.2));
+  lamp.position.set((0.91 * 4) / 6, 0, 2);
+  lamp.updateMatrixWorld(true);
+  assert.equal(
+    benchIntersections(raycaster, camera, x, y, [lamp, band])[0]?.object.uuid,
+    lamp.uuid,
+  );
+  lamp.layers.set(2); // Excluded objects must remain unpickable.
+  assert.equal(
+    benchIntersections(raycaster, camera, x, y, [lamp, band])[0]?.object.uuid,
+    band.uuid,
+  );
+  band.geometry.dispose();
+  lamp.geometry.dispose();
+  band.material.dispose();
+  lamp.material.dispose();
 });
