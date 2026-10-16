@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f6f4ed" />
+    <meta
+      name="description"
+      content="A candlelit jeweler’s workshop by Heather Holtz. Turn the jewelry, move the light, and examine gemstones through a 3D loupe."
+    />
+    <title>The Little Jeweler · Heather Holtz</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23304736' d='m20 3 16 17-16 17L4 20z'/%3E%3Cpath fill='none' stroke='%23edce8d' d='m20 8 10 12-10 12-10-12zM10 20h20M20 8v24'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./src/style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./vendor/three.module.js",
+          "three/addons/": "./vendor/addons/"
+        }
+      }
+    </script>
+    <script type="module" src="./src/main.js"></script>
+  </head>
+  <body class="workshop-game">
+    <a href="#bench" class="skip-link">Skip to the workbench</a>
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="The Little Jeweler home"
+        ><svg viewBox="0 0 42 46" aria-hidden="true">
+          <path
+            d="M21 2 39 20 21 44 3 20Z M3 20h36M21 2 12 20l9 24 9-24Z"
+          /></svg
+        ><span>THE LITTLE<br />JEWELER</span></a
+      >
+      <nav aria-label="Workshop menu">
+        <button
+          type="button"
+          id="toggle-cabinet"
+          aria-expanded="false"
+          aria-controls="cabinet"
+        >
+          ◇ &nbsp; Gem drawer</button
+        ><button type="button" id="open-notes">
+          Render journal <span aria-hidden="true">↗</span></button
+        ><a
+          href="https://github.com/HeatherDHoltz/renderer-ai"
+          target="_blank"
+          rel="noopener"
+          aria-label="View the source on GitHub"
+          >GitHub ↗</a
+        >
+      </nav>
+      <span class="header-note">A quiet evening at the bench.</span>
+    </header>
+    <main>
+      <h1 class="sr-only" id="page-title">
+        The Little Jeweler — a candlelit workshop
+      </h1>
+      <section
+        class="workspace"
+        id="bench"
+        aria-label="Interactive jeweler’s workbench"
+      >
+        <div class="bench-column">
+          <div class="viewer" id="viewer">
+            <div class="scene-label">
+              <span class="live-dot"></span>
+              <span id="mode-label">AT THE BENCH</span>
+              <span class="scene-label-divider">/</span>
+              <span id="scene-name">TIGER’S EYE & GOLD</span>
+            </div>
+            <div class="viewer-tools">
+              <button
+                type="button"
+                id="reset-view"
+                title="Reset view"
+                aria-label="Reset view"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 10a8 8 0 1 1 1 7M4 4v6h6" />
+                </svg></button
+              ><button
+                type="button"
+                id="save-photo"
+                title="Save a photo"
+                aria-label="Save a photo of this view"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 6 9 3h6l1 3h4v14H4V6Z" />
+                  <circle cx="12" cy="12" r="4" />
+                </svg>
+              </button>
+            </div>
+            <div
+              id="render-host"
+              tabindex="0"
+              role="region"
+              aria-label="Jewelry at a fixed workshop camera. Drag or use arrow keys to turn the jewelry. Scroll or pinch to bring it closer. Home resets."
+            ></div>
+            <div class="loading" id="loading">
+              <span class="loading-gem">◇</span><span>Setting the stone…</span>
+            </div>
+            <div class="render-error" id="render-error" hidden>
+              <h2>The bench couldn’t open.</h2>
+              <p id="render-error-text"></p>
+              <button type="button" id="retry-render">Try again</button
+              ><button type="button" id="error-gallery">
+                View the render gallery
+              </button>
+            </div>
+            <button type="button" id="exit-loupe" class="exit-loupe" hidden>
+              ← Back to the bench <kbd>Esc</kbd>
+            </button>
+            <div class="viewer-bottom">
+              <span id="interaction-hint"
+                ><svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path
+                    d="m3 10 3-3m-3 3 3 3m-3-3h14m-3-3 3 3-3 3M10 3v14"
+                  /></svg
+                >Drag the jewelry to turn it · scroll to bring it closer</span
+              ><button type="button" id="auto-turn" aria-pressed="false">
+                <span class="turn-icon" aria-hidden="true">↻</span> Slow turn
+              </button>
+            </div>
+          </div>
+          <div class="tool-tray" aria-label="Inspection tools">
+            <span class="tray-label">YOUR TOOLS</span>
+            <div
+              class="tool-buttons"
+              role="group"
+              aria-label="Choose an inspection tool"
+            >
+              <button
+                type="button"
+                class="tool active"
+                data-tool="turn"
+                aria-pressed="true"
+              >
+                <svg viewBox="0 0 28 28" aria-hidden="true">
+                  <path d="m7 4 5 20 2-1-3-16m10-3-5 20-2-1 3-16M9 7h10" /></svg
+                ><span>Turn jewelry</span><kbd>1</kbd>
+              </button>
+              <button
+                type="button"
+                class="tool"
+                data-tool="light"
+                aria-pressed="false"
+              >
+                <svg viewBox="0 0 28 28" aria-hidden="true">
+                  <path
+                    d="m8 23 7-12 5 3-7 12ZM14 10l2-5 7 4-3 5M20 3l2-2m2 7 3-1M15 2V0"
+                  /></svg
+                ><span>Move light</span><kbd>2</kbd>
+              </button>
+              <button
+                type="button"
+                class="tool"
+                data-tool="loupe"
+                aria-pressed="false"
+              >
+                <svg viewBox="0 0 28 28" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m17 17 8 8M7 11h8m-4-4v8" /></svg
+                ><span>Look closer</span><kbd>3</kbd>
+              </button>
+            </div>
+            <div class="loupe-controls" id="loupe-controls" hidden>
+              <button
+                type="button"
+                id="loupe-less"
+                aria-label="Decrease loupe magnification"
+              >
+                −</button
+              ><output id="loupe-zoom">3×</output
+              ><button
+                type="button"
+                id="loupe-more"
+                aria-label="Increase loupe magnification"
+              >
+                +
+              </button>
+            </div>
+            <span class="tray-tip" id="tray-tip"
+              >A small world.<br />A closer look.</span
+            >
+          </div>
+          <div class="discovery">
+            <span aria-hidden="true">✧</span>
+            <p id="discovery-text">
+              <strong>Find the little ribbon of light.</strong> Move the
+              penlight across the tiger’s eye and watch its silky band follow.
+            </p>
+          </div>
+        </div>
+        <aside
+          class="cabinet"
+          id="cabinet"
+          hidden
+          aria-label="Gemstone and material controls"
+        >
+          <div class="drawer-heading">
+            <span>THE GEM DRAWER</span
+            ><button
+              type="button"
+              id="close-cabinet"
+              aria-label="Close gem drawer"
+            >
+              ✕
+            </button>
+          </div>
+          <section class="cabinet-section stone-section">
+            <div class="section-label">
+              <span>01</span>
+              <h2>Choose a little treasure</h2>
+            </div>
+            <div class="stone-options" role="group" aria-label="Gemstone">
+              <button
+                type="button"
+                class="stone-option selected"
+                data-gem="tiger"
+                aria-pressed="true"
+              >
+                <span class="gem-thumb tiger-thumb" aria-hidden="true"></span
+                ><span
+                  ><strong>Tiger’s eye</strong
+                  ><small>Silky & golden</small></span
+                ><span class="selection-mark" aria-hidden="true">✓</span>
+              </button>
+              <button
+                type="button"
+                class="stone-option"
+                data-gem="diamond"
+                aria-pressed="false"
+              >
+                <svg
+                  class="gem-thumb faceted-thumb"
+                  viewBox="0 0 64 64"
+                  aria-hidden="true"
+                >
+                  <path fill="#dce6df" d="m12 16 40 0 10 15-30 29L2 31Z" />
+                  <path fill="#fff" d="m12 16 20 0-12 15H2Z" />
+                  <path fill="#bccfc7" d="m52 16 10 15H43L32 16Z" />
+                  <path fill="#f4f9f7" d="m20 31 12-15 11 15-11 29Z" />
+                  <path
+                    fill="none"
+                    stroke="#91aaa0"
+                    stroke-width=".6"
+                    d="M2 31h60M12 16l8 15 12 29 11-29 9-15"
+                  /></svg
+                ><span
+                  ><strong>Diamond</strong
+                  ><small>Clear & brilliant</small></span
+                ><span class="selection-mark" aria-hidden="true">✓</span>
+              </button>
+              <button
+                type="button"
+                class="stone-option"
+                data-gem="emerald"
+                aria-pressed="false"
+              >
+                <span class="gem-thumb emerald-thumb" aria-hidden="true"></span
+                ><span
+                  ><strong>Emerald</strong
+                  ><small>Deep green & luminous</small></span
+                ><span class="selection-mark" aria-hidden="true">✓</span>
+              </button>
+            </div>
+          </section>
+          <section class="cabinet-section">
+            <div class="section-label">
+              <span>02</span>
+              <h2>Give it a setting</h2>
+            </div>
+            <div class="segmented" role="group" aria-label="Display setting">
+              <button
+                type="button"
+                data-setting="ring"
+                class="selected"
+                aria-pressed="true"
+              >
+                On a ring</button
+              ><button type="button" data-setting="loose" aria-pressed="false">
+                Loose stone
+              </button>
+            </div>
+            <div class="metal-options" role="group" aria-label="Metal">
+              <button
+                type="button"
+                data-metal="gold"
+                class="metal-option selected"
+                aria-pressed="true"
+              >
+                <span class="metal-swatch gold" aria-hidden="true"></span
+                >Gold<span class="metal-check" aria-hidden="true"
+                  >✓</span
+                ></button
+              ><button
+                type="button"
+                data-metal="silver"
+                class="metal-option"
+                aria-pressed="false"
+              >
+                <span class="metal-swatch silver" aria-hidden="true"></span
+                >Silver<span class="metal-check" aria-hidden="true">✓</span>
+              </button>
+            </div>
+            <label class="range-label" for="finish"
+              >Surface finish <output id="finish-value">Polished</output></label
+            ><input type="range" min="0" max="100" value="14" id="finish" />
+            <div class="range-ends">
+              <span>Polished</span><span>Brushed</span>
+            </div>
+          </section>
+          <section class="cabinet-section light-section">
+            <div class="section-label">
+              <span>03</span>
+              <h2>Chase the light</h2>
+            </div>
+            <div class="segmented" role="group" aria-label="Light source">
+              <button
+                type="button"
+                class="selected"
+                data-source="penlight"
+                aria-pressed="true"
+              >
+                Penlight</button
+              ><button type="button" data-source="softbox" aria-pressed="false">
+                Softbox
+              </button>
+            </div>
+            <label class="range-label" for="light-angle"
+              >Light position <output id="light-value">45°</output></label
+            ><input
+              type="range"
+              min="-180"
+              max="180"
+              step="1"
+              value="45"
+              id="light-angle"
+            /><label class="range-label" for="light-height"
+              >Light height <output id="height-value">45°</output></label
+            ><input
+              type="range"
+              min="8"
+              max="85"
+              step="1"
+              value="45"
+              id="light-height"
+            />
+            <div class="background-row">
+              <span>Bench mat</span>
+              <div role="group" aria-label="Inspection background">
+                <button
+                  type="button"
+                  class="card-swatch green selected"
+                  data-background="green"
+                  aria-label="Green felt bench mat"
+                  aria-pressed="true"
+                ></button
+                ><button
+                  type="button"
+                  class="card-swatch cream"
+                  data-background="cream"
+                  aria-label="Ivory bench mat"
+                  aria-pressed="false"
+                ></button
+                ><button
+                  type="button"
+                  class="card-swatch charcoal"
+                  data-background="charcoal"
+                  aria-label="Charcoal bench mat"
+                  aria-pressed="false"
+                ></button>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </main>
+    <p id="announcement" class="sr-only" role="status" aria-live="polite"></p>
+    <dialog id="notes-dialog" aria-labelledby="notes-title">
+      <div class="dialog-heading">
+        <p class="eyebrow">BEHIND THE SPARKLE</p>
+        <button type="button" id="close-notes" aria-label="Close render notes">
+          ✕
+        </button>
+      </div>
+      <h2 id="notes-title">One curiosity. Three ways to render it.</h2>
+      <p class="notes-intro">
+        This bench grew out of Heather’s Rust ray tracer. The live viewer is a
+        separate Three.js GPU material study; the images below are actual
+        offline renders.
+      </p>
+      <div class="render-studies">
+        <figure>
+          <img
+            src="./assets/rust-gems.png"
+            alt="Six colored, faceted gems rendered by the Rust CPU renderer"
+            loading="lazy"
+          />
+          <figcaption>
+            <span class="eyebrow">HEATHER’S RUST RENDERER</span>
+            <h3>Light, bent through a stone.</h3>
+            <p>
+              Recursive refraction, Fresnel reflection, and RGB absorption in
+              closed gemstone meshes.
+            </p>
+            <a
+              href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/GEMS.md"
+              target="_blank"
+              rel="noopener"
+              >The code & reproduction commands ↗</a
+            >
+          </figcaption>
+        </figure>
+        <figure>
+          <img
+            src="./assets/rust-tigers-eye.gif"
+            alt="Moving-light tiger’s-eye-inspired surface sheen rendered by the Rust renderer"
+            loading="lazy"
+          />
+          <figcaption>
+            <span class="eyebrow">RUST · DIRECTIONAL SURFACE SHEEN</span>
+            <h3>A first ribbon of light.</h3>
+            <p>
+              An anisotropic surface approximation, without volumetric fiber
+              scattering.
+            </p>
+          </figcaption>
+        </figure>
+        <figure>
+          <img
+            src="./assets/mitsuba-tigers-eye.png"
+            alt="Layered tiger’s-eye material study rendered with Mitsuba"
+            loading="lazy"
+          />
+          <figcaption>
+            <span class="eyebrow">MITSUBA · EXTERNAL REFERENCE</span>
+            <h3>A closer look beneath the surface.</h3>
+            <p>
+              A refractive shell, directional volume scattering, and an
+              artist-tuned fiber bed. A visual approximation, with remaining
+              sampling noise.
+            </p>
+            <a
+              href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/MITSUBA.md"
+              target="_blank"
+              rel="noopener"
+              >Material model & measured render times ↗</a
+            >
+          </figcaption>
+        </figure>
+      </div>
+      <div class="notes-details">
+        <h3>About the live bench</h3>
+        <p>
+          The tiger’s-eye shader combines procedural fine fibers, a view- and
+          light-dependent directional highlight, and a clear coat. Diamond and
+          emerald use approximate browser transmission. The workshop camera
+          stays fixed while the jewelry turns. Loupe mode uses a fixed close-up
+          camera and a lit 3D brass eyepiece. Its magnification comes from the
+          camera projection, rather than a full optical lens simulation. These
+          are artistic material studies, not measured gemstone optics.
+        </p>
+        <p>
+          The worn table, bookshelf, candlestick, hammer, and magnifying-glass
+          props are CC0 models by Poly Haven contributors. Only their 1K color
+          maps are used.
+          <a href="./assets/props/CREDITS.html" target="_blank" rel="noopener"
+            >Prop sources, authors, and adaptations</a
+          >. Heather directed the project; Codex assisted with code, scene
+          design, and testing. The manually authored class renderer is separate.
+          Three.js 0.180.0 is distributed under its
+          <a href="./vendor/THREE-LICENSE.txt" target="_blank" rel="noopener"
+            >MIT license</a
+          >. Faceted meshes in the Rust gem gallery are adapted from
+          <a href="https://poly.pizza/u/Zsky" target="_blank" rel="noopener"
+            >Jewel by Zsky</a
+          >,
+          <a
+            href="https://creativecommons.org/licenses/by/3.0/"
+            target="_blank"
+            rel="noopener"
+            >CC BY 3.0</a
+          >; materials, normalization, and topology were adapted.
+          <a
+            href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/assets/gems/ATTRIBUTION.md"
+            target="_blank"
+            rel="noopener"
+            >Full source and adaptation credits</a
+          >.
+        </p>
+      </div>
+    </dialog>
+    <noscript
+      ><p class="noscript">
+        This interactive workbench needs JavaScript. You can still explore the
+        <a href="https://github.com/HeatherDHoltz/renderer-ai"
+          >Rust renderer and render gallery on GitHub</a
+        >.
+      </p></noscript
+    >
+  </body>
+</html>

@@ -21,3 +21,11 @@
 - Course slides, handouts, syllabus, and class submission files are not redistributed here.
 
 No license has been assigned to project-authored source files. Third-party gem meshes retain CC BY 3.0 and their attribution notices; rendered adaptations also credit Zsky. Dependency licenses remain those declared by their respective packages.
+
+## Browser workshop
+
+`workbench/assets/props/` contains five CC0 Poly Haven models: Wooden Table 03 (Gabriel Radić), Wooden Bookshelf Worn (Ulan Cabanilla), Wooden Candlestick (Josh Dean), Magnifying Glass 01 (Nazar Borodavka), and Wooden Hammer 01 (James Ray Cock). The adapted glTF files retain geometry and only the 1K diffuse maps; normal and ARM maps were removed. [Full source URLs, authors, and adaptations](../workbench/assets/props/CREDITS.md), [download/adaptation checksums](../workbench/assets/props/sources.json), and a reproducible importer accompany the models. They total roughly 9 MB including geometry and textures. This is a background budget, not a rendering benchmark.
+
+The live browser room shell, window, plant, book spines, sketch, trays, eyepiece, and brilliant-cut mesh are project-generated. Cabochon/step-cut meshes and three reference render images are unchanged runtime copies from this repository, with SHA-256 records in `workbench/assets/references.json`. The reference panel retains the Zsky/CC BY 3.0 credit. Live geometry does not use the Zsky models.
+
+`workbench/vendor/` contains the required Three.js 0.180.0 modules and MIT license, vendored from the official npm `three@0.180.0` package for offline runtime use. This third-party license does not assign a repository-wide license.

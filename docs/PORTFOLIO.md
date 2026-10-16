@@ -4,6 +4,8 @@ This repository is an AI-assisted engineering project extending Heather's early-
 
 The optional [Mitsuba study](MITSUBA.md) uses an external renderer. Its scenes and material experiments are supporting research artifacts; Mitsuba's volume transport and the resulting reference images are not features or output of the Rust engine.
 
+[The Little Jeweler](../workbench/README.md) is a separate Three.js browser companion, with a fixed first-person workshop, specimen quaternion manipulation, custom fiber shading, approximate gem transmission, and a 3D eyepiece inspection mode. Its real-time GPU output is not produced by the Rust CPU renderer. Poly Haven supplies five credited CC0 background models; the room and browser materials are AI-assisted project work. The in-app journal makes all three rendering paths explicit.
+
 Possible resume wording, after personally reviewing and being ready to explain the code:
 
 - Directed and reviewed an AI-assisted Rust CPU ray tracer with affine geometry, indexed OBJ meshes, HDR physical direct lighting, glass, quaternion animation, and bounded procedural generation; verified with 98 tests and Linux/macOS CI.

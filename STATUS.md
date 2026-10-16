@@ -1,6 +1,6 @@
 # Current status
 
-Updated October 15, 2026 (America/Los_Angeles). The full renderer scope in the handoff is **complete and verified**.
+Updated October 16, 2026 (America/Los_Angeles). The full renderer scope in the handoff and the requested browser workshop are **complete and verified**.
 
 ## Git and authorization
 
@@ -54,6 +54,8 @@ M10 verified: inspected the final 1200×800/512-spp hero and raw HDR export, cur
 
 All M0–M10 acceptance criteria in [PLAN.md](PLAN.md) are verified within the defined CPU-renderer scope. GitHub is authenticated, the public remote is configured, and verified milestone commits/pushes are authorized without repeated confirmation. No implementation milestone remains.
 
+The subsequently requested browser workshop is documented in the final section below; it is a separate GPU companion, not a change to the CPU renderer’s transport capabilities.
+
 This is a physical direct-light baseline with recursive ideal dielectric transport, not a general path tracer. Missing diffuse/glossy interobject transport, nested media, spectral dispersion, caustics, refractive shadows, texture prefiltering, full OBJ/MTL, camera/light tracks, and motion blur are explicit documented limitations, not unfinished required scope. License choice remains intentionally unassigned and optional. See docs/RELEASE.md for verification, docs/GALLERY.md for image commands, and docs/PORTFOLIO.md for honest resume wording.
 
 ## Requested gemstone extension — verified
@@ -71,3 +73,15 @@ Heather requested an installed Mitsuba renderer and a more realistic tiger's-eye
 The external scene uses a separate refractive quartz shell, a spatial SGGX volume, and an optional anisotropic effective fiber bed using artist-modulated Au response as a visual surrogate. It is not measured mineral optics or an implementation in the Rust renderer. Inspected pure-volume and layered previews, the completed 900×900/3072-spp still, and all eight 384×384/512-spp moving-light states. The latter encode into a verified 14-frame ping-pong GIF. Retained still/GIF and a matched 384×384/512-spp small/large-softbox comparison in gallery/mitsuba/, with exact settings, individual timings, and output hashes. Raw EXRs and original display images stay under ignored output/.
 
 Heather asked about grain in the preview. It is primarily Monte Carlo sampling noise around difficult refractive/directional paths, with authored fine striations also present. A synthetic noise control confirmed that OIDN operates, but it preserves some sparkle-like noise as apparent detail. Lower volume density alone did not remove the grain. Larger emitters give a smoother, broader physical reflection at the same pixel/sample count and total source power. Remaining noise and the non-calibrated appearance surrogate are explicit in docs/MITSUBA.md. The 900×900 render-loop wall time was 859.54 s; frame times were 44.06–50.55 s while jobs overlapped, not isolated performance benchmarks. Scalar and vector CPU scene runs work. Rust format, all 98 tests, strict Clippy, Python compilation and diff whitespace checks pass; all 12 original class baseline hashes match. No Rust source or class files were changed.
+
+## Requested first-person browser workshop — verified
+
+Heather approved implementing the gem bench, then refined it into a rustic, game-like first-person jeweler’s workshop. Implemented the separate, dependency-free browser project under `workbench/`, using vendored Three.js 0.180.0. The room camera stays fixed; pointer, touch and keyboard input turn the jewelry quaternion. There are no hands. Five CC0 Poly Haven models supply worn table/bookshelf/candles/tools, with only 1K diffuse maps retained and full author/source/adaptation checksums. The remaining room geometry is project-created.
+
+Tiger’s eye uses custom derivative-filtered fibers and a directional light/view-dependent sheen with clear coat. Diamond/emerald use approximate browser transmission. Ring/loose-stone modes, gold/silver, metal finish, penlight/softbox, movable light, mat colors, slow turn, PNG export, keyboard/touch controls, and a render journal work. Loupe mode replaces the rejected floating 2D glass with a lit 3D brass rim/barrel/lens around a fixed inspection camera. Its magnification is projection-based, not a physically ray-traced optical lens. Small depth-aware background blur and gentle candle motion keep the jewelry prominent.
+
+Verified eight Node tests, standalone static build, actual WebGL material compilation and interaction, narrow/wide layouts without horizontal overflow (331/1108 CSS px), all three journal images, and a real PNG download. Inspected and retained workshop/loupe browser screenshots in `gallery/workbench/`. Rust format, strict Clippy, and all 98 tests pass; all 12 class-baseline SHA-256 hashes remain unchanged. Detailed evidence and limits are in `docs/workbench-verification.json`. No Rust transport code or class files changed. No repository license was assigned.
+
+Private Sites deployment succeeded at https://heathers-little-jeweler.zoeholtz2000.chatgpt.site with source commit `2f1f6c89b3851f4db082a7f5904ade319d2034bf`. The public GitHub source and a Node-only local command remain available. The hosted owner preview requires ChatGPT sign-in; the agent verified the identical full UI locally and observed the hosted sign-in gate. A source-upload HTTP 400 was resolved with buffered HTTP/1.1 Git transfer, scoped only to the ignored Site checkout. Credentials stayed in memory/stdin.
+
+The requested implementation is complete. Optional next product work includes refining gemstone appearance further or choosing public access for the hosted Site; its current owner-private audience was preserved.

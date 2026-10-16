@@ -1,0 +1,147 @@
+[
+  {
+    "asset": "wooden_bookshelf_worn",
+    "page": "https://polyhaven.com/a/wooden_bookshelf_worn",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "original_gltf": {
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/wooden_bookshelf_worn/wooden_bookshelf_worn_1k.gltf",
+      "md5": "f8bb25dfb3c646e5c4f420d800276928"
+    },
+    "adaptation": "Retained geometry and 1K diffuse only; removed normal/ARM textures, set roughness .8. Runtime rescales and places the model.",
+    "gltf_sha256": "fca9e715ce279ae61b18c4cb428d648f1f5d4be2586800afa5c1af5a84d6c7fd",
+    "files": [
+      {
+        "file": "assets/props/wooden_bookshelf_worn/wooden_bookshelf_worn.bin",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/wooden_bookshelf_worn/wooden_bookshelf_worn.bin",
+        "sha256": "170758113b50132380ab46943f6eab18f2714460dead065aae37241a94abf0f9",
+        "bytes": 267964
+      },
+      {
+        "file": "assets/props/wooden_bookshelf_worn/textures/wooden_bookshelf_worn_diff_1k.jpg",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_bookshelf_worn/wooden_bookshelf_worn_diff_1k.jpg",
+        "sha256": "970f60178decadd0d8fb1e5872f718350a49b027fd69469210c41ead350cba56",
+        "bytes": 799126
+      }
+    ],
+    "authors": {
+      "Ulan Cabanilla": "All"
+    }
+  },
+  {
+    "asset": "WoodenTable_03",
+    "page": "https://polyhaven.com/a/WoodenTable_03",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "original_gltf": {
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/WoodenTable_03/WoodenTable_03_1k.gltf",
+      "md5": "7edc11c61cfdf9e47441c6a2b3059db7"
+    },
+    "adaptation": "Retained geometry and 1K diffuse only; removed normal/ARM textures, set roughness .8. Runtime rescales and places the model.",
+    "gltf_sha256": "29b1bf1452285e1611c910b069069fc4aa7debd2de96e5bb4f1178630642ced5",
+    "files": [
+      {
+        "file": "assets/props/WoodenTable_03/textures/WoodenTable_03_diff_1k.jpg",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/WoodenTable_03/WoodenTable_03_diff_1k.jpg",
+        "sha256": "88647e80098da0c70e395e105bf9652602c8688999e0b4c23ff2886854f59e46",
+        "bytes": 154264
+      },
+      {
+        "file": "assets/props/WoodenTable_03/WoodenTable_03.bin",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/WoodenTable_03/WoodenTable_03.bin",
+        "sha256": "16464ee143ae686f3a53c30b810ba9a5c3715964b597bbed40bad2b1df52d66d",
+        "bytes": 118172
+      }
+    ],
+    "authors": {
+      "Gabriel Radi\u0107": "All"
+    }
+  },
+  {
+    "asset": "wooden_candlestick",
+    "page": "https://polyhaven.com/a/wooden_candlestick",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "original_gltf": {
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/wooden_candlestick/wooden_candlestick_1k.gltf",
+      "md5": "26894e96c7c914a995c3a5151c875a4e"
+    },
+    "adaptation": "Retained geometry and 1K diffuse only; removed normal/ARM textures, set roughness .8. Runtime rescales and places the model.",
+    "gltf_sha256": "35d4f6772b068a12e5ca93fe10dd0e3d093a4318d64f6163b15221c962c1f73e",
+    "files": [
+      {
+        "file": "assets/props/wooden_candlestick/textures/wooden_candlestick_diff_1k.jpg",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_candlestick/wooden_candlestick_diff_1k.jpg",
+        "sha256": "b89345f84067f38b40b137f5eeebed64e8d4cbd84a089ecf886cf2d6c49fada3",
+        "bytes": 768160
+      },
+      {
+        "file": "assets/props/wooden_candlestick/wooden_candlestick.bin",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/wooden_candlestick/wooden_candlestick.bin",
+        "sha256": "2b772374c98f7f812b8cdf8852017410ca4c3cbb6567f29893516f32e2897894",
+        "bytes": 6177600
+      }
+    ],
+    "authors": {
+      "Josh Dean": "All"
+    }
+  },
+  {
+    "asset": "magnifying_glass_01",
+    "page": "https://polyhaven.com/a/magnifying_glass_01",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "original_gltf": {
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/magnifying_glass_01/magnifying_glass_01_1k.gltf",
+      "md5": "2ff0fc8378d69d10f6221c12fbb78237"
+    },
+    "adaptation": "Retained geometry and 1K diffuse only; removed normal/ARM textures, set roughness .8. Runtime rescales and places the model.",
+    "gltf_sha256": "e41af0b4d5ecb924068a58a907a7687961f9309c14cf48e5bcb93e4a83e10252",
+    "files": [
+      {
+        "file": "assets/props/magnifying_glass_01/textures/magnifying_glass_01_diff_1k.jpg",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/magnifying_glass_01/magnifying_glass_01_diff_1k.jpg",
+        "sha256": "6f0142ef415cb12492354689dc1bab6fed5200846fe5df4227a1c9b6bff20b7a",
+        "bytes": 55904
+      },
+      {
+        "file": "assets/props/magnifying_glass_01/magnifying_glass_01.bin",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/magnifying_glass_01/magnifying_glass_01.bin",
+        "sha256": "04b21b47548e3ab8555a26451808f0077493b9b24dafb5ac765b9d1da28a7859",
+        "bytes": 182032
+      }
+    ],
+    "authors": {
+      "Nazar Borodavka": "All"
+    }
+  },
+  {
+    "asset": "wooden_hammer_01",
+    "page": "https://polyhaven.com/a/wooden_hammer_01",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "original_gltf": {
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/wooden_hammer_01/wooden_hammer_01_1k.gltf",
+      "md5": "1fa784bf9596aabe6ae63b07541ec8f8"
+    },
+    "adaptation": "Retained geometry and 1K diffuse only; removed normal/ARM textures, set roughness .8. Runtime rescales and places the model.",
+    "gltf_sha256": "976c395880e3af7086b48db23564f64175ca2732b0c675581b105eb9c336775e",
+    "files": [
+      {
+        "file": "assets/props/wooden_hammer_01/wooden_hammer_01.bin",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/wooden_hammer_01/wooden_hammer_01.bin",
+        "sha256": "06a8e9c61402fba101a538b7e30f87a76bbea45b65a0b4972789c56050660ec8",
+        "bytes": 101960
+      },
+      {
+        "file": "assets/props/wooden_hammer_01/textures/wooden_hammer_01_diff_1k.jpg",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wooden_hammer_01/wooden_hammer_01_diff_1k.jpg",
+        "sha256": "f4b2f9e151acd26028dc731677a776b885f51fc26e8f9155ae7ba5a959daed77",
+        "bytes": 517825
+      }
+    ],
+    "authors": {
+      "James Ray Cock": "All"
+    }
+  }
+]

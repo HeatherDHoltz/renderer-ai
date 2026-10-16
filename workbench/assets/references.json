@@ -1,0 +1,27 @@
+[
+  {
+    "source": "assets/gems/cabochon.obj",
+    "file": "cabochon.obj",
+    "sha256": "ce0b75fcbc41f93029a2b25a0f54cc6b4c0864d777b3ded6dd1f8d3ddefe5842"
+  },
+  {
+    "source": "assets/gems/emerald-step.obj",
+    "file": "emerald-step.obj",
+    "sha256": "a79596c622ccb76878b279431c48085bc1db33da086f2203d46d5d06e9f6758e"
+  },
+  {
+    "source": "gallery/gems/precious-gems.png",
+    "file": "rust-gems.png",
+    "sha256": "a6be891f0804999e7b29aeeb447a602ef642d8199c4afea53e9472562a0f3556"
+  },
+  {
+    "source": "gallery/gems/tigers-eye-sheen.gif",
+    "file": "rust-tigers-eye.gif",
+    "sha256": "4d051cc461f05b68d896b05dddfbe8662cbb23b09fa111d5d8bffdafa53b9c43"
+  },
+  {
+    "source": "gallery/mitsuba/tigers-eye.png",
+    "file": "mitsuba-tigers-eye.png",
+    "sha256": "6d368c6346cc30ba85bf6ba4c99251db97a0887616698e12c6f8744db4bbdab5"
+  }
+]

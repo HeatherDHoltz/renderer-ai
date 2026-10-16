@@ -6,6 +6,16 @@ A Rust ray tracer with affine geometry, indexed meshes, SAH acceleration, HDR li
 
 ![Gold, glass, and ceramic still life rendered by this project](gallery/hero.png)
 
+## Explore the workshop
+
+[The Little Jeweler](workbench/README.md) is a separate interactive browser companion: a candlelit first-person workshop with rotatable jewelry, tiger’s eye/diamond/emerald, gold/silver finishes, movable lighting, and a 3D loupe inspection view. Its Three.js GPU materials are distinct from this Rust renderer and the optional Mitsuba reference images.
+
+[Open the private hosted preview](https://heathers-little-jeweler.zoeholtz2000.chatgpt.site) (owner’s ChatGPT sign-in required).
+
+![The Little Jeweler’s candlelit workshop and rotatable gold ring](gallery/workbench/workshop.jpg)
+
+With Node.js 20 or newer, run `npm run dev --prefix workbench` and open `http://127.0.0.1:4173/`. No npm installation, API keys, or asset downloads are needed. The gem drawer holds the material controls; drag the jewelry to rotate it while the room stays fixed.
+
 ## Run it
 
 Install stable Rust and clone this repository. Runtime assets are bundled, including project-generated assets and credited third-party gem meshes; no asset downloads or API keys are needed. Cargo downloads dependencies on the first build.

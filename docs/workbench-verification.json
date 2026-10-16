@@ -1,0 +1,76 @@
+{
+  "date": "2026-10-16",
+  "runtime": {
+    "node": "25.6.1",
+    "three": "0.180.0",
+    "graphics": "WebGL 2"
+  },
+  "checks": {
+    "web_tests": {
+      "passed": 8,
+      "failed": 0,
+      "command": "npm test --prefix workbench"
+    },
+    "static_build": "passed; standalone and offline inputs",
+    "rust_tests": {
+      "passed": 98,
+      "failed": 0,
+      "command": "cargo test --locked"
+    },
+    "rust_format": "passed",
+    "rust_strict_clippy": "passed",
+    "class_baseline_hashes_unchanged": 12
+  },
+  "browser_qa": {
+    "environment": "Codex in-app browser on Heather\u2019s Mac",
+    "materials": [
+      "tigers eye",
+      "diamond",
+      "emerald"
+    ],
+    "controls": [
+      "fixed workshop view / specimen rotation",
+      "3D eyepiece and magnification",
+      "gold and silver",
+      "ring and loose stone",
+      "polished and brushed",
+      "penlight and softbox",
+      "light controls",
+      "gem drawer",
+      "reference journal images",
+      "PNG download"
+    ],
+    "layout_css_widths_checked": [
+      331,
+      1108
+    ],
+    "horizontal_overflow_at_checked_widths": false,
+    "shader_errors_observed": false,
+    "evidence": [
+      "gallery/workbench/workshop.jpg",
+      "gallery/workbench/loupe.jpg"
+    ],
+    "png_export_retained": "output/workshop-photo-check.png"
+  },
+  "background_assets": {
+    "models": 5,
+    "license": "CC0-1.0",
+    "bytes": 9143007,
+    "maps": "1K diffuse only"
+  },
+  "deployment": {
+    "project_id": "appgprj_6ad1d1ee181c819186c337d3573bdaea",
+    "source_commit": "2f1f6c89b3851f4db082a7f5904ade319d2034bf",
+    "deployment_id": "appgdep_6ad1d94e895c8191a4f1665e1fe4187c",
+    "status": "succeeded",
+    "url": "https://heathers-little-jeweler.zoeholtz2000.chatgpt.site",
+    "audience": "owner-private",
+    "browser_handoff": "Hosted page reaches ChatGPT sign-in. Authenticated hosted UI was not inspected; full UI QA used the identical local source."
+  },
+  "limits": [
+    "No measured device FPS benchmark",
+    "Tiger eye is an artist-tuned surface model, not measured volume optics",
+    "Loupe uses camera projection and a 3D eyepiece, not ray tracing through a designed optical lens",
+    "Live browser GPU, Rust CPU, and external Mitsuba outputs are credited separately"
+  ]
+}

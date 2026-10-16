@@ -1,0 +1,2 @@
+# Preserve the vendored upstream formatting byte-for-byte.
+workbench/vendor/** -whitespace
