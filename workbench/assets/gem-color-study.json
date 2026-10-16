@@ -1,0 +1,49 @@
+{
+  "reference": "D65 / CIE 1931 2 degree / 5 mm",
+  "sources": {
+    "corundum.xlsx": {
+      "url": "https://www.gia.edu/dam/jcr:6ec3f5fc-4c0c-4276-a81b-a9534b88d50b/sp20-corundum-chromophores-absorption-cross-section-data.xlsx",
+      "sha256": "26f9c90a90abba463478b44d390f2a725ec78a9c891a1ca1267f865a2f27a9da"
+    },
+    "cie-xyz.csv": {
+      "url": "https://files.cie.co.at/Publications-datasets/CIE_xyz_1931_2deg.csv",
+      "sha256": "fa663e3535a7e0763a745993a1f0a192eb0275ac46ad2d1befd7626841e713c1"
+    },
+    "d65.csv": {
+      "url": "https://files.cie.co.at/Publications-datasets/CIE_std_illum_D65.csv",
+      "sha256": "e76f210bffff3d552ef7113025da5f325d5dfec200dd4b878b1a2f3a507032cb"
+    }
+  },
+  "gems": {
+    "ruby": {
+      "chromophore_ppma": 1300,
+      "linear_rgb_unclipped": [
+        0.446703,
+        -0.000138,
+        0.168329
+      ],
+      "absorption": [
+        0.805861,
+        6.214608,
+        1.781837
+      ],
+      "reference_srgb": "#b20772",
+      "note": "Three-channel fit to averaged polarized measurements; gamut clipped, no fluorescence."
+    },
+    "sapphire": {
+      "chromophore_ppma": 25,
+      "linear_rgb_unclipped": [
+        0.087416,
+        0.176769,
+        0.518064
+      ],
+      "absorption": [
+        2.437074,
+        1.732909,
+        0.657657
+      ],
+      "reference_srgb": "#5375bf",
+      "note": "Three-channel fit to averaged polarized measurements; gamut clipped, no fluorescence."
+    }
+  }
+}

@@ -463,7 +463,7 @@
         <p>
           The tiger’s-eye shader combines procedural fine fibers, a view- and
           light-dependent directional highlight, and a single polished
-          dielectric surface. Diamond and emerald trace refraction and internal
+          dielectric surface. The faceted gems trace refraction and internal
           reflection through their actual facets, with RGB dispersion and
           absorption. A live reflection probe captures the room and movable lamp
           for the jewelry. This remains an environment-based approximation
@@ -472,31 +472,34 @@
           The loupe lifts from the bench along a clear path before the camera
           leans into its 3D brass eyepiece. Its magnification comes from the
           camera projection, rather than a full optical lens simulation. These
-          are artistic material studies, not measured gemstone optics.
+          are real-time approximations. Ruby and sapphire use three-channel fits
+          to published absorption measurements; the other color presets are
+          appearance studies.
         </p>
         <p>
-          The worn table, bookshelf, candlestick, and hammer are CC0 models by
-          Poly Haven contributors. Photographed velvet, wood, plaster, table
-          surface maps and HDR panoramas add real material detail. The felt
-          boxes, articulated lamp, and moving loupe are project-created
-          geometry. An alternate scanned magnifier is also bundled with its
-          source credit.
-          <a href="./assets/props/CREDITS.html" target="_blank" rel="noopener"
-            >Prop sources, authors, and adaptations</a
+          The contemporary room is project-modeled in Blender, with Cycles-baked
+          fixed lighting. Jewelry, velvet cases, task lamp and loupe remain
+          live. Photographed velvet and HDR panoramas are credited to Poly
+          Haven. The shank adapts Paul Wortmann’s CC0 ring band; the setting and
+          live gemstone cuts are project-created.
+          <a
+            href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/GEM-COLOR.md"
+            target="_blank"
+            rel="noopener"
+            >Color research, ring source and room workflow</a
           >
           ·
           <a
             href="./assets/materials/CREDITS.html"
             target="_blank"
             rel="noopener"
-            >Texture, environment, and live diamond credits</a
+            >Texture, environment, and historical mesh credits</a
           >. Heather directed the project; Codex assisted with code, scene
           design, and testing. The manually authored class renderer is separate.
           Three.js 0.180.0 is distributed under its
           <a href="./vendor/THREE-LICENSE.txt" target="_blank" rel="noopener"
             >MIT license</a
-          >. The live diamond and faceted meshes in the Rust gem gallery are
-          adapted from
+          >. The faceted meshes in the offline Rust gem gallery are adapted from
           <a href="https://poly.pizza/u/Zsky" target="_blank" rel="noopener"
             >Jewel by Zsky</a
           >,

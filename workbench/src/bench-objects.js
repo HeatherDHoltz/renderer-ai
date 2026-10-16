@@ -1,4 +1,6 @@
 import * as THREE from "../vendor/three.module.js";
+import { GEMS } from "./gems.js";
+import { ease, caseInspectionView } from "./interaction.js";
 import { velvetInsert } from "./velvet-insert.js";
 import { METALS, FINISHES, metalMaterial } from "./metals.js";
 
@@ -82,150 +84,243 @@ export function makeBenchObjects(
     p.rotation.x = -Math.PI / 2;
     return p;
   }
-  function tray(x, z, width, depth, title, pockets, ring = false) {
+  const cases = {};
+  function tray(parent, width, depth, lining, pockets, rings = false) {
     const t = new THREE.Group();
-    t.position.set(x, -1.22, z);
-    group.add(t);
-    bevelBox([width, 0.23, depth], [0, 0, 0], wood, t);
+    parent.add(t);
+    bevelBox([width, 0.16, depth], [0, 0.07, 0], wood, t);
     mesh(
-      velvetInsert(width - 0.12, depth - 0.12, pockets, ring),
-      felt,
+      velvetInsert(width - 0.12, depth - 0.12, pockets, rings),
+      lining,
       [0, 0, 0],
       t,
     );
-    for (const s of [-1, 1]) {
-      bevelBox([width, 0.26, 0.065], [0, 0.12, (s * depth) / 2], wood, t);
-      bevelBox([0.065, 0.26, depth], [(s * width) / 2, 0.12, 0], wood, t);
+    for (const sign of [-1, 1]) {
+      bevelBox([width, 0.15, 0.055], [0, 0.24, (sign * depth) / 2], wood, t);
+      bevelBox([0.055, 0.15, depth], [(sign * width) / 2, 0.24, 0], wood, t);
     }
-    // A real open lid gives the box a readable silhouette and a dark velvet back.
-    const lid = bevelBox(
-      [width, 0.12, depth * 0.62],
-      [0, 0.57, -depth / 2 - 0.2],
-      wood,
-      t,
-    );
-    lid.rotation.x = 1.12;
-    lid.userData.blockPointer = true;
-    targets.push(lid);
-    const lining = bevelBox(
-      [width - 0.12, 0.025, depth * 0.62 - 0.12],
-      [0, 0.07, 0],
-      felt,
-      lid,
-    );
-    label(title, width * 0.8, [0, 0.335, depth * 0.36], t);
     return t;
   }
-  const gemPockets = [-0.62, 0, 0.62].map((x) => ({
-    x,
-    z: -0.12,
-    rx: 0.25,
-    rz: 0.36,
-    depth: 0.16,
-  }));
-  const gemTray = tray(-2.35, 0.65, 2.05, 1.6, "THE STONE BOX", gemPockets);
-  const names = {
-    tiger: "Tiger’s eye",
-    diamond: "Diamond",
-    emerald: "Emerald",
-  };
-  for (const [i, id] of ["tiger", "diamond", "emerald"].entries()) {
-    const x = (i - 1) * 0.62;
-
-    const g = mesh(geometries[id], materials[id], [x, 0.2, -0.12], gemTray);
+  function makeCase(id, x, z, title, lining, rings = false) {
+    const width = 2.25,
+      depth = 1.85;
+    const c = new THREE.Group();
+    c.position.set(x, -1.29, z);
+    group.add(c);
+    const action = {
+      kind: "box",
+      value: id,
+      label: `${title} · open and examine`,
+    };
+    const base = bevelBox(
+      [width + 0.1, 0.19, depth + 0.1],
+      [0, 0.04, 0],
+      wood,
+      c,
+    );
+    base.userData.action = action;
+    targets.push(base);
+    for (const sign of [-1, 1]) {
+      for (const [size, pos] of [
+        [
+          [width + 0.1, 0.86, 0.075],
+          [0, 0.49, (sign * (depth + 0.04)) / 2],
+        ],
+        [
+          [0.075, 0.86, depth + 0.1],
+          [(sign * (width + 0.04)) / 2, 0.49, 0],
+        ],
+      ]) {
+        const wall = bevelBox(size, pos, wood, c);
+        wall.userData.action = action;
+        targets.push(wall);
+      }
+    }
+    const hinge = new THREE.Group();
+    hinge.position.set(0, 0.94, -(depth + 0.1) / 2);
+    hinge.rotation.x = -1.76;
+    c.add(hinge);
+    const lid = bevelBox(
+      [width + 0.1, 0.15, depth + 0.1],
+      [0, 0, (depth + 0.1) / 2],
+      wood,
+      hinge,
+    );
+    lid.userData.action = action;
+    targets.push(lid);
+    const inside = bevelBox(
+      [width - 0.04, 0.025, depth - 0.04],
+      [0, -0.089, (depth + 0.1) / 2],
+      lining,
+      hinge,
+    );
+    inside.userData.action = action;
+    targets.push(inside);
+    for (const hx of [-0.75, 0.75]) {
+      const h = mesh(
+        new THREE.CylinderGeometry(0.045, 0.045, 0.3, 20),
+        brass,
+        [hx, 0.92, -depth / 2],
+        c,
+      );
+      h.rotation.z = Math.PI / 2;
+    }
+    bevelBox([0.25, 0.11, 0.04], [0, 0.63, depth / 2 + 0.06], brass, c);
+    const pockets = [];
+    for (let row = 0; row < (rings ? 3 : 2); row++)
+      for (let col = 0; col < 3; col++)
+        pockets.push({
+          x: (col - 1) * 0.65,
+          z: (row - (rings ? 1 : 0.5)) * (rings ? 0.47 : 0.72),
+          rx: rings ? 0.18 : 0.25,
+          rz: rings ? 0.065 : 0.27,
+          depth: rings ? 0.18 : 0.15,
+        });
+    const lower = tray(c, width - 0.13, depth - 0.13, lining, pockets, rings);
+    lower.position.y = 0.06;
+    const upper = tray(c, width - 0.13, depth - 0.13, lining, pockets, rings);
+    upper.position.y = 0.63;
+    label(title, width * 0.8, [0, 0.97, depth * 0.49], c);
+    const links = [];
+    for (const zz of [-0.68, 0.68]) {
+      const bar = mesh(
+        new THREE.CylinderGeometry(0.018, 0.018, 1, 12),
+        brass,
+        [0, 0, 0],
+        c,
+      );
+      links.push({ bar, z: zz });
+    }
+    const result = {
+      root: c,
+      lower,
+      upper,
+      width,
+      depth,
+      hinge,
+      links,
+      progress: 0,
+      destination: 0,
+      sign: id === "gems" ? -1 : 1,
+    };
+    cases[id] = result;
+    return result;
+  }
+  const gemCase = makeCase(
+    "gems",
+    -2.85,
+    0.55,
+    "THE STONE BOX",
+    surfaces.redVelvet,
+  );
+  const metalCase = makeCase(
+    "metals",
+    3.05,
+    0.8,
+    "THE RING COLLECTION",
+    felt,
+    true,
+  );
+  for (const [i, id] of Object.keys(GEMS).entries()) {
+    const parent = i < 6 ? gemCase.upper : gemCase.lower;
+    const cell = i % 6,
+      x = ((cell % 3) - 1) * 0.65,
+      z = (Math.floor(cell / 3) - 0.5) * 0.72;
+    const g = mesh(geometries[id], materials[id], [x, 0.21, z], parent);
+    g.scale.setScalar(0.34);
+    g.rotation.y = 0.2;
     g.onBeforeRender = (_r, _s, camera) => {
       if (g.material.userData.update)
         g.material.userData.update(g, camera, light);
-      else if (id === "tiger") {
+      else {
         const u = g.material.userData.fiberUniforms;
         g.worldToLocal(camera.getWorldPosition(u.fiberEye.value));
         g.worldToLocal(light.getWorldPosition(u.fiberLight.value));
       }
     };
     g.layers.set(1);
-    g.scale.setScalar(0.32);
-    g.rotation.y = i * 0.4;
     const hit = box(
-      [0.59, 0.4, 0.9],
-      [x, 0.32, -0.12],
+      [0.61, 0.4, 0.62],
+      [x, 0.36, z],
       new THREE.MeshBasicMaterial({ visible: false }),
-      gemTray,
+      parent,
     );
     hit.userData.action = {
       kind: "gem",
       value: id,
-      label: `${names[id]} · choose stone`,
+      label: `${GEMS[id].name} · choose stone`,
     };
     targets.push(hit);
     const halo = mesh(
-      new THREE.TorusGeometry(0.25, 0.006, 8, 48),
+      new THREE.TorusGeometry(0.25, 0.005, 8, 48),
       brass,
-      [x, 0.315, -0.12],
-      gemTray,
+      [x, 0.315, z],
+      parent,
     );
     halo.rotation.x = Math.PI / 2;
     samples.push({ id, kind: "gem", object: g, baseY: g.position.y, halo });
   }
-  const ringPockets = [];
-  for (let row = 0; row < 3; row++)
-    for (let col = 0; col < 6; col++)
-      ringPockets.push({
-        x: (col - 2.5) * 0.34,
-        z: (row - 1) * 0.45 - 0.06,
-        rx: 0.13,
-        rz: 0.055,
-        depth: 0.17,
-      });
-  const metalTray = tray(
-    2.9,
-    1.05,
-    2.25,
-    1.75,
-    "THE RING COLLECTION",
-    ringPockets,
-    true,
+  const combos = FINISHES.flatMap((f) =>
+    Object.keys(METALS).map((id) => ({ id, finish: f.value, name: f.name })),
   );
-  for (const [row, finish] of FINISHES.entries())
-    for (const [col, id] of Object.keys(METALS).entries()) {
-      const x = (col - 2.5) * 0.34,
-        z = (row - 1) * 0.45 - 0.06;
-      const ring = mesh(
-        new THREE.TorusGeometry(0.12, 0.027, 16, 64),
-        metalMaterial(id, finish.value),
-        [x, 0.34, z],
-        metalTray,
-      );
-      ring.layers.set(1);
-      ring.rotation.x = -0.15;
-      const hit = box(
-        [0.32, 0.42, 0.4],
-        [x, 0.36, z],
-        new THREE.MeshBasicMaterial({ visible: false }),
-        metalTray,
-      );
-      hit.userData.action = {
-        kind: "metal",
-        value: id,
-        finish: finish.value,
-        label: `${METALS[id].name} · ${finish.name.toLowerCase()} · select ring`,
-      };
-      targets.push(hit);
-      const halo = mesh(
-        new THREE.TorusGeometry(0.14, 0.005, 8, 32),
-        brass,
-        [x, 0.312, z],
-        metalTray,
-      );
-      halo.rotation.x = Math.PI / 2;
-      samples.push({
-        id,
-        kind: "metal",
-        finish: finish.value,
-        object: ring,
-        baseY: ring.position.y,
-        halo,
-      });
-    }
+  for (const [i, { id, finish, name }] of combos.entries()) {
+    const parent = i < 9 ? metalCase.upper : metalCase.lower,
+      cell = i % 9;
+    const x = ((cell % 3) - 1) * 0.65,
+      z = (Math.floor(cell / 3) - 1) * 0.47;
+    const ring = mesh(
+      geometries.shank,
+      metalMaterial(id, finish),
+      [x, 0.39, z],
+      parent,
+    );
+    ring.scale.setScalar(0.18);
+    ring.layers.set(1);
+    ring.rotation.x = -0.15;
+    // Matching empty solitaire mounts, rather than broken open bands.
+    for (const sx of [-1, 1])
+      for (const sz of [-1, 1]) {
+        const path = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(sx * 0.65, 0.65, sz * 0.03),
+          new THREE.Vector3(sx * 0.48, 0.94, sz * 0.22),
+          new THREE.Vector3(sx * 0.3, 1.1, sz * 0.3),
+        ]);
+        const claw = new THREE.Mesh(
+          new THREE.TubeGeometry(path, 12, 0.035, 8, false),
+          ring.material,
+        );
+        claw.layers.set(1);
+        ring.add(claw);
+      }
+    const hit = box(
+      [0.6, 0.43, 0.43],
+      [x, 0.41, z],
+      new THREE.MeshBasicMaterial({ visible: false }),
+      parent,
+    );
+    hit.userData.action = {
+      kind: "metal",
+      value: id,
+      finish,
+      label: `${METALS[id].name} · ${name.toLowerCase()} · select ring`,
+    };
+    targets.push(hit);
+    const halo = mesh(
+      new THREE.TorusGeometry(0.21, 0.005, 8, 40),
+      brass,
+      [x, 0.317, z],
+      parent,
+    );
+    halo.rotation.x = Math.PI / 2;
+    samples.push({
+      id,
+      kind: "metal",
+      finish,
+      object: ring,
+      baseY: ring.position.y,
+      halo,
+    });
+  }
 
   // The same world-space loupe rests on the desk, travels, and becomes the eyepiece.
   const loupe = new THREE.Group();
@@ -418,6 +513,15 @@ export function makeBenchObjects(
   }
   return {
     targets,
+    cases,
+    focusBox(id) {
+      for (const [key, c] of Object.entries(cases))
+        c.destination = key === id ? 1 : 0;
+    },
+    boxView(id, aspect) {
+      const c = cases[id];
+      return caseInspectionView(c.root.position, c.sign, aspect);
+    },
     reflectionMaterials: samples
       .filter((s) => s.kind === "metal")
       .map((s) => s.object.material),
@@ -436,6 +540,35 @@ export function makeBenchObjects(
                 Math.min(...FINISHES.map((f) => Math.abs(f.value - finish))));
     },
     animate(time, hover, motion = true) {
+      for (const c of Object.values(cases)) {
+        c.progress = THREE.MathUtils.damp(
+          c.progress,
+          c.destination,
+          motion ? 4 : 8,
+          time,
+        );
+        if (Math.abs(c.progress - c.destination) < 0.001)
+          c.progress = c.destination;
+        const p = ease(c.progress);
+        c.lower.position.y = 0.06 + 0.5 * p;
+        c.upper.position.x = c.sign * (c.width + 0.16) * p;
+        c.upper.position.y = 0.63 + 0.21 * Math.sin(p * Math.PI);
+        for (const { bar, z } of c.links) {
+          const a = new THREE.Vector3(c.sign * 0.83, 0.42, z),
+            b = new THREE.Vector3(
+              c.upper.position.x + c.sign * 0.83,
+              c.upper.position.y + 0.06,
+              z,
+            );
+          bar.position.copy(a).lerp(b, 0.5);
+          bar.scale.y = a.distanceTo(b);
+          bar.quaternion.setFromUnitVectors(
+            new THREE.Vector3(0, 1, 0),
+            b.sub(a).normalize(),
+          );
+          bar.visible = p > 0.005;
+        }
+      }
       for (const s of samples) {
         const active =
           motion &&

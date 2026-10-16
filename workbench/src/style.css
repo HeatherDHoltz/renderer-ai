@@ -2039,3 +2039,63 @@ dialog h2 {
   min-height: 38px;
   padding: 6px;
 }
+
+/* The room can be bright at the window; HUD text keeps a quiet readable plate. */
+.workshop-game .scene-label {
+  background: rgba(22, 31, 25, 0.58);
+  padding: 8px 11px;
+  border-radius: 5px;
+  width: fit-content;
+  max-width: calc(100% - 40px);
+}
+.workshop-game .brand,
+.workshop-game .header-note {
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+}
+.gem-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.workshop-game .stone-options.gem-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.gem-options button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  padding: 10px 8px;
+  border: 1px solid #c4c7b6;
+  border-radius: 5px;
+  font-size: 11px;
+  min-height: 38px;
+}
+.gem-options button::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--gem-color);
+  box-shadow:
+    inset 1px 1px 2px #fff8,
+    inset -1px -1px 2px #0005;
+  flex: none;
+}
+.gem-options button[aria-pressed="true"] {
+  background: #e4eadc;
+  border-color: #697b5f;
+}
+.collection-shortcuts {
+  display: grid;
+  gap: 7px;
+  margin: 0 0 24px;
+}
+.collection-shortcuts button {
+  padding: 12px;
+  border: 1px solid #aaa98f;
+  border-radius: 5px;
+  text-align: left;
+}

@@ -1,0 +1,38 @@
+{
+  "generator": "Blender 4.5.14 LTS / Cycles / 48 samples / 2048-square UV atlas / compositor irradiance denoising",
+  "room": "Project-created geometry and procedural base materials; static lighting only; no movable lamp baked.",
+  "ring": {
+    "author": "Paul Wortmann",
+    "source": "https://opengameart.org/content/ring-0",
+    "download": "https://opengameart.org/sites/default/files/ring_1.zip",
+    "license": "CC0",
+    "adaptation": "Tapered open shank, capped head; project-created live shoulders and claws. Original pack textures not used.",
+    "archive_sha256": "235a4270c59fc4124eabcfcb6179b2b9d6c35c95f2a550b8f1df89bbdd052e10"
+  },
+  "blender": {
+    "source": "https://download.blender.org/release/Blender4.5/blender-4.5.14-macos-arm64.dmg",
+    "download_sha256": "65134d9b07b20e2fa8d3c9e44f6f44ffb5c9774dd521b95f50387310241ca170"
+  },
+  "files": {
+    "atelier/atelier.glb": {
+      "bytes": 3940132,
+      "sha256": "ca2a35a2a726c43598a544f8babc3f93d003922b279bfaf15f78beac641a55b1"
+    },
+    "atelier/atelier-color.png": {
+      "bytes": 783350,
+      "sha256": "6351f9c941505dd156a75559b5bf4ddd2ea71d16a4a2f8abc7afb3833421c915"
+    },
+    "atelier/atelier-light.hdr": {
+      "bytes": 8406469,
+      "sha256": "a54b9977ccf9a2179bc96c485263c97c6d9c3c0da3aec719a004af49ce64f9fd"
+    },
+    "solitaire-shank.obj": {
+      "bytes": 31660,
+      "sha256": "023ced509dcc41a255bb7e699ba04585eafc47444f5ad7dde0a94ae39e85d0ef"
+    },
+    "gem-color-study.json": {
+      "bytes": 1468,
+      "sha256": "c7f6740d8a18e90129a01b7e20861cdbf3b5393708e3fb7db9444f7a6eb25f22"
+    }
+  }
+}

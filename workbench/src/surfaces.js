@@ -19,11 +19,6 @@ export async function loadSurfaces(renderer) {
     velvetNormal,
     velvetRough,
     velvetAO,
-    plasterColor,
-    plasterNormal,
-    plasterRough,
-    tableNormal,
-    tableARM,
     woodColor,
     woodNormal,
     woodRough,
@@ -34,11 +29,6 @@ export async function loadSurfaces(renderer) {
     load("velvet-normal.jpg", false, 2),
     load("velvet-roughness.jpg", false, 2),
     load("velvet-ao.jpg", false, 2),
-    load("plaster-color.jpg", true, 3),
-    load("plaster-normal.jpg", false, 3),
-    load("plaster-roughness.jpg", false, 3),
-    load("table-normal.jpg", false, 1, false),
-    load("table-arm.jpg", false, 1, false),
     load("wood-color.jpg", true),
     load("wood-normal.jpg"),
     load("wood-roughness.jpg"),
@@ -54,7 +44,7 @@ export async function loadSurfaces(renderer) {
     environment = pmrem.fromEquirectangular(hdr);
   pmrem.dispose();
   const velvet = new THREE.MeshPhysicalMaterial({
-    color: "#315b45",
+    color: "#527451",
     map: velvetColor,
     normalMap: velvetNormal,
     normalScale: new THREE.Vector2(0.2, 0.2),
@@ -63,40 +53,40 @@ export async function loadSurfaces(renderer) {
     aoMap: velvetAO,
     aoMapIntensity: 0.6,
     sheen: 1,
-    sheenColor: "#527f59",
+    sheenColor: "#8aa179",
     sheenRoughness: 0.78,
   });
   // Recolor the measured red pile into cabinet green while retaining its nap.
   velvet.onBeforeCompile = (shader) => {
     shader.fragmentShader = shader.fragmentShader.replace(
-      "diffuseColor *= sampledDiffuseColor;",
-      "sampledDiffuseColor.rgb=vec3(dot(sampledDiffuseColor.rgb,vec3(.52,.32,.16)));\n diffuseColor *= sampledDiffuseColor;",
+      "#include <map_fragment>",
+      // onBeforeCompile runs before Three expands shader chunks. Editing the
+      // unexpanded multiply expression left the original red dye in green felt.
+      THREE.ShaderChunk.map_fragment.replace(
+        "diffuseColor *= sampledDiffuseColor;",
+        "sampledDiffuseColor.rgb=vec3(dot(sampledDiffuseColor.rgb,vec3(.52,.32,.16)));\n diffuseColor *= sampledDiffuseColor;",
+      ),
     );
   };
-  velvet.customProgramCacheKey = () => "recolored-photo-velvet-v1";
-  const plaster = new THREE.MeshStandardMaterial({
-    color: "#b8a787",
-    map: plasterColor,
-    normalMap: plasterNormal,
-    normalScale: new THREE.Vector2(0.4, 0.4),
-    roughnessMap: plasterRough,
-    roughness: 1,
-  });
+  velvet.customProgramCacheKey = () => "recolored-photo-velvet-v2";
+  const redVelvet = velvet.clone();
+  redVelvet.color.set("#853948");
+  redVelvet.sheenColor.set("#b97179");
+  redVelvet.onBeforeCompile = velvet.onBeforeCompile;
+  redVelvet.customProgramCacheKey = velvet.customProgramCacheKey;
   const wood = new THREE.MeshStandardMaterial({
     map: woodColor,
     normalMap: woodNormal,
-    normalScale: new THREE.Vector2(0.25, 0.25),
+    normalScale: new THREE.Vector2(0.1, 0.1),
     roughnessMap: woodRough,
     roughness: 0.7,
-    color: "#b99575",
+    color: "#82674f",
   });
   return {
     velvet,
-    plaster,
+    redVelvet,
     wood,
     forest,
-    tableNormal,
-    tableARM,
     hdr,
     environment,
     dispose() {
@@ -108,11 +98,6 @@ export async function loadSurfaces(renderer) {
         velvetNormal,
         velvetRough,
         velvetAO,
-        plasterColor,
-        plasterNormal,
-        plasterRough,
-        tableNormal,
-        tableARM,
         woodColor,
         woodNormal,
         woodRough,

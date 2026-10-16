@@ -1,7 +1,9 @@
+import { GEMS } from "./gems.js";
 import { METALS } from "./metals.js";
 const $ = (id) => document.getElementById(id);
 const state = {
   gem: "tiger",
+  box: null,
   metal: "gold",
   setting: "ring",
   finish: 14,
@@ -15,7 +17,9 @@ const state = {
   loupeX: 0.5,
   loupeY: 0.35,
 };
-const names = { tiger: "Tiger’s eye", diamond: "Diamond", emerald: "Emerald" };
+const names = Object.fromEntries(
+  Object.entries(GEMS).map(([id, g]) => [id, g.name]),
+);
 const host = $("render-host"),
   viewer = $("viewer");
 const metalChoices = document.querySelector(
@@ -32,6 +36,60 @@ metalChoices.replaceChildren(
     return b;
   }),
 );
+const gemChoices =
+  document.querySelector('[role="group"][aria-label="Gemstone"]') ||
+  document.querySelector("[data-gem]").parentElement;
+gemChoices.classList.add("gem-options");
+gemChoices.replaceChildren(
+  ...Object.entries(GEMS).map(([id, g]) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.gem = id;
+    b.textContent = g.name;
+    b.style.setProperty("--gem-color", g.swatch);
+    b.setAttribute("aria-pressed", String(id === state.gem));
+    return b;
+  }),
+);
+const boxExit = document.createElement("button");
+boxExit.id = "exit-box";
+boxExit.className = "exit-loupe";
+boxExit.hidden = true;
+boxExit.textContent = "← Back to the bench · Esc";
+boxExit.addEventListener("click", () => {
+  state.box = null;
+  app?.focusBox(null);
+  updateLabels();
+});
+viewer.append(boxExit);
+const collectionShortcuts = document.createElement("div");
+collectionShortcuts.className = "collection-shortcuts";
+$("cabinet").querySelector(".stone-section").before(collectionShortcuts);
+for (const [id, label] of [
+  ["gems", "Open the stone box"],
+  ["metals", "Open the ring collection"],
+]) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.textContent = label;
+  b.addEventListener("click", () => openBox(id));
+  collectionShortcuts.append(b);
+}
+function openBox(id) {
+  if (!$("cabinet").hidden) setDrawer(false);
+  state.box = id;
+  state.tool = "turn";
+  state.auto = false;
+  app?.setAutoTurn(false);
+  app?.focusBox(id);
+  choose("tool", "turn");
+  updateLabels();
+  announce(
+    id === "gems"
+      ? "Stone box opened. Choose a stone from either layer."
+      : "Ring collection opened. Choose an alloy and finish.",
+  );
+}
 let app,
   failed = false,
   dragging = false;
@@ -49,20 +107,12 @@ function choose(attribute, value) {
   });
 }
 function description() {
-  const text = {
-    tiger: [
-      "Find the little ribbon of light.",
-      "Move the lamp across the tiger’s eye and watch its silky band follow.",
-    ],
-    diamond: [
-      "Every facet has a different good side.",
-      "Turn the stone and watch its faces alternate between bright reflections and clear transmission.",
-    ],
-    emerald: [
-      "Look for the deeper green.",
-      "Light travels farther through thicker parts of the stone, giving the color more depth.",
-    ],
-  }[state.gem];
+  const text = [
+    state.gem === "tiger"
+      ? "Find the little ribbon of light."
+      : `Meet ${names[state.gem].toLowerCase()}.`,
+    GEMS[state.gem].note,
+  ];
   if (state.tool === "loupe") {
     text[0] = "A little closer, a little more to see.";
     text[1] =
@@ -101,8 +151,12 @@ function updateLabels() {
   viewer.dataset.tool = state.tool;
   viewer.dataset.background = state.background;
   $("exit-loupe").hidden = state.tool !== "loupe";
-  $("mode-label").textContent =
-    state.tool === "loupe" ? "THROUGH THE LOUPE" : "AT THE BENCH";
+  $("mode-label").textContent = state.box
+    ? "INSIDE THE COLLECTION"
+    : state.tool === "loupe"
+      ? "THROUGH THE LOUPE"
+      : "AT THE BENCH";
+  boxExit.hidden = !state.box;
   $("loupe-controls").hidden = state.tool !== "loupe";
   $("tray-tip").hidden = state.tool === "loupe";
   const hint = {
@@ -122,6 +176,7 @@ function setTool(value) {
   app?.hover(null);
   $("object-hint").hidden = true;
   state.tool = value;
+  state.box = null;
   state.auto = false;
   choose("tool", value);
   app?.setAutoTurn(false);
@@ -215,7 +270,7 @@ $("reset-view").addEventListener("click", () => {
 });
 $("auto-turn").addEventListener("click", () => {
   const next = !state.auto;
-  if (next && state.tool !== "turn") setTool("turn");
+  if (next && (state.tool !== "turn" || state.box)) setTool("turn");
   state.auto = next;
   app?.setAutoTurn(next);
   updateLabels();
@@ -365,6 +420,7 @@ function release(event) {
       );
     }
   }
+  if (activate?.kind === "box") openBox(activate.value);
   if (activate?.kind === "loupe") setTool("loupe");
   hoverAt(event);
 }
@@ -433,6 +489,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "Escape") {
     if (!$("cabinet").hidden) setDrawer(false);
+    else if (state.box) boxExit.click();
     else if (state.tool !== "turn") setTool("turn");
   }
 });
@@ -494,6 +551,7 @@ async function boot() {
     app.setBackground(state.background);
     app.setTool(state.tool);
     app.setAutoTurn(state.auto);
+    if (state.box) app.focusBox(state.box);
     if (notes.open) app.pause(true);
     updateLabels();
     $("loading").hidden = true;

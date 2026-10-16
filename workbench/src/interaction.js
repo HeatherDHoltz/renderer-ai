@@ -1,5 +1,26 @@
 import * as THREE from "../vendor/three.module.js";
 
+export function caseInspectionView(origin, sign, aspect) {
+  if (!(aspect > 0) || !Number.isFinite(aspect))
+    throw new Error("Invalid inspection aspect");
+  const center = origin.clone().add(new THREE.Vector3(sign * 1.08, 0.56, 0));
+  const distance = Math.max(
+    5.4,
+    5.2 / (2 * Math.tan(THREE.MathUtils.degToRad(20)) * aspect) + 0.8,
+  );
+  // Portrait framing needs more distance, not a camera above the ceiling.
+  const rise = Math.min((distance * 0.86) / Math.hypot(0.86, 0.72), 6.4);
+  const position = center
+    .clone()
+    .add(
+      new THREE.Vector3(0, rise, Math.sqrt(distance * distance - rise * rise)),
+    );
+  const camera = new THREE.PerspectiveCamera(40, aspect, 0.025, 70);
+  camera.position.copy(position);
+  camera.lookAt(center);
+  return { center, position, quaternion: camera.quaternion };
+}
+
 export const clamp = (x, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));
 export const ease = (x) => {
   const t = clamp(x);

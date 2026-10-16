@@ -95,6 +95,25 @@ export function normalizeGem(geometry, width) {
   return geometry;
 }
 
+// The imported shank needs cylindrical UVs for the brushed-metal tangent frame.
+// Missing UVs make anisotropic materials invalid even when positions look fine.
+export function solitaireGeometry(text) {
+  const geometry = readGemOBJ(text, true),
+    p = geometry.attributes.position,
+    uv = [];
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i),
+      y = p.getY(i),
+      z = p.getZ(i);
+    uv.push(
+      Math.atan2(y, x) / (2 * Math.PI) + 0.5,
+      Math.atan2(z, Math.hypot(x, y) - 0.91) / (2 * Math.PI) + 0.5,
+    );
+  }
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  return geometry;
+}
+
 export function lightPosition(angleDegrees, heightDegrees, radius = 5) {
   const a = THREE.MathUtils.degToRad(angleDegrees),
     h = THREE.MathUtils.degToRad(heightDegrees);

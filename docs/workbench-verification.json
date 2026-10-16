@@ -165,5 +165,35 @@
     "limits": "Artist-tuned real-time surface study remains; no measured mineral calibration or new volume transport.",
     "checks": "22 web tests, static build, Rust format/strict Clippy and 98 Rust tests; 12 class baseline hashes unchanged.",
     "hosted_visual_qa": "Published material inspected at the same default 2x loupe view, ready=true and no console errors. Actual hosted screenshot retained."
+  },
+  "atelier_revision": {
+    "date": "2026-10-16",
+    "direction": "Contemporary walnut/ivory atelier with burgundy and green velvet, restrained brass, folded linen, books/tools and amber-glass votives.",
+    "room": "Project-modeled Blender 4.5.14 LTS; Cycles color/irradiance 2048 atlases, 48 samples; linear HDR irradiance denoised in compositor. Movable task light is not baked. Live scenery retains 3D parallax and receives direct task-light updates.",
+    "gems": "12 specimens; ruby and sapphire fit to GIA cross sections integrated under D65/CIE1931 at 5mm. Other colors are appearance fits, no full spectral/birefringent/fluorescent simulation. New finite-girdle brilliant/step/oval/cushion cut solids: 89/42/89/89 planes. External paths remain cube-probe approximations.",
+    "ring": "Tapered open and capped shank adapted from Paul Wortmann CC0 Ring.002; project-created cathedral shoulders/claws and thin support rail. Generated UVs keep anisotropic brushing finite.",
+    "cases": "Matching full-footprint hinged lids; photographed red/green velvet on both lining and trays. Two layers unfold sideways; lower tray rises. Smooth inspection/return; accessible drawer buttons; selection stays live.",
+    "fixes": [
+      "Velvet callback now edits unresolved map_fragment include before shader expansion; original red dye no longer muddies green velvet.",
+      "Camera fit includes tray depth margin and caps portrait rise below ceiling.",
+      "Inspection refits when viewport changes; case-to-loupe returns to bench before normal corridor."
+    ],
+    "local_browser": [
+      "No console warnings/errors in final ready scene.",
+      "Actual direct ring drag visibly rotated the new shank and cabochon.",
+      "Actual lamp drag changed reach from 48 to -12 and height from 28 to 8.",
+      "Physical tsavorite selection and case-to-loupe flight; diamond loupe and top-facing rotation.",
+      "Both physical cases opened; 18 samples visible; actual brushed titanium selection confirmed finish 92.",
+      "430x850 CSS viewport, no horizontal overflow, all 12 gems visible in open case; ceiling occlusion caught and fixed.",
+      "1280x720 desktop overview and collection, matching velvet lining colors."
+    ],
+    "checks": "26 web tests, static build, cargo fmt --check, all 98 Rust tests, strict all-target Clippy; all 12 original class hashes unchanged. No GPU or mobile FPS benchmark claimed.",
+    "evidence": [
+      "gallery/workbench/atelier.jpg",
+      "gallery/workbench/gem-collection.jpg",
+      "gallery/workbench/diamond-brilliant.jpg"
+    ],
+    "research": "docs/GEM-COLOR.md; assets/gem-color-study.json; assets/atelier-provenance.json",
+    "publication": "Pending same-Site publication after local verification."
   }
 }

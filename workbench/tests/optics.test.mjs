@@ -8,6 +8,9 @@ import {
   convexFacetHull,
   dielectricFresnel,
 } from "../src/gem-optics.js";
+import { GEMS, referenceColor } from "../src/gems.js";
+import { cutGeometry } from "../src/cuts.js";
+import { solitaireGeometry } from "../src/geometry.js";
 import { velvetInsert } from "../src/velvet-insert.js";
 import { METALS, FINISHES, metalMaterial } from "../src/metals.js";
 
@@ -50,7 +53,7 @@ function assertClosed(g) {
     assert.equal(r.winding, 0);
   }
 }
-test("actual live diamond and repaired emerald are closed convex optical solids", async () => {
+test("preserved offline reference meshes remain closed convex optical solids", async () => {
   const diamond = normalizeGem(await mesh("diamond"), 1.24),
     emerald = normalizeGem(convexFacetHull(await mesh("emerald-step")), 1.22);
   for (const [g, n] of [
@@ -119,6 +122,61 @@ test("eighteen alloy/finish combinations have increasing roughness and direction
     for (const m of ms) {
       assert.equal(m.metalness, 1);
       m.dispose();
+    }
+  }
+});
+
+test("all live cut families are closed convex solids with thin finite girdles", () => {
+  for (const kind of ["brilliant", "step", "oval", "cushion"]) {
+    const g = cutGeometry(kind);
+    assertClosed(g);
+    assert.equal(facetPlanes(g).length, kind === "step" ? 42 : 89);
+    const ys = [
+      ...new Set(
+        Array.from(g.attributes.position.array)
+          .filter((_, i) => i % 3 === 1)
+          .map((y) => y.toFixed(5)),
+      ),
+    ]
+      .map(Number)
+      .sort((a, b) => a - b);
+    const girdleGap = ys.some(
+      (y, i) => i > 0 && y - ys[i - 1] > 0.02 && y - ys[i - 1] < 0.03,
+    );
+    assert.ok(girdleGap, `${kind}: finite girdle`);
+    assert.ok(g.boundingBox.max.y > 0.7 && g.boundingBox.max.y < 0.76);
+  }
+});
+test("the imported solitaire shank is closed and has finite UVs for brushed metal", async () => {
+  const g = solitaireGeometry(
+    await readFile(
+      new URL("../assets/solitaire-shank.obj", import.meta.url),
+      "utf8",
+    ),
+  );
+  assertClosed(g.toNonIndexed());
+  assert.equal(g.attributes.uv.count, g.attributes.position.count);
+  for (const x of g.attributes.uv.array)
+    assert.ok(Number.isFinite(x) && x >= 0 && x <= 1);
+});
+test("ruby and sapphire retain the documented spectral fits; all absorption is finite and nonnegative", async () => {
+  const fit = JSON.parse(
+    await readFile(
+      new URL("../assets/gem-color-study.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  assert.equal(Object.keys(GEMS).length, 12);
+  for (const id of ["ruby", "sapphire"]) {
+    assert.deepEqual(GEMS[id].absorption, fit.gems[id].absorption);
+    assert.equal(referenceColor(GEMS[id]), fit.gems[id].reference_srgb);
+  }
+  for (const g of Object.values(GEMS)) {
+    assert.ok(g.ior > 1.5 && g.ior < 2.5);
+    if (!g.absorption) continue;
+    for (const mu of g.absorption) {
+      assert.ok(Number.isFinite(mu) && mu >= 0);
+      assert.ok(Math.exp(-2 * mu) <= Math.exp(-mu));
     }
   }
 });

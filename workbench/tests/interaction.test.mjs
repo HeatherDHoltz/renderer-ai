@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import * as THREE from "../vendor/three.module.js";
 import {
+  caseInspectionView,
   gazeOffset,
   ease,
   corridorPoint,
@@ -57,10 +58,11 @@ test("loupe travels in a non-overshooting corridor over and in front of jewelry"
     assert.ok(ease(t) >= 0 && ease(t) <= 1);
 });
 
-test("the actual loupe body and handle clear all three mounted gem bounds", async () => {
+test("the loupe body and handle clear every live cut and the imported shank", async () => {
   const { readFile } = await import("node:fs/promises");
   const { readGemOBJ, normalizeGem } = await import("../src/geometry.js");
-  const { convexFacetHull } = await import("../src/gem-optics.js");
+  const { cutGeometry } = await import("../src/cuts.js");
+  const { solitaireGeometry } = await import("../src/geometry.js");
   const meshes = {
     tiger: normalizeGem(
       readGemOBJ(
@@ -72,27 +74,16 @@ test("the actual loupe body and handle clear all three mounted gem bounds", asyn
       ),
       1.38,
     ),
-    emerald: normalizeGem(
-      convexFacetHull(
-        readGemOBJ(
-          await readFile(
-            new URL("../assets/emerald-step.obj", import.meta.url),
-            "utf8",
-          ),
-        ),
-      ),
-      1.22,
-    ),
-    diamond: normalizeGem(
-      readGemOBJ(
-        await readFile(
-          new URL("../assets/diamond.obj", import.meta.url),
-          "utf8",
-        ),
-      ),
-      1.24,
+    ...Object.fromEntries(
+      ["brilliant", "step", "oval", "cushion"].map((k) => [k, cutGeometry(k)]),
     ),
   };
+  const shank = solitaireGeometry(
+    await readFile(
+      new URL("../assets/solitaire-shank.obj", import.meta.url),
+      "utf8",
+    ),
+  );
   for (const [name, geometry] of Object.entries(meshes)) {
     const group = new THREE.Group(),
       root = new THREE.Group();
@@ -100,11 +91,11 @@ test("the actual loupe body and handle clear all three mounted gem bounds", asyn
     root.position.y = -0.2;
     group.position.y = 0.2;
     group.rotation.set(0.12, -0.3, 0);
-    const band = new THREE.Mesh(new THREE.TorusGeometry(0.91, 0.12, 32, 128));
-    band.scale.z = 1.2;
+    const band = new THREE.Mesh(shank);
+
     root.add(band);
     const stone = new THREE.Mesh(geometry);
-    stone.position.y = name === "tiger" ? 0.98 : 1.1;
+    stone.position.y = name === "tiger" ? 0.98 : 0.7;
     root.add(stone);
     group.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(group).expandByScalar(0.04);
@@ -206,4 +197,32 @@ test("pointer picking reaches the visible ring layer and preserves ordinary benc
   lamp.geometry.dispose();
   band.material.dispose();
   lamp.material.dispose();
+});
+
+test("case inspection looks toward its contents and frames unfolded trays at wide and narrow aspects", () => {
+  for (const aspect of [0.5, 0.7, 1, 1.78, 2.4])
+    for (const sign of [-1, 1]) {
+      const origin = new THREE.Vector3(sign * 3, -1.29, 0.6),
+        v = caseInspectionView(origin, sign, aspect);
+      const camera = new THREE.PerspectiveCamera(40, aspect, 0.025, 70);
+      camera.position.copy(v.position);
+      camera.quaternion.copy(v.quaternion);
+      camera.updateMatrixWorld(true);
+      const center = v.center.clone().project(camera);
+      assert.ok(v.position.y < 9, "inspection stays below the room ceiling");
+      assert.ok(
+        Math.abs(center.x) < 1e-6 && Math.abs(center.y) < 1e-6 && center.z < 1,
+      );
+      for (const x of [-2.6, 2.6])
+        for (const z of [-0.95, 0.95]) {
+          const p = v.center
+            .clone()
+            .add(new THREE.Vector3(x, 0.12, z))
+            .project(camera);
+          assert.ok(
+            Math.abs(p.x) < 1.02 && Math.abs(p.y) < 1.02,
+            `trays fit at ${aspect}: ${p.toArray()}`,
+          );
+        }
+    }
 });
