@@ -1,0 +1,4 @@
+mitsuba==3.9.1
+drjit==1.5.0
+numpy==2.2.6
+Pillow==11.3.0

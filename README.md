@@ -42,6 +42,8 @@ cargo run --release --locked -- render scenes/ai_gallery.json --output output/he
 
 [Gemstone study](docs/GEMS.md): diamond, emerald, ruby, sapphire, amethyst, and aquamarine on downloaded/adapted cuts, plus tiger's-eye-inspired cabochons and a moving-light sheen demonstration. Includes artist credits and optical limitations.
 
+[Optional Mitsuba reference study](docs/MITSUBA.md): a separate Python environment for layered tiger's-eye materials and directional volume scattering. These reference renders use Mitsuba, not this Rust engine.
+
 ```sh
 cargo run --release --locked -- validate scenes/mesh.json
 cargo run --release --locked -- animate scenes/animation.json --frames 0:16 --fps 8 --output output/animation

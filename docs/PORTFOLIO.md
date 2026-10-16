@@ -2,6 +2,8 @@
 
 This repository is an AI-assisted engineering project extending Heather's early-semester renderer. Heather set the direction and reviewed results; Codex assisted with implementation, tests, debugging, scene generation, and documentation. The independent manually authored class project was not modified. Do not present the generated implementation as entirely handwritten or imply that an AI model performs rendering at runtime.
 
+The optional [Mitsuba study](MITSUBA.md) uses an external renderer. Its scenes and material experiments are supporting research artifacts; Mitsuba's volume transport and the resulting reference images are not features or output of the Rust engine.
+
 Possible resume wording, after personally reviewing and being ready to explain the code:
 
 - Directed and reviewed an AI-assisted Rust CPU ray tracer with affine geometry, indexed OBJ meshes, HDR physical direct lighting, glass, quaternion animation, and bounded procedural generation; verified with 98 tests and Linux/macOS CI.

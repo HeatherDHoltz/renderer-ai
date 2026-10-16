@@ -69,3 +69,5 @@ python3 scripts/render_gem_gallery.py
 ```
 
 `tests/gemstones.rs` checks world-distance/thickness absorption, inside origins, the analytic sum of internally reflected slab paths, entry reflection, anisotropic isotropic-limit agreement/reciprocity/rotation/PDF/energy, invalid parameters, and the faceted near-tip regression across backends. The offline example script validates/renders all new scenes as well.
+
+For a separate experiment using a refracting quartz shell, directional volume scattering, and an effective internal fiber layer in an external renderer, see the [Mitsuba reference study](MITSUBA.md). Those images use Mitsuba, not the Rust renderer.
