@@ -2,6 +2,8 @@
 
 Scenes are UTF-8 JSON. Run `cargo run --release --locked -- validate scenes/mesh.json` to check syntax, resource limits, references, transforms, and assets. Unknown fields and unsupported enum values are errors. Loading never executes code. Asset paths resolve relative to the scene file; absolute paths also work but reduce portability.
 
+[scene.schema.json](scene.schema.json) supplies a structural Draft 2020-12 schema for editors/authoring tools; the CLI additionally checks semantic references/assets/transforms and aggregate limits. [AI_SCENE_AUTHORING.md](AI_SCENE_AUTHORING.md) provides a concrete constrained prompt and a checked-in example. [PROCEDURAL.md](PROCEDURAL.md) defines the separate generator configuration and `generate` CLI; its output is an ordinary scene in this format.
+
 Working examples: [canonical geometry](../scenes/shapes.json), [mirror/glass](../scenes/glass.json), [flat/smooth textured OBJ instances](../scenes/mesh.json).
 
 ## Top-level fields

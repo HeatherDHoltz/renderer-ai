@@ -1,0 +1,818 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/scene.schema.json",
+  "title": "Renderer scene v1",
+  "description": "Structural editor schema. The Rust validate CLI additionally checks references, transforms, mode compatibility, assets, and aggregate resource limits.",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "camera": {
+      "$ref": "#/$defs/camera"
+    },
+    "render": {
+      "$ref": "#/$defs/render"
+    },
+    "background": {
+      "type": "array",
+      "items": {
+        "type": "number",
+        "minimum": 0
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "textures": {
+      "type": "object",
+      "maxProperties": 256,
+      "additionalProperties": {
+        "$ref": "#/$defs/texture"
+      }
+    },
+    "materials": {
+      "type": "object",
+      "maxProperties": 4096,
+      "additionalProperties": {
+        "$ref": "#/$defs/material"
+      }
+    },
+    "geometries": {
+      "type": "object",
+      "maxProperties": 4096,
+      "additionalProperties": {
+        "$ref": "#/$defs/geometry"
+      }
+    },
+    "objects": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/object"
+      }
+    },
+    "lights": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {
+        "$ref": "#/$defs/light"
+      }
+    },
+    "environment": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/environment"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "version",
+    "camera",
+    "materials",
+    "geometries",
+    "objects"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "camera": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "perspective",
+            "orthographic"
+          ]
+        },
+        "position": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "target": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "up": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "fov": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 179
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "render": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8192
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8192
+        },
+        "spp": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16384
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "integrator": {
+          "enum": [
+            "whitted",
+            "physical"
+          ]
+        },
+        "max_depth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "min_throughput": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "exposure": {
+          "type": "number",
+          "minimum": -32,
+          "maximum": 32
+        },
+        "tone_map": {
+          "enum": [
+            "linear",
+            "reinhard"
+          ]
+        },
+        "accel": {
+          "enum": [
+            "none",
+            "bvh",
+            "octree"
+          ]
+        },
+        "sampling": {
+          "enum": [
+            "center",
+            "jittered"
+          ]
+        },
+        "threads": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256
+        },
+        "tile_size": {
+          "type": "integer",
+          "minimum": 4,
+          "maximum": 256
+        },
+        "progressive": {
+          "type": "boolean"
+        },
+        "preview_every": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16384
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "texture": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "checker"
+            },
+            "a": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "b": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "scale": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "kind",
+            "a",
+            "b",
+            "scale"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "image"
+            },
+            "path": {
+              "type": "string"
+            },
+            "filter": {
+              "enum": [
+                "nearest",
+                "bilinear"
+              ]
+            },
+            "wrap": {
+              "enum": [
+                "repeat",
+                "clamp"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "physical": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "model": {
+              "const": "diffuse"
+            },
+            "base_color": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "required": [
+            "model",
+            "base_color"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "model": {
+              "const": "metal_rough"
+            },
+            "base_color": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "metallic": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "roughness": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "model",
+            "base_color",
+            "metallic",
+            "roughness"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "model": {
+              "const": "dielectric"
+            },
+            "tint": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "ior": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 4
+            }
+          },
+          "required": [
+            "model",
+            "tint",
+            "ior"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "material": {
+      "type": "object",
+      "properties": {
+        "diffuse": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "specular": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "shininess": {
+          "type": "number",
+          "minimum": 0
+        },
+        "reflection": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "transmission": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "ior": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "texture": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "physical": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/physical"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "geometry": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "sphere"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "plane"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "box"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "cylinder"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "cone"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "mesh"
+            },
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "transform": {
+      "type": "object",
+      "properties": {
+        "translation": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "rotation_degrees": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "scale": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "keyframe": {
+      "type": "object",
+      "properties": {
+        "time": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "translation": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "rotation": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "scale": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        }
+      },
+      "required": [
+        "time",
+        "translation",
+        "rotation",
+        "scale"
+      ],
+      "additionalProperties": false
+    },
+    "animation": {
+      "type": "object",
+      "properties": {
+        "keyframes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4096,
+          "items": {
+            "$ref": "#/$defs/keyframe"
+          }
+        }
+      },
+      "required": [
+        "keyframes"
+      ],
+      "additionalProperties": false
+    },
+    "object": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "parent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "geometry": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "material": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transform": {
+          "$ref": "#/$defs/transform"
+        },
+        "animation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/animation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "smooth": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "light": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "point"
+            },
+            "position": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "color": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "required": [
+            "kind",
+            "position",
+            "color"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "area"
+            },
+            "center": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "edge_u": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "edge_v": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "radiance": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "two_sided": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "kind",
+            "center",
+            "edge_u",
+            "edge_v",
+            "radiance"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "environment": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "constant"
+            },
+            "radiance": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "required": [
+            "kind",
+            "radiance"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "hdr"
+            },
+            "path": {
+              "type": "string"
+            },
+            "intensity": {
+              "type": "number",
+              "minimum": 0
+            },
+            "rotation_degrees": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "kind",
+            "path"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

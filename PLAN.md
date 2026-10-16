@@ -13,7 +13,7 @@ Acceptance criteria and full scope: [implementation handoff](IMPLEMENTATION_HAND
 | M6 Parallel/progressive | verified | Tiled workers, configurable threads, preview batches; thread/tile/batch equivalence |
 | M7 HDR/physical materials | verified | HDR IO/environment importance sampling, GGX/Smith/Schlick, dielectric transport, color/BRDF tests and studio images |
 | M8 Hierarchy/animation | verified | Cycle-checked graph, TRS/quaternion tracks, fresh acceleration at each frame; first/middle/last inspection |
-| M9 Procedural/AI authoring | active | Seeded generator, bounded branching L-system, validated scene-authoring workflow |
-| M10 Portfolio/release | pending | Clean checkout verification, CI, measured benchmarks, real gallery, current docs and claims audit |
+| M9 Procedural/AI authoring | verified | Seeded generator, bounded branching L-system, validated scene-authoring workflow |
+| M10 Portfolio/release | active | Clean checkout verification, CI, measured benchmarks, real gallery, current docs and claims audit |
 
 Proceed in order. Scene IO may be introduced early if it makes diagnostics reproducible; record any dependency change here. Keep milestone commits small enough to review. No reduced scope has been agreed.

@@ -12,6 +12,9 @@
 - `assets/studio.hdr`: synthetic 256×128 linear Radiance RGBE map with three angular softboxes and a dim upper/lower field, generated entirely by `cargo run --release --locked --example generate_environment`. No photograph or external environment. Values exceed one before display mapping.
 - `gallery/physical-studio.png`: inspected 960×540, 256-spp environment-only render of `scenes/physical_studio.json`; command, material ordering, and limitations in PHYSICAL.md. The accompanying raw HDR stays in ignored `output/`.
 - `gallery/animation-{first,middle,last}.png`: actual 640×420, 32-spp frames 0/8/16 of the included kinetic sculpture, at 8 fps; analytic geometry and the existing generated OBJ only. Sequence command and composition in ANIMATION.md.
+- `gallery/scatter.png` and `garden.png`: actual procedural renders from the checked generator configs; all geometry is analytic, no external assets. Full commands/settings in PROCEDURAL.md.
+- `assets/torus.obj`: project-generated closed Y-axis torus (R=1, r=0.24), 2,304 positions / 4,608 triangles, vertex normals and independent seam UVs. Recreate with `python3 scripts/generate_torus.py` (Python standard library only).
+- `scenes/ai_gallery.json`: Codex-authored still-life scene following the documented constrained prompt; project-generated meshes, analytic shapes, and synthetic environment only. No external art or model service.
 - Course slides, handouts, syllabus, and class submission files are not redistributed here.
 
 No license has been assigned to project-authored files or images. Dependency licenses remain those declared by their respective packages.

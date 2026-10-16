@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "seed": 116,
+  "render": {
+    "width": 800,
+    "height": 560,
+    "spp": 128,
+    "integrator": "physical",
+    "max_depth": 6
+  },
+  "camera": {
+    "position": [
+      6,
+      4.2,
+      9
+    ],
+    "target": [
+      0,
+      1.65,
+      0
+    ],
+    "fov": 32
+  },
+  "palette": [
+    [
+      0.045,
+      0.38,
+      0.17
+    ],
+    [
+      0.18,
+      0.5,
+      0.085
+    ],
+    [
+      0.5,
+      0.24,
+      0.04
+    ]
+  ],
+  "generator": {
+    "kind": "lsystem",
+    "axiom": "F",
+    "rules": {
+      "F": "F[+!F[&!FL]L][-!F[^!FL]L]\\F[&!FL]L"
+    },
+    "iterations": 3,
+    "step": 0.25,
+    "angle_degrees": 34,
+    "radius": 0.05,
+    "taper": 0.68,
+    "leaf_size": 0.105,
+    "max_symbols": 100000,
+    "max_segments": 10000,
+    "count": 4,
+    "bounds_min": [
+      -3.2,
+      -1.5
+    ],
+    "bounds_max": [
+      3.2,
+      1.5
+    ]
+  }
+}

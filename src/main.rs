@@ -23,6 +23,14 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Command {
+    /// Generate an ordinary validated scene from a bounded offline config.
+    Generate {
+        config: PathBuf,
+        #[arg(long, default_value = "output/generated-scene.json")]
+        output: PathBuf,
+        #[arg(long)]
+        seed: Option<u64>,
+    },
     /// Render an inclusive frame range with fresh transforms and bounds at every time.
     Animate {
         scene: PathBuf,
@@ -128,6 +136,28 @@ fn main() {
 }
 fn run() -> Result<(), Box<dyn Error>> {
     match Cli::parse().command {
+        Command::Generate {
+            config,
+            output,
+            seed,
+        } => {
+            let mut config = renderer_project::procedural::GeneratorFile::load(&config)?;
+            if let Some(v) = seed {
+                config.seed = v;
+            }
+            let file = config.generate()?;
+            if let Some(parent) = output.parent().filter(|p| !p.as_os_str().is_empty()) {
+                std::fs::create_dir_all(parent)?;
+            }
+            std::fs::write(&output, serde_json::to_vec_pretty(&file)?)?;
+            println!(
+                "Generated {} objects with seed {} -> {}",
+                file.objects.len(),
+                config.seed,
+                output.display()
+            );
+            Ok(())
+        }
         Command::Animate {
             scene,
             output,

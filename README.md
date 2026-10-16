@@ -9,6 +9,8 @@ cargo run --release --locked -- render scenes/mesh.json --output output/mesh.png
 cargo run --release --locked -- render scenes/glass.json --output output/glass.png
 cargo run --release --locked -- render scenes/physical_studio.json --output output/studio.png --hdr-output output/studio.hdr
 cargo run --release --locked -- animate scenes/animation.json --frames 0:16 --fps 8 --output output/animation
+cargo run --release --locked -- generate scenes/generators/garden.json --output output/garden.json
+cargo run --release --locked -- render output/garden.json --output output/garden.png
 cargo test --locked
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
@@ -24,7 +26,7 @@ Seeded jittered antialiasing and rectangular area-light soft shadows are verifie
 
 ![HDR environment-only material studio](gallery/physical-studio.png)
 
-Selectable brute-force, binned-SAH BVH, and reference octree traversal cover both instances and mesh triangles. [Hierarchical keyframe animation](docs/ANIMATION.md) produces deterministic frame sequences with quaternion interpolation and rebuilt acceleration. Procedural generation remains in progress. [Measured benchmarks](docs/BENCHMARKS.md) include raw data, hardware, settings, construction cost, and brute-force agreement. In the fixed 8,192-triangle ray-query workload, BVH reduced the median from 734.6 ms to 2.87 ms on Apple M1 Max; this measures intersection work. Full-render measurements at 320×224 also cover 1/2/4/10 workers with exact film agreement; the area-light study measured 0.875 s at one worker and 0.100 s at ten.
+Selectable brute-force, binned-SAH BVH, and reference octree traversal cover both instances and mesh triangles. [Hierarchical keyframe animation](docs/ANIMATION.md) produces deterministic frame sequences with quaternion interpolation and rebuilt acceleration. [Seeded procedural scenes and branching L-systems](docs/PROCEDURAL.md) generate validated scene JSON. A [schema and constrained AI authoring workflow](docs/AI_SCENE_AUTHORING.md) include a checked still-life example. Final portfolio/release polish is in progress. [Measured benchmarks](docs/BENCHMARKS.md) include raw data, hardware, settings, construction cost, and brute-force agreement. In the fixed 8,192-triangle ray-query workload, BVH reduced the median from 734.6 ms to 2.87 ms on Apple M1 Max; this measures intersection work. Full-render measurements at 320×224 also cover 1/2/4/10 workers with exact film agreement; the area-light study measured 0.875 s at one worker and 0.100 s at ten.
 
 ![Sampled rectangular-light soft shadows](gallery/soft-shadows.png)
 

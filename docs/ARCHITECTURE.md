@@ -59,3 +59,7 @@ The benchmark CLI validates every ray's hit/identity/distance and occlusion agai
 ## Tiled execution and previews
 
 A dedicated Rayon pool renders exclusive tile buffers from immutable film-prefix sums. Per-pixel floating-point additions keep the same sample order across worker counts, tiles, and progressive batches; completed buffers commit after successful batch evaluation. The renderer validates nonfinite/negative radiance with pixel/sample diagnostics. Progressive callbacks receive complete uniform prefixes; CLI PNG replacement uses a temporary sibling and atomic rename. Details and exercised commands are in [PARALLEL.md](PARALLEL.md).
+
+## Offline scene generation
+
+`procedural` expands a validated ASCII L-system under symbol/stack/segment/output budgets, then interprets a quaternion turtle into named cylinder/leaf instances. Seeded scatter and tree-root placement use stateless sample addresses. Generated scenes pass the same `SceneFile` build and input-size limits and contain no executable code or external assets. [PROCEDURAL.md](PROCEDURAL.md) defines commands, bounds, and limits. [AI_SCENE_AUTHORING.md](AI_SCENE_AUTHORING.md) pairs a structural JSON schema with the authoritative semantic CLI validator; it is an authoring workflow, not a rendering algorithm or hosted integration.

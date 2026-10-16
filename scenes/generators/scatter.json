@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "seed": 116,
+  "render": {
+    "width": 640,
+    "height": 420,
+    "spp": 64,
+    "integrator": "physical"
+  },
+  "camera": {
+    "position": [
+      8,
+      6,
+      11
+    ],
+    "target": [
+      0,
+      0.7,
+      0
+    ],
+    "fov": 40
+  },
+  "palette": [
+    [
+      0.04,
+      0.44,
+      0.4
+    ],
+    [
+      0.7,
+      0.2,
+      0.055
+    ],
+    [
+      0.6,
+      0.42,
+      0.12
+    ]
+  ],
+  "generator": {
+    "kind": "scatter",
+    "count": 80,
+    "bounds_min": [
+      -4,
+      -3
+    ],
+    "bounds_max": [
+      4,
+      3
+    ],
+    "size": [
+      0.12,
+      0.42
+    ],
+    "shapes": [
+      "sphere",
+      "box",
+      "cylinder",
+      "cone"
+    ]
+  }
+}

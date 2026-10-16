@@ -14,6 +14,7 @@ pub mod mesh;
 pub mod pbr;
 pub mod physical;
 pub mod plane;
+pub mod procedural;
 pub mod ray;
 pub mod render;
 pub mod sampling;
