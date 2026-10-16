@@ -284,7 +284,14 @@
       "Brilliant cuts return much light upward; their bench caustic need not fill the whole geometric shadow."
     ],
     "publication": {
-      "status": "pending"
+      "source_sha": "7892ff042a52816b767391b9d7cb3fac776cbe03",
+      "deployment_id": "appgdep_6ad2a1f18f688191b22824fa7300b06e",
+      "version_id": "appgprj_6ad1d1ee181c819186c337d3573bdaea~appgver_ac28b62917cc8191a50bf21d2ffba04e",
+      "status": "succeeded",
+      "url": "https://heathers-little-jeweler.zoeholtz2000.chatgpt.site",
+      "audience": "Existing owner-private audience preserved.",
+      "browser_handoff": "Canonical site reloaded and left open; ChatGPT sign-in required. No hosted WebGL/interaction QA claimed. Actual rendering, controls and GPU queries verified locally.",
+      "implementation_github_commit": "e5fd69c"
     }
   }
 }

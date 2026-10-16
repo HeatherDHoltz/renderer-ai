@@ -16,7 +16,7 @@ Source URLs and SHA-256 hashes, unclipped linear results, concentration choices 
 
 ### Other specimens
 
-Other coefficients are documented appearance fits informed by the mineral's known hue, not measured spectra. They should not be used to identify, grade or value a gem. Refractive indices are representative values within published ranges; birefringence, pleochroism, fluorescence, inclusions, spectral illuminants and caustics are not simulated. RGB dispersion offsets are rendering approximations, not measured wavelength-resolved Sellmeier coefficients. Tiger's eye retains its artist-tuned directional fiber surface model.
+Other coefficients are documented appearance fits informed by the mineral's known hue, not measured spectra. They should not be used to identify, grade or value a gem. Refractive indices are representative values within published ranges; birefringence, pleochroism, fluorescence, inclusions and spectral illuminants are not simulated. The new bench caustic uses the same RGB approximation, not full spectral transport. RGB dispersion offsets are rendering approximations, not measured wavelength-resolved Sellmeier coefficients. Tiger's eye retains its artist-tuned directional fiber surface model.
 
 | Specimen | Representative IOR | Reference transmitted sRGB | Basis |
 | --- | --- | --- | --- |
