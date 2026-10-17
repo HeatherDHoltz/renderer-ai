@@ -6,6 +6,7 @@ import {
   normalizeGem,
   inspectionFieldOfView,
   turnSpecimen,
+  readSettingBinary,
 } from "./geometry.js";
 
 function tigerMaterial() {
@@ -21,7 +22,8 @@ function tigerMaterial() {
     metalness: 0,
     clearcoat: 0,
     ior: 1.545,
-    envMapIntensity: 0.8,
+    // Keep the dielectric body balance while the metal receives brighter cards.
+    envMapIntensity: 0.39,
   });
   material.userData.fiberUniforms = uniforms;
   material.customProgramCacheKey = () => "jeweler-fiber-v1";
@@ -97,6 +99,7 @@ import {
   examinationLights,
   bindExaminationLights,
 } from "./examination-light.js";
+import { createJewelryCache } from "./jewelry-cache.js";
 import { BenchOrbit } from "./orbit.js";
 import { GEMS } from "./gems.js";
 import { cutGeometry } from "./cuts.js";
@@ -110,7 +113,6 @@ import {
   corridorPoint,
   loupeCorridor,
   advanceProgress,
-  lampControls,
   benchFraming,
   benchIntersections,
 } from "./interaction.js";
@@ -152,7 +154,7 @@ export async function createWorkbench(host, onFatalError) {
     reflectionRevision = 0;
   const camera = new THREE.PerspectiveCamera(46, 1, 0.025, 70);
   camera.position.set(0, 2.6, 6.4);
-  camera.lookAt(0, 0.3, -0.3);
+  camera.lookAt(0, -0.15, -0.2);
   camera.layers.enable(1);
   const inspectionCamera = new THREE.PerspectiveCamera(55 / 3, 1, 0.025, 70);
   inspectionCamera.position.set(0, 1.5, 2.7);
@@ -162,7 +164,10 @@ export async function createWorkbench(host, onFatalError) {
   const benchQuaternion = camera.quaternion.clone();
   let benchFov = 46,
     orbitFov = 46;
-  const orbit = new BenchOrbit(benchPosition, new THREE.Vector3(0, 0.3, -0.3));
+  const orbit = new BenchOrbit(
+    benchPosition,
+    new THREE.Vector3(0, -0.15, -0.2),
+  );
   let collectionReturn = null;
   let inspection = 0,
     inspectionDestination = 0,
@@ -187,16 +192,24 @@ export async function createWorkbench(host, onFatalError) {
   setting.add(mount);
   scene.add(spin);
   const response = await Promise.all(
-    ["cabochon.obj", "solitaire-shank.obj"].map(async (name) => {
-      const r = await fetch(new URL(`../assets/${name}`, import.meta.url));
-      if (!r.ok) throw new Error("Jewelry mesh could not load");
-      return r.text();
-    }),
+    ["cabochon.obj", "solitaire-setting.mesh", "solitaire-sample.obj"].map(
+      async (name) => {
+        const r = await fetch(new URL(`../assets/${name}`, import.meta.url));
+        if (!r.ok) throw new Error("Jewelry mesh could not load");
+        return name.endsWith(".mesh") ? r.arrayBuffer() : r.text();
+      },
+    ),
   );
-  const shank = solitaireGeometry(response[1]);
+  const shank = new THREE.BufferGeometry();
+  const settingSource = readSettingBinary(response[1]);
   const band = new THREE.Mesh(shank, metal);
   band.castShadow = true;
   setting.add(band);
+  const bandPick = new THREE.Mesh(
+    new THREE.TorusGeometry(0.91, 0.12, 16, 80),
+    new THREE.MeshBasicMaterial({ visible: false }),
+  );
+  setting.add(bandPick);
   const stone = new THREE.Mesh();
   stone.castShadow = true;
   root.add(stone);
@@ -205,7 +218,7 @@ export async function createWorkbench(host, onFatalError) {
   );
   const geometries = {
     tiger: normalizeGem(readGemOBJ(response[0], true), 1.38),
-    shank,
+    shank: solitaireGeometry(response[2]),
   };
   for (const [id, gem] of Object.entries(GEMS))
     if (id !== "tiger") geometries[id] = cuts[gem.cut];
@@ -220,9 +233,9 @@ export async function createWorkbench(host, onFatalError) {
       );
   const key = new THREE.PointLight("#fffefe", 100, 17, 2);
   key.castShadow = true;
-  key.shadow.mapSize.set(512, 512);
-  key.shadow.bias = -0.0002;
-  key.shadow.normalBias = 0.012;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.bias = -0.00002;
+  key.shadow.normalBias = 0.0015;
   key.shadow.camera.near = 0.1;
   key.shadow.camera.far = 17;
   key.shadow.autoUpdate = false;
@@ -270,10 +283,10 @@ export async function createWorkbench(host, onFatalError) {
   );
   spin.quaternion.copy(neutral);
   const support = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.52, 0.62, 0.15, 64),
+    new THREE.CylinderGeometry(0.18, 0.21, 0.055, 96),
     surfaces.wood,
   );
-  support.position.y = -1.08;
+  support.position.y = -1.35;
   support.receiveShadow = true;
   scene.add(support);
   const displayPost = new THREE.Mesh(
@@ -282,12 +295,12 @@ export async function createWorkbench(host, onFatalError) {
   );
   scene.add(displayPost);
   function updatePivot() {
-    root.position.set(0, -0.2, 0);
-    spin.position.set(0, 0.2, 0);
+    root.position.set(0, 0, 0);
+    spin.scale.setScalar(0.24);
+    spin.position.set(0, -1.08, 0.15);
     support.visible = true;
-    support.position.y =
-      selectedSetting === "loose" ? stone.position.y - 0.075 : -1.08;
-    displayPost.visible = selectedSetting === "loose";
+    support.position.y = selectedSetting === "loose" ? -1.3 : -1.35;
+    displayPost.visible = false;
     displayPost.scale.y = Math.max(0.05, support.position.y - 0.075 + 1.35);
     displayPost.position.y = -1.35 + displayPost.scale.y / 2;
   }
@@ -299,123 +312,65 @@ export async function createWorkbench(host, onFatalError) {
     stone.geometry = geometries[selectedGem];
     stone.material = materials[selectedGem];
     const g = stone.geometry.boundingBox;
-    if (selectedGem === "tiger") {
-      const curve = new THREE.CatmullRomCurve3(
-        Array.from(
-          { length: 65 },
-          (_, i) =>
-            new THREE.Vector3(
-              Math.cos((i / 64) * Math.PI * 2) * (g.max.x + 0.018),
-              0.99,
-              Math.sin((i / 64) * Math.PI * 2) * (g.max.z + 0.018),
-            ),
-        ),
-        true,
-      );
-      mount.add(
-        new THREE.Mesh(
-          new THREE.TubeGeometry(curve, 128, 0.035, 12, true),
-          metal,
-        ),
-      );
-      stone.position.set(0, 0.98, 0);
-    } else {
-      const baseY = 0.7,
-        points = stone.geometry.attributes.position;
-      let maxRadius = 0;
-      for (let i = 0; i < points.count; i++)
-        maxRadius = Math.max(
-          maxRadius,
-          Math.hypot(points.getX(i), points.getZ(i)),
-        );
-      let sum = 0,
+    // One continuous high-resolution solid replaces the old separate tubes.
+    // The head deforms gently for each cut; the finger shank remains unchanged.
+    const sx = g.max.x / 0.62,
+      sz = g.max.z / 0.62;
+    let girdle = 0.5332;
+    const facets = materials[selectedGem].uniforms?.facets.value;
+    if (facets) {
+      const points = stone.geometry.attributes.position;
+      let radius = 0,
+        sum = 0,
         count = 0;
       for (let i = 0; i < points.count; i++)
-        if (Math.hypot(points.getX(i), points.getZ(i)) > maxRadius * 0.995) {
+        radius = Math.max(radius, Math.hypot(points.getX(i), points.getZ(i)));
+      for (let i = 0; i < points.count; i++)
+        if (Math.hypot(points.getX(i), points.getZ(i)) > radius * 0.995) {
           sum += points.getY(i);
           count++;
         }
-      const girdle = sum / count,
-        worldGirdle = baseY + girdle,
-        planes = materials[selectedGem].uniforms.facets.value;
-      function radiusAt(a, y) {
-        const dx = Math.cos(a),
-          dz = Math.sin(a);
-        let r = Infinity;
-        for (const p of planes) {
-          const den = p.x * dx + p.z * dz;
-          if (den > 1e-6) r = Math.min(r, -(p.y * y + p.w) / den);
-        }
-        return r;
-      }
-      for (const x of [-1, 1])
-        for (const z of [-1, 1]) {
+      girdle = sum / count;
+    }
+    const next = solitaireGeometry(settingSource, (geometry) => {
+      const p = geometry.attributes.position;
+      for (let i = 0; i < p.count; i++) {
+        const y = p.getY(i),
+          x = p.getX(i),
+          z = p.getZ(i),
+          blend = THREE.MathUtils.smoothstep(y, 0.6, 1.16);
+        let fit = 1;
+        // Step/cushion outlines extend beyond an ellipse at their corners.
+        // Fit the entire connected head to the actual girdle support planes.
+        if (facets && blend > 0) {
           const a = Math.atan2(z, x),
-            r = radiusAt(a, girdle),
-            dx = Math.cos(a),
-            dz = Math.sin(a);
-          const curve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(x * 0.66, 0.67, z * 0.035),
-            new THREE.Vector3(x * 0.64, worldGirdle - 0.2, z * 0.16),
-            new THREE.Vector3(
-              dx * (r + 0.035),
-              worldGirdle - 0.05,
-              dz * (r + 0.035),
-            ),
-            new THREE.Vector3(
-              dx * (r - 0.012),
-              worldGirdle + 0.025,
-              dz * (r - 0.012),
-            ),
-          ]);
-          const prong = new THREE.Mesh(
-            new THREE.TubeGeometry(curve, 32, 0.021, 12, false),
-            metal,
-          );
-          prong.castShadow = true;
-          mount.add(prong);
-          const tip = new THREE.Mesh(
-            new THREE.SphereGeometry(0.022, 16, 12),
-            metal,
-          );
-          tip.position.copy(curve.getPoint(1));
-          mount.add(tip);
+            ex = Math.cos(a) * sx,
+            ez = Math.sin(a) * sz,
+            ellipseRadius = Math.hypot(ex, ez),
+            dx = ex / ellipseRadius,
+            dz = ez / ellipseRadius;
+          let radius = Infinity;
+          for (const plane of facets) {
+            const denominator = plane.x * dx + plane.z * dz;
+            if (denominator > 1e-6)
+              radius = Math.min(
+                radius,
+                -(plane.y * girdle + plane.w) / denominator,
+              );
+          }
+          fit = radius / (0.62 * ellipseRadius);
         }
-      const y = girdle - 0.12,
-        basketCurve = new THREE.CatmullRomCurve3(
-          Array.from({ length: 65 }, (_, i) => {
-            const a = (i / 64) * Math.PI * 2,
-              r = radiusAt(a, y) + 0.025;
-            return new THREE.Vector3(
-              Math.cos(a) * r,
-              baseY + y,
-              Math.sin(a) * r,
-            );
-          }),
-          true,
+        p.setX(i, x * THREE.MathUtils.lerp(1, sx * fit, blend));
+        p.setZ(i, z * THREE.MathUtils.lerp(1, sz * fit, blend));
+        p.setY(
+          i,
+          y + (selectedGem === "tiger" ? -0.22 : girdle - 0.5332) * blend,
         );
-      mount.add(
-        new THREE.Mesh(
-          new THREE.TubeGeometry(basketCurve, 96, 0.014, 10, true),
-          metal,
-        ),
-      );
-      stone.position.set(0, baseY, 0);
-    }
-    for (const x of [-1, 1]) {
-      const path = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(x * 0.68, 0.64, 0),
-        new THREE.Vector3(x * 0.62, 0.85, 0),
-        new THREE.Vector3(x * 0.46, 1.02, 0),
-        new THREE.Vector3(x * 0.33, 1.08, 0),
-      ]);
-      const shoulder = new THREE.Mesh(
-        new THREE.TubeGeometry(path, 32, 0.055, 16, false),
-        metal,
-      );
-      shoulder.castShadow = true;
-      mount.add(shoulder);
-    }
+      }
+    });
+    if (band.geometry !== shank) band.geometry.dispose();
+    band.geometry = next;
+    stone.position.set(0, selectedGem === "tiger" ? 0.98 : 0.7, 0);
     setting.visible = selectedSetting === "ring";
     if (selectedSetting === "loose") stone.position.y = 0.25 - g.max.y / 2;
     spin.traverse((o) => o.layers.set(1));
@@ -444,14 +399,14 @@ export async function createWorkbench(host, onFatalError) {
     objectsMoving = false;
   updateMount();
   updateLight();
-  const workshop = await buildWorkshop(scene, surfaces);
+  const workshop = await buildWorkshop(scene, surfaces, renderer);
   const caustics = createCaustics(renderer, workshop.causticReceivers, host);
   objects = makeBenchObjects(scene, geometries, materials, surfaces, key);
   objects.select("gem", selectedGem);
   objects.select("metal", "gold");
   const updateSpecimenEnvironment = specimenEnvironment(
     [metal, tiger, ...objects.reflectionMaterials],
-    scene.environmentIntensity,
+    1.15,
   );
   function updateReflections(now) {
     if (!reflectionDirty || now - lastReflection < 100) return;
@@ -473,30 +428,43 @@ export async function createWorkbench(host, onFatalError) {
     lastReflection = now;
     host.dataset.reflectionRevision = String(++reflectionRevision);
   }
+  for (const [position, size, intensity] of [
+    [[-3.8, 1.8, 4.2], [3.2, 3.8], 2.8],
+    [[3.8, 0.6, 3.8], [2.7, 4], 2.2],
+    [[0, 5, 2.2], [4.6, 2.3], 3.0],
+  ]) {
+    const card = new THREE.Mesh(
+      new THREE.PlaneGeometry(...size),
+      new THREE.MeshBasicMaterial({
+        color: new THREE.Color(intensity, intensity * 0.96, intensity * 0.88),
+        side: THREE.DoubleSide,
+        toneMapped: false,
+      }),
+    );
+    card.position.set(...position);
+    card.lookAt(0, -0.7, 0);
+    card.layers.set(2);
+    scene.add(card);
+  }
+  // Capture layers 0 and 2; the seated camera sees 0 and 1. Cards brighten metals
+  // by reflecting actual white surfaces rather than adding emissive metal.
+  reflectionCamera.layers.enable(2);
+  reflectionDirty = true;
   const raycaster = new THREE.Raycaster();
   let zoomAnchor = null,
     zoomAt = -Infinity;
   const zoomPointer = new THREE.Vector2();
-  const lampPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -1.2);
-  const lampGrip = new THREE.Vector3();
-  function lampPoint(x, y) {
-    camera.updateMatrixWorld(true);
-    raycaster.setFromCamera(new THREE.Vector2(x * 2 - 1, 1 - y * 2), camera);
-    return raycaster.ray.intersectPlane(lampPlane, new THREE.Vector3());
-  }
   function pick(x, y) {
     if (boxFlight && boxFlight.progress < 1) return null;
     if (inspectionDestination || inspection > 0)
       return inspection === 1
         ? { kind: "jewelry", label: "Turn the stone · drag" }
         : null;
-    if (tool === "light" && !boxFlight)
-      return { kind: "light", label: "Drag to sweep the examination light" };
     scene.updateMatrixWorld(true);
     const hits = benchIntersections(raycaster, camera, x, y, [
       ...objects.targets,
       stone,
-      ...(setting.visible ? [band, ...mount.children] : []),
+      ...(setting.visible ? [bandPick] : []),
     ]);
     if (hits[0]?.object.userData.blockPointer) return null;
     return hits.length
@@ -568,11 +536,11 @@ export async function createWorkbench(host, onFatalError) {
     const center = stone.localToWorld(
       stone.geometry.boundingBox.getCenter(new THREE.Vector3()),
     );
-    const position = center.clone().add(new THREE.Vector3(0, 0.95, 2.8));
+    const position = center.clone().add(new THREE.Vector3(0, 0.285, 0.84));
     inspectionCamera.position.copy(position);
     inspectionCamera.lookAt(center);
     inspectionCamera.updateMatrixWorld(true);
-    const eye = new THREE.Vector3(0, 0, -0.66)
+    const eye = new THREE.Vector3(0, 0, -0.198)
       .applyQuaternion(inspectionCamera.quaternion)
       .add(position);
     const bounds = new THREE.Box3().setFromObject(spin);
@@ -592,12 +560,14 @@ export async function createWorkbench(host, onFatalError) {
         stone.geometry.boundingBox.getCenter(new THREE.Vector3()),
       );
       flight.center.lerp(center, 1 - Math.exp(-dt * 8));
-      flight.position.copy(flight.center).add(new THREE.Vector3(0, 0.95, 2.8));
+      flight.position
+        .copy(flight.center)
+        .add(new THREE.Vector3(0, 0.285, 0.84));
       inspectionCamera.position.copy(flight.position);
       inspectionCamera.lookAt(flight.center);
       flight.quaternion.copy(inspectionCamera.quaternion);
       flight.points[flight.points.length - 1]
-        .set(0, 0, -0.66)
+        .set(0, 0, -0.198)
         .applyQuaternion(flight.quaternion)
         .add(flight.position);
     }
@@ -655,8 +625,8 @@ export async function createWorkbench(host, onFatalError) {
           Math.min(1, camera.aspect) *
           Math.tan(THREE.MathUtils.degToRad(inspectionFieldOfView(zoom) / 2))) /
         Math.tan(THREE.MathUtils.degToRad(19));
-      const size = THREE.MathUtils.lerp(1, scale, ease(inspection));
-      lens.scale.set(size, size, 1);
+      const size = 0.3 * THREE.MathUtils.lerp(1, scale, ease(inspection));
+      lens.scale.set(size, size, 0.3);
       objects.baffleDepth.visible = inspection === 1;
       objects.baffle.visible = inspection > 0.88;
       objects.baffle.material.opacity = ease((inspection - 0.88) / 0.12);
@@ -669,32 +639,32 @@ export async function createWorkbench(host, onFatalError) {
       .map((v) => v.toFixed(3))
       .join(",");
   }
-  // A light depth-of-field pass: room props soften while the specimen stays crisp.
+  // Composite the native-resolution layers with depth occlusion before tone mapping.
   const target = new THREE.WebGLRenderTarget(1, 1, {
     type: THREE.HalfFloatType,
-    samples: Math.min(2, renderer.capabilities.maxSamples),
+    samples: Math.min(4, renderer.capabilities.maxSamples),
   });
   target.depthTexture = new THREE.DepthTexture(1, 1, THREE.UnsignedIntType);
+  const jewelryCache = createJewelryCache(renderer, scene, camera, target);
+  let jewelryDirty = true;
   const postScene = new THREE.Scene(),
     postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 2);
   postCamera.position.z = 1;
   const postMaterial = new THREE.ShaderMaterial({
     uniforms: {
       image: { value: target.texture },
+      jewelry: { value: jewelryCache.texture },
+      jewelryDepth: { value: jewelryCache.depth },
       depthImage: { value: target.depthTexture },
-      pixel: { value: new THREE.Vector2() },
-      focus: { value: 6.8 },
-      clipRange: { value: new THREE.Vector2(0.025, 70) },
     },
     depthTest: false,
     depthWrite: false,
     vertexShader:
       "varying vec2 vUV;void main(){vUV=uv;gl_Position=vec4(position.xy,0.,1.);}",
-    fragmentShader: `uniform sampler2D image;uniform sampler2D depthImage;uniform vec2 pixel;uniform vec2 clipRange;uniform float focus;varying vec2 vUV;
-      float linearDepth(float d){return clipRange.x*clipRange.y/(clipRange.y-d*(clipRange.y-clipRange.x));}
-      void main(){float depth=linearDepth(texture2D(depthImage,vUV).x);float blur=depth<1.0?0.0:clamp(abs(depth-focus)/max(depth,1.0)*2.3,0.0,2.0);vec3 color=texture2D(image,vUV).rgb*2.0;float weight=2.0;
-      for(int i=0;i<8;i++){float a=float(i)*0.78539816;vec2 uv=vUV+vec2(cos(a),sin(a))*pixel*blur;float sampleDepth=linearDepth(texture2D(depthImage,uv).x);float w=abs(sampleDepth-depth)<max(.3,depth*.08)?1.0:0.0;color+=texture2D(image,uv).rgb*w;weight+=w;}
-      color/=weight;float vignette=1.0-.19*pow(length((vUV-.5)*vec2(1.1,.85)),1.5);gl_FragColor=vec4(color*vignette,1.0);
+    fragmentShader: `uniform sampler2D image,depthImage,jewelry,jewelryDepth;varying vec2 vUV;
+      void main(){vec4 gem=texture2D(jewelry,vUV);float visible=step(texture2D(jewelryDepth,vUV).r,texture2D(depthImage,vUV).r+.000003);
+      vec3 color=texture2D(image,vUV).rgb*(1.-gem.a*visible)+gem.rgb*visible;
+      float vignette=1.-.12*pow(length((vUV-.5)*vec2(1.1,.85)),1.5);gl_FragColor=vec4(color*vignette,1.);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
       }`,
@@ -709,7 +679,8 @@ export async function createWorkbench(host, onFatalError) {
     needsFrame = true,
     interactionUntil = 0,
     draws = 0,
-    quality = "";
+    quality = "",
+    ambientTimer = 0;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   function resize() {
     width = host.clientWidth;
@@ -722,7 +693,7 @@ export async function createWorkbench(host, onFatalError) {
     benchPosition.set(0, framingPose.y, framingPose.z);
     const framing = new THREE.PerspectiveCamera();
     framing.position.copy(benchPosition);
-    framing.lookAt(0, 0.3, -0.3);
+    framing.lookAt(0, -0.15, -0.2);
     benchQuaternion.copy(framing.quaternion);
     if (flight) {
       flight.benchPosition.copy(benchPosition);
@@ -732,10 +703,10 @@ export async function createWorkbench(host, onFatalError) {
     if (collectionReturn) {
       collectionReturn.position.copy(benchPosition);
       collectionReturn.quaternion.copy(benchQuaternion);
-      collectionReturn.center.set(0, 0.3, -0.3);
+      collectionReturn.center.set(0, -0.15, -0.2);
       collectionReturn.fov = benchFov;
     }
-    orbit.adopt(benchPosition, new THREE.Vector3(0, 0.3, -0.3));
+    orbit.adopt(benchPosition, new THREE.Vector3(0, -0.15, -0.2));
     camera.aspect = width / heightPx;
     camera.fov = benchFov;
     camera.updateProjectionMatrix();
@@ -756,45 +727,31 @@ export async function createWorkbench(host, onFatalError) {
   });
   intersection.observe(host);
   function draw() {
-    const active = camera;
-    postMaterial.uniforms.focus.value = boxFlight
-      ? active.position.distanceTo(boxFlight.center)
-      : inspection > 0 && flight
-        ? active.position.distanceTo(flight.center)
-        : active.position.distanceTo(orbit.target);
-    renderer.setRenderTarget(target);
-    renderer.render(scene, active);
+    host.dataset.jewelryDraws = String(jewelryCache.render(jewelryDirty));
+    jewelryDirty = false;
     renderer.setRenderTarget(null);
     renderer.render(postScene, postCamera);
     host.dataset.draws = String(++draws);
   }
   function setQuality(moving, force = false) {
-    const loupeActive = inspection > 0 || inspectionDestination > 0;
-    const next = moving
-      ? loupeActive
-        ? "interactive-loupe"
-        : "interactive"
-      : "still";
-    if (!force && quality === next) return;
-    quality = next;
-    const pixels = moving ? (loupeActive ? 700000 : 950000) : 2000000;
-    const ratio = Math.min(
-      devicePixelRatio || 1,
-      moving ? 1 : 1.5,
-      Math.sqrt(pixels / Math.max(1, width * heightPx)),
-    );
+    const ratio = devicePixelRatio || 1;
+    if (!force && quality === ratio) return;
+    quality = ratio;
     renderer.setPixelRatio(ratio);
     renderer.setSize(width, heightPx, false);
     target.setSize(Math.round(width * ratio), Math.round(heightPx * ratio));
-    postMaterial.uniforms.pixel.value.set(
-      1 / (width * ratio),
-      1 / (heightPx * ratio),
+    jewelryCache.resize(
+      Math.round(width * ratio),
+      Math.round(heightPx * ratio),
     );
-    host.dataset.renderQuality = next;
+    jewelryDirty = true;
+    host.dataset.renderQuality = "native";
+    host.dataset.renderPixelRatio = String(ratio);
     needsFrame = true;
   }
   function frame(now) {
     scheduled = 0;
+    clearTimeout(ambientTimer);
     if (stopped || paused || !visible || document.hidden) return;
     const benchMoving = !boxFlight && inspection === 0 && orbit.moving;
     const aiming =
@@ -812,7 +769,8 @@ export async function createWorkbench(host, onFatalError) {
       auto ||
       objectsMoving ||
       (!inspectionDestination &&
-        spin.position.distanceToSquared(new THREE.Vector3(0, 0.2, 0)) > 1e-8) ||
+        spin.position.distanceToSquared(new THREE.Vector3(0, -1.08, 0.15)) >
+          1e-8) ||
       (boxFlight && boxFlight.progress < 1) ||
       Object.values(objects.cases).some((c) => c.progress !== c.destination) ||
       inspection !== inspectionDestination ||
@@ -837,9 +795,13 @@ export async function createWorkbench(host, onFatalError) {
       );
       if (
         !inspectionDestination &&
-        spin.position.distanceToSquared(new THREE.Vector3(0, 0.2, 0)) > 1e-8
+        spin.position.distanceToSquared(new THREE.Vector3(0, -1.08, 0.15)) >
+          1e-8
       ) {
-        spin.position.lerp(new THREE.Vector3(0, 0.2, 0), 1 - Math.exp(-dt * 8));
+        spin.position.lerp(
+          new THREE.Vector3(0, -1.08, 0.15),
+          1 - Math.exp(-dt * 8),
+        );
         key.shadow.needsUpdate = true;
         workshop.sun.shadow.needsUpdate = true;
       }
@@ -848,6 +810,7 @@ export async function createWorkbench(host, onFatalError) {
         pendingBox = null;
         focusBox(next);
       }
+      if (moving || caustics.settling) jewelryDirty = true;
       updateCamera(dt);
       objectsMoving = objects.animate(dt, hover, !reduced.matches);
       if (
@@ -867,12 +830,15 @@ export async function createWorkbench(host, onFatalError) {
     host.dataset.renderState =
       moving || objectsMoving || caustics.settling ? "settling" : "resting";
     if (moving || objectsMoving || caustics.settling) requestFrame();
+    else if (!reduced.matches && workshop.needsAnimation(camera))
+      ambientTimer = setTimeout(requestFrame, 1000 / 24);
   }
   function requestFrame() {
     if (!scheduled && !stopped) scheduled = requestAnimationFrame(frame);
   }
   function invalidate(shadows = true) {
     needsFrame = true;
+    jewelryDirty = true;
     interactionUntil = performance.now() + 220;
     if (shadows) {
       key.shadow.needsUpdate = true;
@@ -939,7 +905,7 @@ export async function createWorkbench(host, onFatalError) {
       reflectionDirty = true;
       workshop.mat.material.color.set(
         value === "cream"
-          ? "#aaa89c"
+          ? "#d3c7ae"
           : value === "charcoal"
             ? "#242923"
             : "#31423a",
@@ -976,21 +942,6 @@ export async function createWorkbench(host, onFatalError) {
         !!(boxFlight && boxFlight.progress < 1)
       );
     },
-    beginLightDrag(x, y) {
-      const point = lampPoint(x, y);
-      if (point) lampGrip.copy(key.position).sub(point);
-    },
-    dragLight(x, y) {
-      const point = lampPoint(x, y);
-      if (point) {
-        const controls = lampControls(point.add(lampGrip));
-        angle = controls.angle;
-        height = controls.height;
-      }
-      updateLight();
-      invalidate();
-      return { angle: Math.round(angle), height: Math.round(height) };
-    },
     setLoupe(_x, _y, value) {
       if (zoom === value) return;
       zoom = value;
@@ -1004,7 +955,7 @@ export async function createWorkbench(host, onFatalError) {
     },
     reset() {
       spin.quaternion.copy(neutral);
-      orbit.adopt(benchPosition, new THREE.Vector3(0, 0.3, -0.3));
+      orbit.adopt(benchPosition, new THREE.Vector3(0, -0.15, -0.2));
       orbitFov = benchFov;
       collectionReturn = null;
       boxFlight = null;
@@ -1096,6 +1047,7 @@ export async function createWorkbench(host, onFatalError) {
     dispose() {
       stopped = true;
       cancelAnimationFrame(scheduled);
+      clearTimeout(ambientTimer);
       observer.disconnect();
       intersection.disconnect();
       document.removeEventListener("visibilitychange", wake);
@@ -1107,9 +1059,11 @@ export async function createWorkbench(host, onFatalError) {
       reflectionGenerator.dispose();
       surfaces.dispose();
       target.dispose();
+      jewelryCache.dispose();
       postMaterial.dispose();
       for (const material of Object.values(materials)) material.dispose();
       scene.traverse((o) => o.geometry?.dispose());
+      settingSource.dispose();
       metal.dispose();
       renderer.dispose();
     },

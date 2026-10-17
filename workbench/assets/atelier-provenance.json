@@ -1,30 +1,22 @@
 {
-  "generator": "Blender 4.5.14 LTS / Cycles / 64 samples / 2048-square color, diffuse irradiance and emission atlases / compositor irradiance denoising",
-  "room": "Project-created circa-1905 study geometry and procedural base materials: walnut paneling, coffered ceiling, fitted bookcases, jeweler bench, period shades and fireplace. Fixed lighting only; live examination light is not baked.",
-  "ring": {
-    "author": "Paul Wortmann",
-    "source": "https://opengameart.org/content/ring-0",
-    "download": "https://opengameart.org/sites/default/files/ring_1.zip",
-    "license": "CC0",
-    "adaptation": "Tapered open shank, capped head; project-created live shoulders and claws. Original pack textures not used.",
-    "archive_sha256": "235a4270c59fc4124eabcfcb6179b2b9d6c35c95f2a550b8f1df89bbdd052e10"
-  },
+  "generator": "Blender 4.5.14 LTS / Cycles / 96 samples / 4096-square color, 2048-square denoised HDR irradiance, 1024-square HDR emission / separate MaterialUV and BakeUV / distinct PBR materials",
+  "room": "Project-created circa-1905 collector-jeweler study: walnut panels/coffers, bookcases, drapes, bench, period shades, fireplace, balance, open watch movement, lapidary drawing, wire/findings and beryl specimens. Separate full-2K photographed CC0 antique/natural props; source files and credits in study-props/. Fixed lighting only is baked.",
   "blender": {
     "source": "https://download.blender.org/release/Blender4.5/blender-4.5.14-macos-arm64.dmg",
     "download_sha256": "65134d9b07b20e2fa8d3c9e44f6f44ffb5c9774dd521b95f50387310241ca170"
   },
   "files": {
     "atelier/atelier.glb": {
-      "bytes": 15499904,
-      "sha256": "5f303a2a09b756aea5fe5e14f35bcee60eee7ea1f6c98e7084e86986fd876410"
+      "bytes": 35267356,
+      "sha256": "68da0f771dce646440d834a46ebfe0eb9bb5d41eea204cbbb8612ec6156fdb4a"
     },
     "atelier/atelier-color.png": {
-      "bytes": 1326547,
-      "sha256": "5520773cfa2035678c81c9c7f09158ff29a629eadfe4ad37178b449479db3a3f"
+      "bytes": 2083697,
+      "sha256": "690be7757c4947f9cb510802d960d3ce7392c81d1fb819f3055f02991f899738"
     },
     "atelier/atelier-light.hdr": {
-      "bytes": 4786595,
-      "sha256": "c04bc6c5e95aeee2ae99cc0550d92bca4062f53811af4074685935abf8f21c66"
+      "bytes": 3902107,
+      "sha256": "9260eb5ad979e0f5ce76bc4a1adb9ccd49db923c2c465f22c599cc5e1ee4d387"
     },
     "solitaire-shank.obj": {
       "bytes": 31660,
@@ -35,12 +27,24 @@
       "sha256": "c7f6740d8a18e90129a01b7e20861cdbf3b5393708e3fb7db9444f7a6eb25f22"
     },
     "atelier/atelier-emission.hdr": {
-      "bytes": 290842,
-      "sha256": "dbff5566d9d8f5da651ba91f57a1947bd81e3829cbb8c3d125572a506108924b"
+      "bytes": 81068,
+      "sha256": "a3f90b55daffeee145ec165e528ba0812f204c648372e2b79a2e6b97e719a67c"
     },
     "atelier/centre-harbor.jpg": {
       "bytes": 70110,
       "sha256": "67ddc1f2a4e1375110a84eb81e210109db03b94383e282981ed0289143b92f49"
+    },
+    "atelier/study-props.glb": {
+      "bytes": 23790460,
+      "sha256": "76e8021f805b222c5d59758dda5eabcb9dcc23c25c9cc0ffb225bff0ec8f6540"
+    },
+    "solitaire-setting.obj": {
+      "bytes": 40045942,
+      "sha256": "1fd9479fe286710ad7969c03b1430c6f95cba7492b80c202ff0f9c24635d4cf3"
+    },
+    "solitaire-sample.obj": {
+      "bytes": 1252194,
+      "sha256": "e8d1b720e71076e96db2938577894d2a4434027784615b56b9ac2842c4b485fd"
     }
   },
   "painting": {
@@ -54,5 +58,19 @@
     "download": "https://images.metmuseum.org/CRDImages/ad/web-large/ap80.1.1.jpg",
     "rights": "Public domain; Met Open Access metadata isPublicDomain=true.",
     "adaptation": "Resized only by atlas bake; reproduced in a project-created gilt mantel frame."
+  },
+  "historical_ring": {
+    "author": "Paul Wortmann",
+    "source": "https://opengameart.org/content/ring-0",
+    "download": "https://opengameart.org/sites/default/files/ring_1.zip",
+    "license": "CC0",
+    "adaptation": "Tapered open shank, capped head; project-created live shoulders and claws. Original pack textures not used.",
+    "archive_sha256": "235a4270c59fc4124eabcfcb6179b2b9d6c35c95f2a550b8f1df89bbdd052e10",
+    "current_display": false
+  },
+  "ring": {
+    "authorship": "Project-authored Blender comfort-fit cathedral setting, one closed fused solid",
+    "generator": "scripts/build-solitaire.py",
+    "provenance": "ring-provenance.json"
   }
 }

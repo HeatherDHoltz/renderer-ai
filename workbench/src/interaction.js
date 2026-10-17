@@ -1,12 +1,15 @@
 import * as THREE from "../vendor/three.module.js";
 
-export function caseInspectionView(origin, sign, aspect) {
+export function caseInspectionView(origin, sign, aspect, scale = 1) {
   if (!(aspect > 0) || !Number.isFinite(aspect))
     throw new Error("Invalid inspection aspect");
-  const center = origin.clone().add(new THREE.Vector3(sign * 1.08, 0.56, 0));
+  const center = origin
+    .clone()
+    .add(new THREE.Vector3(sign * 1.08 * scale, 0.56 * scale, 0));
   const distance = Math.max(
-    5.4,
-    5.2 / (2 * Math.tan(THREE.MathUtils.degToRad(20)) * aspect) + 0.8,
+    5.4 * scale,
+    (5.2 * scale) / (2 * Math.tan(THREE.MathUtils.degToRad(20)) * aspect) +
+      0.8 * scale,
   );
   // Portrait framing needs more distance, not a camera above the ceiling.
   const rise = Math.min((distance * 0.86) / Math.hypot(0.86, 0.72), 6.4);
@@ -76,7 +79,7 @@ export function lampControls(point) {
 export function benchFraming(aspect) {
   if (!Number.isFinite(aspect) || aspect <= 0)
     throw new RangeError("Invalid viewport aspect");
-  const fov = THREE.MathUtils.lerp(60, 46, clamp((aspect - 0.55) / 1.1));
+  const fov = THREE.MathUtils.lerp(60, 52, clamp((aspect - 0.55) / 1.1));
   const z = Math.max(
     6.4,
     Math.min(

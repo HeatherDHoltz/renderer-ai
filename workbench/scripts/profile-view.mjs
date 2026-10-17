@@ -31,17 +31,17 @@ scene = patch(
 );
 scene = patch(
   scene,
-  "  function setQuality(moving, force = false) {",
-  '  function setQuality(moving, force = false) {\n    moving = auditFlags.has("interactive");',
+  "    const ratio = devicePixelRatio || 1;",
+  '    const ratio = auditFlags.has("dpr1") ? 1 : devicePixelRatio || 1;',
 );
 scene = patch(
   scene,
-  "    const ratio = Math.min(",
-  '    const ratio = auditFlags.has("dpr1") ? 1 : Math.min(',
+  "jewelryCache.render(jewelryDirty)",
+  "jewelryCache.render(true)",
 );
 scene = patch(
   scene,
-  "  function draw() {\n    const active",
+  "  function draw() {\n    host.dataset.jewelryDraws",
   `  let auditMode='', auditLast=0, auditSamples=[];
   function draw() {
     const mode=inspection===0?'bench':inspection===1?'loupe':'transition';
@@ -51,13 +51,21 @@ scene = patch(
     auditLast=now;
     const sorted=[...auditSamples].sort((a,b)=>a-b);
     host.dataset.profile=JSON.stringify({mode,samples:sorted.length,drawIntervalMedianMs:sorted[Math.floor(sorted.length/2)]||0,dpr:renderer.getPixelRatio(),canvas:[renderer.domElement.width,renderer.domElement.height],flags:[...auditFlags.keys()]});
-    const active`,
+    host.dataset.jewelryDraws`,
 );
-scene = patch(
-  scene,
+const scheduleStart = scene.indexOf(
   "    if (moving || objectsMoving || caustics.settling) requestFrame();",
-  "    requestFrame();",
 );
+const scheduleEnd = scene.indexOf(
+  "\n  }\n  function requestFrame",
+  scheduleStart,
+);
+if (scheduleStart < 0 || scheduleEnd < 0)
+  throw new Error("Diagnostic frame hook moved");
+scene =
+  scene.slice(0, scheduleStart) +
+  "    requestFrame();" +
+  scene.slice(scheduleEnd);
 await writeFile(scenePath, scene);
 const opticsPath = path.join(output, "src/gem-optics.js");
 let optics = await readFile(opticsPath, "utf8");
@@ -68,5 +76,5 @@ optics = patch(
 );
 await writeFile(opticsPath, optics);
 console.log(
-  `Diagnostic source: ${output}\nOpen /?interactive for the shipping pixel budget; add &dpr1 for equal resolution, &planes for the full facet scan.\nUse controls to enter/exit loupe. Read #render-host data-profile after 60 steady draws. Stop the server and close the tab after measuring; this build deliberately draws continuously.`,
+  `Diagnostic source: ${output}\nOpen / for native-resolution full redraws; use /?dpr1 for an explicit diagnostic resolution and add &planes for the full facet scan.\nUse controls to enter/exit loupe. Read #render-host data-profile after 60 steady draws. Stop the server and close the tab after measuring; this build deliberately draws continuously.`,
 );

@@ -60,13 +60,13 @@ export function makeBenchObjects(
     geo.rotateX(-Math.PI / 2);
     return mesh(geo, material, pos, parent);
   }
-  function label(text, width, pos, parent = group) {
+  function label(text, width, pos, parent = group, fontSize = 27) {
     const canvas = document.createElement("canvas");
     canvas.width = 512;
     canvas.height = 100;
     const ctx = canvas.getContext("2d");
     ctx.fillStyle = "#c6b68f";
-    ctx.font = "500 27px Georgia";
+    ctx.font = `500 ${fontSize}px Georgia`;
     ctx.textAlign = "center";
     ctx.fillText(text, 256, 63);
     const texture = new THREE.CanvasTexture(canvas);
@@ -107,6 +107,7 @@ export function makeBenchObjects(
     const c = new THREE.Group();
     c.position.set(x, -1.29, z);
     group.add(c);
+    c.scale.setScalar(0.78);
     const action = {
       kind: "box",
       value: id,
@@ -138,7 +139,7 @@ export function makeBenchObjects(
     }
     const hinge = new THREE.Group();
     hinge.position.set(0, 0.94, -(depth + 0.1) / 2);
-    hinge.rotation.x = -1.76;
+    hinge.rotation.x = -2.5;
     c.add(hinge);
     const lid = bevelBox(
       [width + 0.1, 0.15, depth + 0.1],
@@ -209,14 +210,14 @@ export function makeBenchObjects(
   const gemCase = makeCase(
     "gems",
     -2.85,
-    0.55,
+    1.45,
     "THE STONE BOX",
     surfaces.redVelvet,
   );
   const metalCase = makeCase(
     "metals",
     3.05,
-    0.8,
+    1.4,
     "THE RING COLLECTION",
     felt,
     true,
@@ -260,8 +261,8 @@ export function makeBenchObjects(
     halo.rotation.x = Math.PI / 2;
     samples.push({ id, kind: "gem", object: g, baseY: g.position.y, halo });
   }
-  const combos = FINISHES.flatMap((f) =>
-    Object.keys(METALS).map((id) => ({ id, finish: f.value, name: f.name })),
+  const combos = Object.keys(METALS).flatMap((id) =>
+    FINISHES.map((f) => ({ id, finish: f.value, name: f.name })),
   );
   for (const [i, { id, finish, name }] of combos.entries()) {
     const parent = i < 9 ? metalCase.upper : metalCase.lower,
@@ -276,22 +277,11 @@ export function makeBenchObjects(
     );
     ring.scale.setScalar(0.18);
     ring.layers.set(1);
-    ring.rotation.x = -0.15;
-    // Matching empty solitaire mounts, rather than broken open bands.
-    for (const sx of [-1, 1])
-      for (const sz of [-1, 1]) {
-        const path = new THREE.CatmullRomCurve3([
-          new THREE.Vector3(sx * 0.65, 0.65, sz * 0.03),
-          new THREE.Vector3(sx * 0.48, 0.94, sz * 0.22),
-          new THREE.Vector3(sx * 0.3, 1.1, sz * 0.3),
-        ]);
-        const claw = new THREE.Mesh(
-          new THREE.TubeGeometry(path, 12, 0.035, 8, false),
-          ring.material,
-        );
-        claw.layers.set(1);
-        ring.add(claw);
-      }
+    ring.rotation.x = -1.1;
+    ring.rotation.y = 0.12;
+    // Crown points toward the rear; the continuous plain shank faces the eye.
+    if (cell % 3 === 0)
+      label(METALS[id].name.toUpperCase(), 1.3, [0, 0.319, z + 0.225], parent);
     const hit = box(
       [0.6, 0.43, 0.43],
       [x, 0.41, z],
@@ -321,6 +311,17 @@ export function makeBenchObjects(
       halo,
     });
   }
+
+  for (const tray of [metalCase.upper, metalCase.lower])
+    FINISHES.forEach((f, i) =>
+      label(
+        f.name.toUpperCase(),
+        0.56,
+        [(i - 1) * 0.65, 0.34, -0.77],
+        tray,
+        52,
+      ),
+    );
 
   // The same world-space loupe rests on the desk, travels, and becomes the eyepiece.
   const loupe = new THREE.Group();
@@ -354,21 +355,8 @@ export function makeBenchObjects(
     [0, -0.3, 0],
     loupe,
   );
-  const lens = mesh(
-    new THREE.SphereGeometry(1, 48, 24),
-    new THREE.MeshPhysicalMaterial({
-      color: "#d3e7df",
-      transparent: true,
-      opacity: 0.09,
-      roughness: 0.03,
-      clearcoat: 1,
-      depthWrite: false,
-    }),
-    [0, 0, -0.05],
-    loupe,
-  );
-  lens.scale.set(0.25, 0.25, 0.009);
-  lens.castShadow = false;
+  // Ideal clear achromatic eyepiece: no translucent tinted overlay over the
+  // inspected image. The physical brass body and aperture remain in 3D.
   const baffle = mesh(
     new THREE.RingGeometry(0.278, 5, 96),
     new THREE.MeshBasicMaterial({
@@ -395,8 +383,9 @@ export function makeBenchObjects(
   loupe.add(baffleDepth);
   baffle.visible = false;
   baffle.castShadow = false;
-  loupe.position.set(1.45, -1.04, 0.8);
+  loupe.position.set(1.6, -1.37, 1.0);
   loupe.rotation.set(-Math.PI / 2, 0, -0.65);
+  loupe.scale.setScalar(0.3);
   // Near-eye metal stays clean at the modest cube-shadow resolution.
   loupe.traverse((o) => {
     if (o.isMesh) {
@@ -418,7 +407,7 @@ export function makeBenchObjects(
     label: "Jeweler’s loupe · pick up",
   };
   targets.push(loupeHit);
-  label("THE LOUPE", 1, [1.5, -1.19, 1.4]);
+  label("ACHROMATIC", 0.45, [1.6, -1.393, 1.37]);
 
   return {
     targets,
@@ -429,7 +418,12 @@ export function makeBenchObjects(
     },
     boxView(id, aspect) {
       const c = cases[id];
-      return caseInspectionView(c.root.position, c.sign, aspect);
+      return caseInspectionView(
+        c.root.position,
+        c.sign,
+        aspect,
+        c.root.scale.x,
+      );
     },
     reflectionMaterials: samples
       .filter((s) => s.kind === "metal")

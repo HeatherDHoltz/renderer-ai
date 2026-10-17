@@ -15,7 +15,7 @@ export const FINISHES = [
 let brush;
 function brushingTexture() {
   if (brush) return brush;
-  const n = 256,
+  const n = 1024,
     p = new Uint8Array(n * n);
   for (let y = 0; y < n; y++)
     for (let x = 0; x < n; x++)
@@ -33,7 +33,7 @@ export function applyMetal(material, id, finish) {
   material.roughness = 0.065 + 0.46 * t;
   material.anisotropy = 0.08 + 0.86 * t;
   material.bumpMap = brushingTexture();
-  material.bumpScale = 0.0035 * t * t;
+  material.bumpScale = 0.0008 * t * t;
 }
 export function metalMaterial(id, finish) {
   const m = new THREE.MeshPhysicalMaterial({ metalness: 1, roughness: 0.1 });

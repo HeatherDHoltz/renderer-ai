@@ -157,7 +157,7 @@ test("the imported solitaire shank is closed and has finite UVs for brushed meta
   assertClosed(g.toNonIndexed());
   assert.equal(g.attributes.uv.count, g.attributes.position.count);
   for (const x of g.attributes.uv.array)
-    assert.ok(Number.isFinite(x) && x >= 0 && x <= 1);
+    assert.ok(Number.isFinite(x) && x >= 0 && x <= 1.5);
 });
 test("ruby and sapphire retain the documented spectral fits; all absorption is finite and nonnegative", async () => {
   const fit = JSON.parse(

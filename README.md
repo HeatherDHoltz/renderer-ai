@@ -14,7 +14,7 @@ A Rust ray tracer with affine geometry, indexed meshes, SAH acceleration, HDR li
 
 ![The Little Jeweler’s dark paneled study and rotatable diamond ring](gallery/workbench/study-bright.jpg)
 
-With Node.js 20 or newer, run `npm run dev --prefix workbench` and open `http://127.0.0.1:4173/`. No npm installation, API keys, or asset downloads are needed. Drag to explore, scroll/pinch toward a subject, double-click to focus, choose gems and metals in their felt boxes, use Turn jewelry to rotate the specimen, select Move light and sweep its illumination, and click the loupe to lift it. Bench controls provide keyboard-accessible alternatives.
+With Node.js 20 or newer, run `npm run dev --prefix workbench` and open `http://127.0.0.1:4173/`. No npm installation, API keys, or asset downloads are needed. Drag to explore, scroll/pinch toward a subject, double-click to focus, choose gems and metals in their felt boxes, use Turn jewelry to rotate the specimen, examine the normal-sized solitaire under fixed studio lighting, and click the clear loupe to lift it. Bench controls provide keyboard-accessible alternatives.
 
 ## Run it
 

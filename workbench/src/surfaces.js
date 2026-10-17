@@ -10,7 +10,7 @@ export async function loadSurfaces(renderer) {
     t.colorSpace = color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     t.repeat.set(repeat, repeat);
-    t.anisotropy = renderer.capabilities.getMaxAnisotropy() > 4 ? 4 : 2;
+    t.anisotropy = renderer.capabilities.getMaxAnisotropy();
     t.flipY = flipY;
     return t;
   };

@@ -40,6 +40,31 @@ export function readGemOBJ(text, smooth = false) {
   return geometry;
 }
 
+// Exact float32 positions/uint32 indices from the source OBJ, packed at build.
+export function readSettingBinary(buffer) {
+  const header = new DataView(buffer);
+  if (header.getUint32(0, true) !== 0x31474e52)
+    throw new Error("Invalid setting mesh signature");
+  const vertices = header.getUint32(4, true),
+    indices = header.getUint32(8, true);
+  if (buffer.byteLength !== 12 + vertices * 12 + indices * 4)
+    throw new Error("Invalid setting mesh length");
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new THREE.BufferAttribute(new Float32Array(buffer, 12, vertices * 3), 3),
+  );
+  geometry.setIndex(
+    new THREE.BufferAttribute(
+      new Uint32Array(buffer, 12 + vertices * 12, indices),
+      1,
+    ),
+  );
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  return geometry;
+}
+
 export function brilliantGeometry() {
   const vertices = [],
     faces = [],
@@ -97,21 +122,65 @@ export function normalizeGem(geometry, width) {
 
 // The imported shank needs cylindrical UVs for the brushed-metal tangent frame.
 // Missing UVs make anisotropic materials invalid even when positions look fine.
-export function solitaireGeometry(text) {
-  const geometry = readGemOBJ(text, true),
-    p = geometry.attributes.position,
-    uv = [];
-  for (let i = 0; i < p.count; i++) {
-    const x = p.getX(i),
-      y = p.getY(i),
-      z = p.getZ(i);
-    uv.push(
-      Math.atan2(y, x) / (2 * Math.PI) + 0.5,
-      Math.atan2(z, Math.hypot(x, y) - 0.91) / (2 * Math.PI) + 0.5,
-    );
+export function solitaireGeometry(text, deform) {
+  const geometry =
+    typeof text === "string" ? readGemOBJ(text, true) : text.clone();
+  if (deform) {
+    deform(geometry);
+    geometry.computeVertexNormals();
   }
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-  return geometry;
+  const p = geometry.attributes.position,
+    n = geometry.attributes.normal,
+    index = geometry.index.array;
+  const positions = [],
+    normals = [],
+    uvs = [],
+    triangles = [],
+    unique = new Map();
+  for (let i = 0; i < index.length; i += 3) {
+    const face = [];
+    for (let j = 0; j < 3; j++) {
+      const k = index[i + j],
+        x = p.getX(k),
+        y = p.getY(k),
+        z = p.getZ(k);
+      face.push([Math.atan2(y, x) / (2 * Math.PI) + 0.5, z * 0.6 + 0.5]);
+    }
+    // Unwrap each triangle while retaining the shared smooth normals. A
+    // wrap-crossing triangle must not interpolate through the whole brush map.
+    for (const axis of [0, 1])
+      if (
+        Math.max(...face.map((v) => v[axis])) -
+          Math.min(...face.map((v) => v[axis])) >
+        0.5
+      )
+        for (const uv of face) if (uv[axis] < 0.5) uv[axis] += 1;
+    for (let j = 0; j < 3; j++) {
+      const k = index[i + j],
+        uv = face[j],
+        key = k + (uv[0] >= 1 ? p.count : 0);
+      let next = unique.get(key);
+      if (next === undefined) {
+        next = positions.length / 3;
+        unique.set(key, next);
+        positions.push(p.getX(k), p.getY(k), p.getZ(k));
+        normals.push(n.getX(k), n.getY(k), n.getZ(k));
+        uvs.push(...uv);
+      }
+      triangles.push(next);
+    }
+  }
+  const result = new THREE.BufferGeometry();
+  result.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(positions, 3),
+  );
+  result.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+  result.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  result.setIndex(triangles);
+  result.computeBoundingBox();
+  geometry.dispose();
+  return result;
 }
 
 export function lightPosition(angleDegrees, heightDegrees, radius = 5) {

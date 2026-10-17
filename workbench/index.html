@@ -97,7 +97,7 @@
               id="render-host"
               tabindex="0"
               role="region"
-              aria-label="A seated jeweler’s view. Drag to orbit, scroll or pinch to zoom toward the pointer, and double-click a surface to focus. Click stones and metals in their felt boxes. Choose Turn jewelry to rotate the ring independently. Keys 1 explore, 2 turn jewelry, 3 move light, 4 lift the loupe. Arrow keys adjust the selected tool. F focuses the center, Home resets, Escape returns to the bench."
+              aria-label="A seated jeweler’s view. Drag to orbit, scroll or pinch to zoom toward the pointer, and double-click a surface to focus. Click stones and metals in their felt boxes. Choose Turn jewelry to rotate the ring independently. Keys 1 explore, 2 turn jewelry, 3 lift the loupe. Arrow keys adjust the selected tool. F focuses the center, Home resets, Escape returns to the bench."
             ></div>
             <div id="object-hint" class="object-hint" hidden></div>
             <div class="loading" id="loading">
@@ -160,19 +160,6 @@
               <button
                 type="button"
                 class="tool"
-                data-tool="light"
-                aria-label="Move light"
-                aria-pressed="false"
-              >
-                <svg viewBox="0 0 28 28" aria-hidden="true">
-                  <path
-                    d="m8 23 7-12 5 3-7 12ZM14 10l2-5 7 4-3 5M20 3l2-2m2 7 3-1M15 2V0"
-                  /></svg
-                ><span>Move light</span><kbd>3</kbd>
-              </button>
-              <button
-                type="button"
-                class="tool"
                 data-tool="loupe"
                 aria-label="Pick up the loupe"
                 aria-pressed="false"
@@ -180,7 +167,7 @@
                 <svg viewBox="0 0 28 28" aria-hidden="true">
                   <circle cx="11" cy="11" r="8" />
                   <path d="m17 17 8 8M7 11h8m-4-4v8" /></svg
-                ><span>Look closer</span><kbd>4</kbd>
+                ><span>Look closer</span><kbd>3</kbd>
               </button>
             </div>
             <div class="loupe-controls" id="loupe-controls" hidden>
@@ -347,35 +334,18 @@
                 Broad light
               </button>
             </div>
-            <label class="range-label" for="light-angle"
-              >Light position <output id="light-value">-20%</output></label
-            ><input
-              type="range"
-              min="-100"
-              max="100"
-              step="1"
-              value="-20"
-              id="light-angle"
-            /><label class="range-label" for="light-height"
-              >Light height <output id="height-value">65%</output></label
-            ><input
-              type="range"
-              min="8"
-              max="85"
-              step="1"
-              value="65"
-              id="light-height"
-            />
-            <div class="segmented">
-              <button
-                type="button"
-                id="toggle-caustics"
-                class="selected"
-                aria-pressed="true"
-              >
-                Refracted light on the bench
-              </button>
-            </div>
+            <p class="lighting-note">
+              A fixed jeweler’s light and broad white reflectors reveal color
+              and polished metal.
+            </p>
+            <button
+              type="button"
+              id="toggle-caustics"
+              class="selected"
+              aria-pressed="true"
+            >
+              Refracted light on the bench
+            </button>
             <div class="background-row">
               <span>Bench mat</span>
               <div role="group" aria-label="Inspection background">
@@ -491,30 +461,32 @@
           examination lights are also traced directly for the jewelry. Room
           reflections remain an environment-based approximation. A light-side
           photon pass traces the selected faceted gem onto the flat bench,
-          including RGB dispersion, absorption and internal reflection. It uses
-          fewer samples during movement, refines when still, and can be disabled
-          in Bench controls. Ring/prop occlusion along these bent paths and full
+          including RGB dispersion, absorption and internal reflection. It
+          retains its full sample count during movement and can be disabled in
+          Bench controls. Ring/prop occlusion along these bent paths and full
           scene path tracing are not simulated. The seated view orbits a movable
           pivot when dragged; scrolling or pinching zooms toward the pointer and
           double-clicking focuses a surface. Jewelry turns independently with
-          the Turn jewelry tool. The renderer lowers pixel density during
-          movement, restores detail when still, and pauses completely once the
-          view settles. The room’s baked light keeps the ambiance without
-          continually re-rendering it. The loupe lifts from the bench along a
-          clear path before the camera leans into its 3D brass eyepiece. Its
-          magnification comes from the camera projection, rather than a full
-          optical lens simulation. These are real-time approximations. Ruby and
-          sapphire use three-channel fits to published absorption measurements;
-          the other color presets are appearance studies.
+          the Turn jewelry tool. The renderer keeps native pixel density during
+          movement. A depth-aware cache retains the precious-material image
+          while only the visible hearth animates; movement refreshes that image
+          at full detail. The room’s baked light supplies its fixed ambiance.
+          The loupe lifts from the bench along a clear path before the camera
+          leans into its 3D brass eyepiece. Its magnification comes from the
+          camera projection, rather than a full optical lens simulation. These
+          are real-time approximations. Ruby and sapphire use three-channel fits
+          to published absorption measurements; the other color presets are
+          appearance studies.
         </p>
         <p>
           The circa-1905 study is project-modeled in Blender, with Cycles-baked
           fixed lighting. Jewelry, velvet cases, examination light and loupe
           remain live. Photographed velvet and HDR panoramas are credited to
-          Poly Haven. The shank adapts Paul Wortmann’s CC0 ring band; the
-          setting and live gemstone cuts are project-created. The mantel
-          painting is William Trost Richards’ public-domain 1874 landscape, from
-          the Met’s Open Access collection.
+          Poly Haven. The seamless solitaire setting and live gemstone cuts are
+          project-created. A photographed CC0 antique clock, shell and brass
+          vase retain their original PBR materials. The mantel painting is
+          William Trost Richards’ public-domain 1874 landscape, from the Met’s
+          Open Access collection.
           <a
             href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/GEM-COLOR.md"
             target="_blank"

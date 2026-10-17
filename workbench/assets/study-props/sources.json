@@ -1,0 +1,126 @@
+[
+  {
+    "asset": "vintage_grandfather_clock_01",
+    "page": "https://polyhaven.com/a/vintage_grandfather_clock_01",
+    "license": "CC0-1.0",
+    "adaptation": "Original complete 2K PBR geometry, normals and ARM retained; staged in the study without flattening materials.",
+    "files": [
+      {
+        "file": "assets/study-props/vintage_grandfather_clock_01/model.gltf",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/2k/vintage_grandfather_clock_01/vintage_grandfather_clock_01_2k.gltf",
+        "sha256": "2b25571b438ca9f225f9f611e422e071ef76bea0c3f38a269042dd07c681d734",
+        "bytes": 7868
+      },
+      {
+        "file": "assets/study-props/vintage_grandfather_clock_01/textures/vintage_grandfather_clock_01_nor_gl_2k.jpg",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/vintage_grandfather_clock_01/vintage_grandfather_clock_01_nor_gl_2k.jpg",
+        "sha256": "1562948ddb6dd0cc505d0e04aa0798a97e481c92595c85073739e0269f3ac162",
+        "bytes": 2151531
+      },
+      {
+        "file": "assets/study-props/vintage_grandfather_clock_01/textures/vintage_grandfather_clock_01_diff_2k.jpg",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/vintage_grandfather_clock_01/vintage_grandfather_clock_01_diff_2k.jpg",
+        "sha256": "568aa20873f72f7a3fd57e90cdf756e6ddd32f1e7e2d2e91656600d7070d34ba",
+        "bytes": 2165017
+      },
+      {
+        "file": "assets/study-props/vintage_grandfather_clock_01/textures/vintage_grandfather_clock_01_arm_2k.jpg",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/vintage_grandfather_clock_01/vintage_grandfather_clock_01_arm_2k.jpg",
+        "sha256": "a1e8a24a439cc98fde64549ff4b70ac4ac99ca7c2d827a353914fb350d57ad11",
+        "bytes": 2463597
+      },
+      {
+        "file": "assets/study-props/vintage_grandfather_clock_01/vintage_grandfather_clock_01.bin",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/vintage_grandfather_clock_01/vintage_grandfather_clock_01.bin",
+        "sha256": "a6369fa664dd13d281e87c63f0ba31a0350291c93322fd10ec63f2ba4d252fd3",
+        "bytes": 337224
+      }
+    ],
+    "authors": {
+      "Yann Kervran": "Rigging",
+      "James Ray Cock": "Modeling & Texturing"
+    }
+  },
+  {
+    "asset": "lambis_shell",
+    "page": "https://polyhaven.com/a/lambis_shell",
+    "license": "CC0-1.0",
+    "adaptation": "Original complete 2K PBR geometry, normals and ARM retained; staged in the study without flattening materials.",
+    "files": [
+      {
+        "file": "assets/study-props/lambis_shell/model.gltf",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/2k/lambis_shell/lambis_shell_2k.gltf",
+        "sha256": "f5e97ac15923a8cccd1bfb5708eec79521a4a10e60b92e387db01e5fd59e92c4",
+        "bytes": 2772
+      },
+      {
+        "file": "assets/study-props/lambis_shell/lambis_shell.bin",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/lambis_shell/lambis_shell.bin",
+        "sha256": "3129e3a175dbeba8375b21b8f5dec3b559a173f116dc4c402d79afd8751df7aa",
+        "bytes": 310540
+      },
+      {
+        "file": "assets/study-props/lambis_shell/textures/lambis_shell_nor_gl_2k.jpg",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/lambis_shell/lambis_shell_nor_gl_2k.jpg",
+        "sha256": "f513165bdc69b032643fef4959d94ba8760625529992660f7e5df491be024cec",
+        "bytes": 1683325
+      },
+      {
+        "file": "assets/study-props/lambis_shell/textures/lambis_shell_arm_2k.jpg",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/lambis_shell/lambis_shell_arm_2k.jpg",
+        "sha256": "b802199a9c5816ebd490d8dc7c943175aa01002c673117b7c812e2d8c36cffa8",
+        "bytes": 1710242
+      },
+      {
+        "file": "assets/study-props/lambis_shell/textures/lambis_shell_diff_2k.jpg",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/lambis_shell/lambis_shell_diff_2k.jpg",
+        "sha256": "35c556e197bc2bdd82bf2c1dd9c1a095250589f409efe2a28f70bd08167b1883",
+        "bytes": 2437368
+      }
+    ],
+    "authors": {
+      "Kuutti Siitonen": "All"
+    }
+  },
+  {
+    "asset": "brass_vase_03",
+    "page": "https://polyhaven.com/a/brass_vase_03",
+    "license": "CC0-1.0",
+    "adaptation": "Original complete 2K PBR geometry, normals and ARM retained; staged in the study without flattening materials.",
+    "files": [
+      {
+        "file": "assets/study-props/brass_vase_03/model.gltf",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/2k/brass_vase_03/brass_vase_03_2k.gltf",
+        "sha256": "a66857b95d7694e19d4b7cad973213c754d08f67fb93f11434a8e848c2451cbe",
+        "bytes": 2668
+      },
+      {
+        "file": "assets/study-props/brass_vase_03/textures/brass_vase_03_diff_2k.jpg",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/brass_vase_03/brass_vase_03_diff_2k.jpg",
+        "sha256": "7596db572387f85292047258c57f67ab112b0add37963b1918a0571e7e49bd7a",
+        "bytes": 1877378
+      },
+      {
+        "file": "assets/study-props/brass_vase_03/brass_vase_03.bin",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/brass_vase_03/brass_vase_03.bin",
+        "sha256": "55332659811893d1903cbff6aebee7ea4b2824d330171bd9cb20f80f305c4aeb",
+        "bytes": 65136
+      },
+      {
+        "file": "assets/study-props/brass_vase_03/textures/brass_vase_03_nor_gl_2k.jpg",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/brass_vase_03/brass_vase_03_nor_gl_2k.jpg",
+        "sha256": "ad52d43668add935db5d9f7ea3be11ca91c2d3effc6e719968e44dd92231be6b",
+        "bytes": 1629154
+      },
+      {
+        "file": "assets/study-props/brass_vase_03/textures/brass_vase_03_arm_2k.jpg",
+        "source": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/brass_vase_03/brass_vase_03_arm_2k.jpg",
+        "sha256": "b1ae2cf3bb0854d8f3fef5f7998512da022cf3bb5cc534d17391e07cb34b6cd5",
+        "bytes": 1653568
+      }
+    ],
+    "authors": {
+      "Rico Cilliers": "All"
+    }
+  }
+]

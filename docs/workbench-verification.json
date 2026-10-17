@@ -7,7 +7,7 @@
   },
   "checks": {
     "web_tests": {
-      "passed": 34,
+      "passed": 37,
       "failed": 0,
       "command": "npm test --prefix workbench"
     },
@@ -434,5 +434,103 @@
       "github_implementation_commit": "ddc8888",
       "browser_handoff": "Canonical hosted page reloaded and left open at normal ChatGPT sign-in. No new hosted WebGL interaction QA claimed; local desktop/portrait verification is recorded above."
     }
+  },
+  "fidelity_revision": {
+    "date": "2026-10-16",
+    "request": "Fidelity before maneuverability; improve surroundings/fire, normal-sized ring, clear loupe, alloy grouping and continuous setting/shading.",
+    "policy": "Native device pixel density during motion and stillness; up to 4x MSAA; no adaptive resolution or room-blur pass. Supersedes the adaptive policy/timings in orbit_revision.",
+    "room": {
+      "authoring": "Blender 4.5.14 LTS, 96 Cycles samples",
+      "color_atlas": 4096,
+      "denoised_irradiance": 2048,
+      "emission": 1024,
+      "materials": "Distinct PBR responses and separate material/bake UVs; photographed timber maps retain original tiling.",
+      "objects": [
+        "CC0 full-2K photographed grandfather clock",
+        "CC0 full-2K photographed lambis shell",
+        "CC0 full-2K brass vase",
+        "authored jeweler balance and weights",
+        "open watch movement with gears",
+        "lapidary drawing, pencil and letter",
+        "drawplate, copper wire and findings",
+        "hexagonal beryl specimen group",
+        "56-step participating flame volume, modeled charcoal/embers"
+      ],
+      "limits": "Art-directed period study and noisy flame volume, no fluid dynamics. Clock glass opacity corrected at runtime; original source files unchanged. Fixed lighting/bounce is baked."
+    },
+    "setting": {
+      "authorship": "Project-authored in Blender after evaluating downloadable alternatives; not a newly imported third-party ring.",
+      "main_triangles": 988288,
+      "collection_triangles": 34590,
+      "changes": [
+        "Closed connected fused comfort-fit band, shoulders, claws and gallery hoop",
+        "Shared smooth normals; split angular seam plus continuous depth UV eliminate the old brushing singularity",
+        "Head fit follows actual cut girdle support planes",
+        "Main ring scale 0.24; macro inspection camera and real loupe scale adjusted together",
+        "Neutral clear eyepiece without tinted translucent lens overlay",
+        "Sample crowns tilt away, continuous shank toward eye",
+        "Alloy rows and polished/satin/brushed columns",
+        "White reflection cards and stronger metal-only environment balance; metals remain metalness 1"
+      ],
+      "limits": "Authored solitaire design, not manufacturing CAD or a certified commercial cut. Loupe magnification is a camera projection."
+    },
+    "lighting": {
+      "movable_light": "Removed visible fixture and movement tool; fixed focused/broad source choices remain.",
+      "caustic_paths": 98304,
+      "caustic_map": 1024,
+      "motion_detail": "Same full photon count during interaction/rest; RGB optics and twelve-bounce paths retained.",
+      "limits": "Existing flat receiver/unoccluded aperture/environment/RGB transport limits remain; no whole-scene path tracing."
+    },
+    "cache_observation": {
+      "desktop_css": [
+        1280,
+        720
+      ],
+      "device_pixel_ratio": 2,
+      "resting_observation_1": {
+        "scene_draws": 1063,
+        "jewelry_draws": 447
+      },
+      "resting_observation_2": {
+        "scene_draws": 1397,
+        "jewelry_draws": 447
+      },
+      "interpretation": "Same untouched resting bench, native DPR 2: 334 additional ambient room draws with zero additional jewelry draws, unchanged reflection/photon revision. Draw counters are not FPS or thermal measurements.",
+      "limits": "Motion invalidates full-resolution foreground. Visible hearth draws up to 24 Hz; reduced motion, hidden canvas/page and out-of-frustum hearth suppress ambient scheduling."
+    },
+    "transport_verification": {
+      "roomBufferViewsRetainedExactly": 289,
+      "ringTrianglesRetainedExactly": 988288,
+      "largestRoomBufferBytes": 20617748,
+      "ringBinaryBytes": 17789124
+    },
+    "checks": {
+      "node_tests": 37,
+      "rust_tests": 98,
+      "cargo_fmt": "passed",
+      "strict_clippy": "passed",
+      "class_baseline_hashes_unchanged": 12,
+      "static_build": "passed",
+      "optional_profile_copy": "patch/build preparation succeeded; no new device FPS benchmark"
+    },
+    "browser_qa": [
+      "Actual 1280x720 local WebGL ready scene with no warning/error logs",
+      "Clear diamond loupe and full-resolution direct ring rotation",
+      "Emerald corner fitting and tiger-eye cabochon in the new setting",
+      "Both metal trays/alloy grouping and sample presentation",
+      "430x850 native portrait bench and loupe, no horizontal overflow",
+      "Visible volume flames and readable photographed clock dial",
+      "Full-detail packed room/setting reload successful",
+      "Physical brushed titanium sample selection, case-to-loupe transition and direct rotation at unchanged native DPR 2",
+      "Final production transport reload and actual collection labels inspected without console warnings/errors"
+    ],
+    "screenshots": [
+      "gallery/workbench/fidelity-workshop.jpg",
+      "gallery/workbench/fidelity-loupe.jpg",
+      "gallery/workbench/fidelity-emerald.jpg",
+      "gallery/workbench/fidelity-metals.jpg"
+    ],
+    "publication": "pending same existing owner-private Site; GitHub milestone push authorized",
+    "performance": "Native pixels, larger textures and geometry are intentionally more costly. No new whole-view/mobile FPS or temperature guarantee; older adaptive-scene measurements are historical."
   }
 }

@@ -2,7 +2,7 @@
 
 Run from the repository root:
   blender -b --factory-startup --python workbench/scripts/build-atelier.py
-Only static scenery is baked. Cases, specimen, loupe and movable task light are
+Only static scenery is baked. Cases, specimen, loupe and examination light are
 created in the browser. Coordinates below use the application's +Y-up frame.
 """
 import math
@@ -22,7 +22,7 @@ bpy.ops.object.select_all(action="SELECT")
 bpy.ops.object.delete(use_global=False)
 scene = bpy.context.scene
 scene.render.engine = "CYCLES"
-scene.cycles.samples = 64
+scene.cycles.samples = 96
 scene.render.threads_mode = "FIXED"
 scene.render.threads = 8
 scene.cycles.use_denoising = True
@@ -54,29 +54,19 @@ def material(name, color, rough=.6, metal=0, grain=False):
     c = rgb(color)
     bsdf.inputs["Base Color"].default_value = (*c, 1)
     bsdf.inputs["Roughness"].default_value = rough
-    # Static metal is represented by its diffuse, baked appearance. Real jewelry
-    # remain live PBR materials in the browser.
+    # Retain distinct PBR response alongside fixed diffuse illumination.
+    # Jewelry remains live and is excluded from this bake.
     bsdf.inputs["Metallic"].default_value = metal
     if grain:
-        tex = nodes.new("ShaderNodeTexNoise")
-        tex.inputs["Scale"].default_value = 5
-        tex.inputs["Detail"].default_value = 2
-        coord = nodes.new("ShaderNodeTexCoord")
-        mapping = nodes.new("ShaderNodeVectorMath")
-        mapping.operation = "MULTIPLY"
-        mapping.inputs[1].default_value = (2, 90, 3)
-        links.new(coord.outputs["Generated"], mapping.inputs[0])
-        links.new(mapping.outputs[0], tex.inputs["Vector"])
-        ramp = nodes.new("ShaderNodeValToRGB")
-        ramp.color_ramp.elements[0].color = (*(x * .55 for x in c), 1)
-        ramp.color_ramp.elements[1].color = (*(min(1, x * 1.25) for x in c), 1)
-        links.new(tex.outputs["Fac"], ramp.inputs[0])
-        links.new(ramp.outputs[0], bsdf.inputs["Base Color"])
-        bump = nodes.new("ShaderNodeBump")
-        bump.inputs["Strength"].default_value = .12
-        bump.inputs["Distance"].default_value = .012
-        links.new(tex.outputs["Fac"], bump.inputs["Height"])
-        links.new(bump.outputs[0], bsdf.inputs["Normal"])
+        uv = nodes.new("ShaderNodeUVMap"); uv.uv_map = "MaterialUV"
+        for filename, socket, colorspace in [("wood-color.jpg","Base Color","sRGB"),("wood-roughness.jpg","Roughness","Non-Color")]:
+            tex = nodes.new("ShaderNodeTexImage"); tex.image=bpy.data.images.load(str(ROOT/"workbench/assets/materials"/filename), check_existing=True);tex.image.colorspace_settings.name=colorspace
+            links.new(uv.outputs["UV"],tex.inputs["Vector"])
+            if socket=="Base Color":
+                tint=nodes.new("ShaderNodeMixRGB");tint.blend_type="MULTIPLY";tint.inputs[0].default_value=1;tint.inputs[2].default_value=(*c,1);links.new(tex.outputs["Color"],tint.inputs[1]);links.new(tint.outputs[0],bsdf.inputs[socket])
+            else: links.new(tex.outputs["Color"],bsdf.inputs[socket])
+        tex=nodes.new("ShaderNodeTexImage");tex.image=bpy.data.images.load(str(ROOT/"workbench/assets/materials/wood-normal.jpg"),check_existing=True);tex.image.colorspace_settings.name="Non-Color";links.new(uv.outputs["UV"],tex.inputs["Vector"])
+        bump=nodes.new("ShaderNodeNormalMap");bump.inputs["Strength"].default_value=.22;links.new(tex.outputs["Color"],bump.inputs["Color"]);links.new(bump.outputs[0],bsdf.inputs["Normal"])
     return m
 
 
@@ -85,9 +75,9 @@ edge = material("end grain", "251911", .5, grain=True)
 paint = material("warm mineral paint", "e6dfd2", .88)
 linen = material("unbleached linen", "4b3829", .95)
 ivory = material("ivory ceramic", "e9dfca", .33)
-brass = material("satin brass", "ab8754", .36)
+brass = material("satin brass", "ab8754", .30, .85)
 ink = material("charcoal", "292e2d", .55)
-steel = material("steel", "82908e", .35)
+steel = material("steel", "82908e", .29, .92)
 wax = material("warm wax", "e9d5ad", .8)
 amber = material("amber glass body", "533b28", .22)
 paper = material("paper edges", "b3a488", .95)
@@ -238,14 +228,15 @@ for sw,sh in [(3.14,2.06),(2.97,1.89)]:
     for sy in [-1,1]:box("gilt frame rail",(sw,.055,.09),(fx,3.30+sy*sh/2,back+.43),brass,.012)
 painting=bpy.data.materials.new("Richards 1874 — Met Open Access");painting.use_nodes=True
 nodes,links=painting.node_tree.nodes,painting.node_tree.links
-tex=nodes.new("ShaderNodeTexImage");tex.image=bpy.data.images.load(str(OUT/"centre-harbor.jpg"));links.new(tex.outputs["Color"],nodes.get("Principled BSDF").inputs["Base Color"])
+uv=nodes.new("ShaderNodeUVMap");uv.uv_map="MaterialUV"
+tex=nodes.new("ShaderNodeTexImage");links.new(uv.outputs["UV"],tex.inputs["Vector"]);tex.image=bpy.data.images.load(str(OUT/"centre-harbor.jpg"));links.new(tex.outputs["Color"],nodes.get("Principled BSDF").inputs["Base Color"])
 bpy.ops.mesh.primitive_plane_add(size=1,location=xyz((fx,3.30,back+.45)))
 o=bpy.context.object;o.name="Sundown at Centre Harbor (1874)";o.rotation_euler.x=math.pi/2;o.scale=(2.85,1.84,1);bpy.ops.object.transform_apply(location=False,rotation=False,scale=True);finish(o,painting)
 box("picture light",(2.3,.075,.13),(fx,4.55,back+.70),brass)
 area("picture wash",(fx,4.48,back+.85),(fx,3.3,back+.4),36,"ffe0ab",2.1,.12)
 # Built-in bookcases and labeled drawers, with individual cloth/leather spines.
 book_colors=["2f3930","604035","512b32","243139","776346","423e2e"]
-for bx,width in [(-.90,1.55),(6.80,3.9)]:
+for bx,width in [(6.80,3.9)]:
     box("bookcase back",(width,6.0,.12),(bx,1.55,back+.24),edge)
     for sx in [-1,1]:box("bookcase stile",(.16,6.25,.95),(bx+sx*width/2,1.6,back+.66),walnut)
     for y in [-1.4,.1,1.65,3.25,4.8]:
@@ -299,6 +290,9 @@ area("moon through window",(-5,4,back+.48),(0,-1,0),115,"9ab5d5",4.8,5.5)
 area("quiet warm fill",(1,6,2),(0,-1,-2),360,"ffe0b4",4)
 area("fire bounce",(fx,-.3,back+.8),(0,-1.3,0),175,"ff8b38",1.8,.8)
 
+details=runpy.run_path(str(Path(__file__).with_name("study-details.py")), init_globals=globals())
+external=details["external"]
+
 # A real Cycles still is useful for diagnosing art direction independently of
 # runtime color management. It is kept in ignored output, not used as a backdrop.
 bpy.ops.object.camera_add(location=xyz((0, 2.6, 6.4)))
@@ -318,7 +312,22 @@ for o in preview_only:
 # Bake color and irradiance into one shared non-overlapping UV atlas. Exported
 # geometry retains depth/parallax and receives the live task light every frame.
 bpy.ops.object.select_all(action="DESELECT")
+bpy.context.view_layer.update()
 for o in static:
+    uv=o.data.uv_layers.active
+    if uv: uv.name="MaterialUV"
+    else: uv=o.data.uv_layers.new(name="MaterialUV")
+    if any(slot.material and slot.material.name in [walnut.name,edge.name,panel.name] for slot in o.material_slots):
+        for poly in o.data.polygons:
+            normal=o.matrix_world.to_3x3()@poly.normal
+            axis=max(range(3),key=lambda i:abs(normal[i]))
+            for li in poly.loop_indices:
+                v=o.matrix_world@o.data.vertices[o.data.loops[li].vertex_index].co
+                xy=(v.x,v.y) if axis==2 else (v.x,v.z) if axis==1 else(v.y,v.z)
+                uv.data[li].uv=(xy[0]*.62,xy[1]*.62)
+    o.data.uv_layers.new(name="BakeUV")
+    o.data.uv_layers.active=o.data.uv_layers["BakeUV"]
+    o.data.uv_layers["BakeUV"].active_render=True
     o.select_set(True)
 bpy.context.view_layer.objects.active = static[0]
 bpy.ops.object.join()
@@ -330,8 +339,8 @@ bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=.006)
 bpy.ops.object.mode_set(mode="OBJECT")
 
 
-def bake(name, passes, fmt, kind="DIFFUSE"):
-    image = bpy.data.images.new(name, 2048, 2048, alpha=False, float_buffer=fmt == "HDR")
+def bake(name, passes, fmt, kind="DIFFUSE", size=4096):
+    image = bpy.data.images.new(name, size, size, alpha=False, float_buffer=fmt == "HDR")
     image.colorspace_settings.name = "Non-Color" if fmt == "HDR" else "sRGB"
     for slot in room.material_slots:
         nodes = slot.material.node_tree.nodes
@@ -348,19 +357,33 @@ def bake(name, passes, fmt, kind="DIFFUSE"):
     return image
 
 
-color = bake("atelier-color.png", {"COLOR"}, "PNG")
-bake("atelier-light.hdr", {"DIRECT", "INDIRECT"}, "HDR")
-bake("atelier-emission.hdr", set(), "HDR", "EMIT")
+# Diffuse color bake must preserve metallic F0 colors rather than baking black.
+original=[]
+for slot in room.material_slots:
+    bsdf=slot.material.node_tree.nodes.get("Principled BSDF")
+    original.append((slot.material,bsdf.inputs["Roughness"].default_value,bsdf.inputs["Metallic"].default_value))
+    bsdf.inputs["Metallic"].default_value=0
+color = bake("atelier-color.png", {"COLOR"}, "PNG", size=4096)
+bake("atelier-light.hdr", {"DIRECT", "INDIRECT"}, "HDR", size=2048)
+bake("atelier-emission.hdr", set(), "HDR", "EMIT", size=1024)
 denoiser = runpy.run_path(str(Path(__file__).with_name("denoise-atelier.py")))
 denoiser["denoise_atlas"](OUT / "atelier-light.hdr")
-export_material = material("baked atelier", "ffffff", .72)
-nodes, links = export_material.node_tree.nodes, export_material.node_tree.links
-texture = nodes.new("ShaderNodeTexImage")
-texture.image = color
-links.new(texture.outputs["Color"], nodes.get("Principled BSDF").inputs["Base Color"])
-room.data.materials.clear()
-room.data.materials.append(export_material)
-for p in room.data.polygons:
-    p.material_index = 0
+# Retain distinct surface response and photographed timber normal/roughness.
+cache={}
+for i,(source,rough,metal) in enumerate(original):
+    wood=source.name in [walnut.name,edge.name,panel.name]
+    key=(source.name if wood else "atlas",round(rough,3),round(metal,3))
+    if key not in cache:
+        m=source.copy() if wood else material("study surface %.3f %.3f"%(rough,metal),"ffffff",rough,metal)
+        bsdf=m.node_tree.nodes.get("Principled BSDF");bsdf.inputs["Metallic"].default_value=metal
+        if not wood:
+            uv=m.node_tree.nodes.new("ShaderNodeUVMap");uv.uv_map="BakeUV"
+            texture=m.node_tree.nodes.new("ShaderNodeTexImage");texture.image=color;m.node_tree.links.new(uv.outputs["UV"],texture.inputs["Vector"]);m.node_tree.links.new(texture.outputs["Color"],bsdf.inputs["Base Color"])
+        cache[key]=m
+    room.data.materials[i]=cache[key]
 bpy.ops.export_scene.gltf(filepath=str(OUT / "atelier.glb"), use_selection=True, export_format="GLB", export_yup=True)
-print("ATELIER_BAKED", len(room.data.vertices), "vertices", OUT)
+bpy.ops.object.select_all(action="DESELECT")
+for o in external:o.select_set(True)
+bpy.context.view_layer.objects.active=external[0]
+bpy.ops.export_scene.gltf(filepath=str(OUT/"study-props.glb"),use_selection=True,export_format="GLB",export_yup=True)
+print("ATELIER_BAKED", len(room.data.vertices), "vertices", OUT, flush=True)

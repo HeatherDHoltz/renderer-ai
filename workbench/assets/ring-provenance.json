@@ -1,0 +1,39 @@
+{
+  "authorship": "Authored for Heather Holtz\u2019s AI-assisted portfolio project with Codex assistance. No third-party ring geometry is used in the current setting.",
+  "generator": "workbench/scripts/build-solitaire.py",
+  "tool": "Official Blender 4.5.14 LTS",
+  "construction": "Rounded comfort-fit superellipse band sweep, cathedral shoulders, curved four-claw setting and gallery hoop; voxel fusion at 0.007, 20 smoothing iterations at 0.7, subdivision, shared-vertex triangle export. Head deformed per cut at runtime; normals recalculated before seam-safe UV generation.",
+  "files": {
+    "solitaire-setting.obj": {
+      "bytes": 40045942,
+      "sha256": "1fd9479fe286710ad7969c03b1430c6f95cba7492b80c202ff0f9c24635d4cf3",
+      "vertices": 494138,
+      "triangles": 988288
+    },
+    "solitaire-sample.obj": {
+      "bytes": 1252194,
+      "sha256": "e8d1b720e71076e96db2938577894d2a4434027784615b56b9ac2842c4b485fd",
+      "vertices": 17289,
+      "triangles": 34590
+    }
+  },
+  "research": [
+    {
+      "source": "https://www.blenderkit.com/asset-gallery-detail/f46e3b3a-11a1-4125-a386-9ced5b787f88/",
+      "outcome": "Free low-poly solitaire candidate requires BlenderKit/account workflow; not imported."
+    },
+    {
+      "source": "https://pinshape.com/items/5193-solitaire-ring",
+      "outcome": "AndrewDalek CC-BY STL candidate, sign-in required for download; not imported."
+    },
+    {
+      "source": "https://github.com/JuanGaljoen/castable",
+      "outcome": "No repository license found during inspection; no code or geometry reused."
+    },
+    {
+      "source": "https://opengameart.org/content/ring-0",
+      "outcome": "Paul Wortmann CC0 band used in earlier revision. Old adaptation retained as solitaire-shank.obj, no longer displayed."
+    }
+  ],
+  "repository_license": "No repository-wide source license selected; asset credits do not assign one."
+}

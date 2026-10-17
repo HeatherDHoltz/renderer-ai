@@ -143,10 +143,6 @@ function updateLoupe() {
 function updateLabels() {
   $("scene-name").textContent =
     `${names[state.gem].toUpperCase()}${state.setting === "ring" ? " & " + METALS[state.metal].name.toUpperCase() : " · LOOSE STONE"}`;
-  $("light-angle").value = state.angle;
-  $("light-height").value = state.height;
-  $("light-value").textContent = state.angle + "%";
-  $("height-value").textContent = state.height + "%";
   $("finish").value = state.finish;
   $("finish-value").textContent =
     state.finish < 28 ? "Polished" : state.finish < 70 ? "Satin" : "Brushed";
@@ -166,7 +162,6 @@ function updateLabels() {
     explore:
       "Drag to look around · scroll / pinch to zoom · double-click to focus",
     turn: "Drag jewelry to turn it · drag the room to look around",
-    light: "Drag across the view to move the light · arrow keys also work",
     loupe: "Drag to turn the stone · scroll to magnify",
   }[state.tool];
   $("interaction-hint").textContent = hint;
@@ -188,13 +183,10 @@ function setTool(value) {
   app?.setTool(value);
   updateLabels();
   announce(
-    `${value === "explore" ? "Explore" : value === "turn" ? "Turn" : value === "light" ? "Examination light" : "Loupe"} selected. ${value === "loupe" ? "Drag to turn the jewelry inside the eyepiece. Escape returns to the bench." : ""}`,
+    `${value === "explore" ? "Explore" : value === "turn" ? "Turn" : "Loupe"} selected. ${value === "loupe" ? "Drag to turn the jewelry inside the eyepiece. Escape returns to the bench." : ""}`,
   );
 }
-function updateLight() {
-  app?.setLight(state.angle, state.height);
-  updateLabels();
-}
+
 for (const button of document.querySelectorAll("[data-gem]"))
   button.addEventListener("click", () => {
     state.gem = button.dataset.gem;
@@ -255,14 +247,6 @@ $("finish").addEventListener("input", (event) => {
   state.finish = Number(event.target.value);
   app?.setFinish(state.finish);
   updateLabels();
-});
-$("light-angle").addEventListener("input", (event) => {
-  state.angle = Number(event.target.value);
-  updateLight();
-});
-$("light-height").addEventListener("input", (event) => {
-  state.height = Number(event.target.value);
-  updateLight();
 });
 $("loupe-more").addEventListener("click", () => {
   state.zoom = Math.min(6, state.zoom + 1);
@@ -358,14 +342,11 @@ host.addEventListener("pointerdown", (event) => {
   const p = point(event),
     action = app.pick(p.x, p.y);
 
-  if (action?.kind === "light") app.beginLightDrag(p.x, p.y);
   pressed = action;
   grab =
-    action?.kind === "light"
-      ? "light"
-      : action?.kind === "jewelry" && state.tool !== "explore"
-        ? "jewelry"
-        : "camera";
+    action?.kind === "jewelry" && state.tool !== "explore"
+      ? "jewelry"
+      : "camera";
   travel = 0;
   dragging = true;
   pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -406,12 +387,6 @@ host.addEventListener("pointermove", (event) => {
       }
     }
     pinchDistance = d;
-  } else if (grab === "light") {
-    const p = point(event);
-    const values = app.dragLight(p.x, p.y);
-    state.angle = values.angle;
-    state.height = values.height;
-    updateLabels();
   } else if (grab === "jewelry") app.rotate(dx * 0.008, dy * 0.008);
   else if (grab === "camera") app.orbit(dx * 0.004, dy * 0.004);
 });
@@ -492,11 +467,7 @@ host.addEventListener("keydown", (event) => {
   if (arrows[event.key]) {
     event.preventDefault();
     const [dx, dy] = arrows[event.key];
-    if (state.tool === "light") {
-      state.angle = Math.max(-100, Math.min(100, state.angle + dx * 5));
-      state.height = Math.max(8, Math.min(85, state.height - dy * 5));
-      updateLight();
-    } else if (state.tool === "explore") app.orbit(dx * 0.08, dy * 0.08);
+    if (state.tool === "explore") app.orbit(dx * 0.08, dy * 0.08);
     else app.rotate(dx * 0.12, dy * 0.12);
   }
   if (["+", "=", "-", "_"].includes(event.key)) {
@@ -523,7 +494,7 @@ document.addEventListener("keydown", (event) => {
     event.target.closest("input,textarea,select")
   )
     return;
-  const tool = { 1: "explore", 2: "turn", 3: "light", 4: "loupe" }[event.key];
+  const tool = { 1: "explore", 2: "turn", 3: "loupe" }[event.key];
   if (tool) {
     setTool(tool);
     host.focus({ preventScroll: true });

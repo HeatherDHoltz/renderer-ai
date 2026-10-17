@@ -7,7 +7,7 @@ export const GEMS = {
     cut: "cabochon",
     ior: 1.545,
     swatch: "#9d6728",
-    note: "A silky quartz cabochon. Move the light to find the golden ribbon.",
+    note: "A silky quartz cabochon. Turn the stone to find the golden ribbon.",
   },
   diamond: {
     name: "Diamond",

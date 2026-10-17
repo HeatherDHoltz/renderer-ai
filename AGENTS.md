@@ -7,6 +7,7 @@ Read `IMPLEMENTATION_HANDOFF.md`, `PLAN.md`, and `STATUS.md` before implementati
 - Heather authorized public `HeatherDHoltz/renderer-ai` creation and automatic pushes on October 15, 2026. Push verified milestone commits without repeated confirmation. Never force-push or rewrite shared history.
 - Keep credentials out of files, commits, and tool output. Use GitHub CLI's credential helper.
 - Do not spawn subagents without Heather's authorization.
+- Fidelity takes priority over maneuverability and frame rate (Heather, October 16, 2026). Never lower pixel density or material/geometry quality during interaction without a new explicit request.
 - Maintain honest milestone evidence and exact next steps. Do not mark unimplemented features complete or invent benchmark results.
 - Check `cargo fmt --check`, `cargo test --locked`, and `cargo clippy --all-targets -- -D warnings` for implementation milestones. Inspect actual rendered images for visual milestones.
 - Keep large generated output under ignored `output/`; retain selected real gallery images. Keep Cargo.lock.

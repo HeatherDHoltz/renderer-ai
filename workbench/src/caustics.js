@@ -1,9 +1,9 @@
 import * as THREE from "../vendor/three.module.js";
 import { facetPlanes, convexOpticsGLSL } from "./gem-optics.js";
 
-export const CAUSTIC_SAMPLES = 8192;
-export const SETTLED_CAUSTIC_SAMPLES = 16384;
-const SIZE = 512;
+export const CAUSTIC_SAMPLES = 32768;
+export const SETTLED_CAUSTIC_SAMPLES = 32768;
+const SIZE = 1024;
 const EXTENT = new THREE.Vector2(12, 10);
 const RECEIVER_Y = -1.32;
 
