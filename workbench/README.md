@@ -18,7 +18,7 @@ npm run build --prefix workbench
 node workbench/scripts/verify-packed.mjs
 ```
 
-The static `dist/` can be hosted anywhere. `.openai/hosting.json` retains the existing Sites project identity. Source assets and vendored modules are checked in for offline builds. `pack-fidelity.mjs` splits the room into aligned glTF buffers and packs the main OBJ into float32/uint32 binary transport; all geometry and image buffer bytes are retained. The original large OBJ/GLB stay in source and are omitted from `dist/`. No mesh decimation or texture reduction is performed by packaging.
+The static `dist/` can be hosted anywhere. `.openai/hosting.json` retains the existing Sites project identity. Source assets and vendored modules are checked in for offline builds. Authoring uses `pack-fidelity.mjs` to split room/prop GLBs into aligned glTF buffers below 8 MiB. The ring ships as gzip-compressed float32/uint32 binary; the browser decompresses it without losing geometry. Bulky original OBJ/GLB authoring exports stay under ignored `output/fidelity-research/`. Normal builds copy the canonical assets unchanged. No mesh decimation or texture reduction is performed by packaging.
 
 ## Controls
 

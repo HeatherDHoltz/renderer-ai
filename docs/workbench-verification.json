@@ -499,9 +499,11 @@
       "limits": "Motion invalidates full-resolution foreground. Visible hearth draws up to 24 Hz; reduced motion, hidden canvas/page and out-of-frustum hearth suppress ambient scheduling."
     },
     "transport_verification": {
-      "roomBufferViewsRetainedExactly": 289,
+      "roomAndPropBufferViewsRetained": 315,
+      "originalAuthoringExportsCompared": 3,
       "ringTrianglesRetainedExactly": 988288,
-      "largestRoomBufferBytes": 20617748,
+      "largestGLTFBufferBytes": 8360804,
+      "ringGzipBytes": 9721014,
       "ringBinaryBytes": 17789124
     },
     "checks": {
@@ -522,7 +524,8 @@
       "Visible volume flames and readable photographed clock dial",
       "Full-detail packed room/setting reload successful",
       "Physical brushed titanium sample selection, case-to-loupe transition and direct rotation at unchanged native DPR 2",
-      "Final production transport reload and actual collection labels inspected without console warnings/errors"
+      "Final production transport reload and actual collection labels inspected without console warnings/errors",
+      "Final split glTF room/props and browser-native gzip ring delivery loaded ready and entered the clear loupe without console warnings/errors."
     ],
     "screenshots": [
       "gallery/workbench/fidelity-workshop.jpg",
@@ -530,7 +533,7 @@
       "gallery/workbench/fidelity-emerald.jpg",
       "gallery/workbench/fidelity-metals.jpg"
     ],
-    "publication": "pending same existing owner-private Site; GitHub milestone push authorized",
+    "publication": "pending corrected same-Site source upload; oversized unpublished source objects replaced losslessly using a fresh helper checkout of the unchanged remote",
     "performance": "Native pixels, larger textures and geometry are intentionally more costly. No new whole-view/mobile FPS or temperature guarantee; older adaptive-scene measurements are historical."
   }
 }

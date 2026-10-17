@@ -2,7 +2,7 @@
 The old runtime tubes and rectangular shank caps are replaced, not overlaid.
 Run with official Blender 4.5: blender -b --python workbench/scripts/build-solitaire.py.
 """
-import bpy,math
+import bpy,math,gzip,struct
 from pathlib import Path
 from mathutils import Vector
 ROOT=Path(__file__).resolve().parents[2]
@@ -56,7 +56,14 @@ def export(obj,name):
  lines=['# Project-authored comfort-fit cathedral setting; see ring-provenance.json']
  lines += ['v %.8f %.8f %.8f'%(p.co.x,p.co.z,-p.co.y)for p in g.vertices]
  lines += ['f '+' '.join(str(i+1)for i in tri.vertices)for tri in g.loop_triangles]
- (ROOT/'workbench/assets'/name).write_text('\n'.join(lines)+'\n');print(name,len(g.vertices),len(g.loop_triangles),flush=True)
+ destination=ROOT/('output/fidelity-research' if name=='solitaire-setting.obj' else 'workbench/assets');destination.mkdir(parents=True,exist_ok=True)
+ (destination/name).write_text('\n'.join(lines)+'\n')
+ if name=='solitaire-setting.obj':
+  positions=b''.join(struct.pack('<3f',round(p.co.x,8),round(p.co.z,8),round(-p.co.y,8))for p in g.vertices)
+  indices=b''.join(struct.pack('<3I',*tri.vertices)for tri in g.loop_triangles)
+  binary=struct.pack('<3I',0x31474e52,len(g.vertices),len(g.loop_triangles)*3)+positions+indices
+  (ROOT/'workbench/assets/solitaire-setting.mesh.gz').write_bytes(gzip.compress(binary,mtime=0))
+ print(name,len(g.vertices),len(g.loop_triangles),flush=True)
 export(o,'solitaire-setting.obj')
 # Small collection rings share a smoother lower tessellation, not a broken band.
 d=o.modifiers.new('collection tessellation','DECIMATE');d.ratio=.035;bpy.ops.object.modifier_apply(modifier=d.name)

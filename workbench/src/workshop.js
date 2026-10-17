@@ -9,7 +9,7 @@ export async function buildWorkshop(scene, surfaces, renderer) {
       new URL("../assets/atelier/atelier.gltf", import.meta.url).href,
     ),
     new GLTFLoader().loadAsync(
-      new URL("../assets/atelier/study-props.glb", import.meta.url).href,
+      new URL("../assets/atelier/study-props.gltf", import.meta.url).href,
     ),
     new HDRLoader().loadAsync(
       new URL("../assets/atelier/atelier-light.hdr", import.meta.url).href,

@@ -1,49 +1,95 @@
-// Verify production transport against the original high-detail source assets.
+// Verify canonical/delivered assets and optional original authoring exports.
 import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
+import { gunzipSync } from "node:zlib";
 import { readGemOBJ, readSettingBinary } from "../src/geometry.js";
-const asset = new URL("../assets/", import.meta.url),
-  dist = new URL("../dist/assets/", import.meta.url);
-const original = await readFile(new URL("atelier/atelier.glb", asset));
-const n = original.readUInt32LE(12),
-  a = JSON.parse(original.subarray(20, 20 + n));
-const b = JSON.parse(await readFile(new URL("atelier/atelier.gltf", dist)));
-const buffers = await Promise.all(
-  b.buffers.map((x) => readFile(new URL("atelier/" + x.uri, dist))),
-);
-assert.equal(a.bufferViews.length, b.bufferViews.length);
-for (let i = 0; i < a.bufferViews.length; i++) {
-  const v = a.bufferViews[i],
-    w = b.bufferViews[i];
+const assets = new URL("../assets/", import.meta.url),
+  dist = new URL("../dist/assets/", import.meta.url),
+  raw = new URL("../../output/fidelity-research/", import.meta.url);
+let views = 0,
+  largest = 0,
+  originalsChecked = 0;
+for (const name of ["atelier", "study-props"]) {
+  const json = await readFile(new URL("atelier/" + name + ".gltf", assets));
   assert.deepEqual(
-    original.subarray(
-      28 + n + (v.byteOffset || 0),
-      28 + n + (v.byteOffset || 0) + v.byteLength,
-    ),
-    buffers[w.buffer].subarray(w.byteOffset, w.byteOffset + w.byteLength),
+    json,
+    await readFile(new URL("atelier/" + name + ".gltf", dist)),
   );
+  const gltf = JSON.parse(json),
+    buffers = await Promise.all(
+      gltf.buffers.map(async (b) => {
+        const data = await readFile(new URL("atelier/" + b.uri, assets));
+        assert.deepEqual(
+          data,
+          await readFile(new URL("atelier/" + b.uri, dist)),
+        );
+        assert.equal(data.length, b.byteLength);
+        largest = Math.max(largest, data.length);
+        return data;
+      }),
+    );
+  let original;
+  try {
+    original = await readFile(new URL(name + ".glb", raw));
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  if (original) {
+    const n = original.readUInt32LE(12),
+      source = JSON.parse(original.subarray(20, 20 + n));
+    assert.equal(source.bufferViews.length, gltf.bufferViews.length);
+    for (let i = 0; i < source.bufferViews.length; i++) {
+      const a = source.bufferViews[i],
+        b = gltf.bufferViews[i];
+      assert.deepEqual(
+        original.subarray(
+          28 + n + (a.byteOffset || 0),
+          28 + n + (a.byteOffset || 0) + a.byteLength,
+        ),
+        buffers[b.buffer].subarray(b.byteOffset, b.byteOffset + b.byteLength),
+      );
+    }
+    originalsChecked++;
+  }
+  views += gltf.bufferViews.length;
 }
-const source = readGemOBJ(
-  await readFile(new URL("solitaire-setting.obj", asset), "utf8"),
-  true,
-);
-const bin = await readFile(new URL("solitaire-setting.mesh", dist));
-const packed = readSettingBinary(
-  bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength),
-);
+const gzip = await readFile(new URL("solitaire-setting.mesh.gz", assets));
 assert.deepEqual(
-  source.attributes.position.array,
-  packed.attributes.position.array,
+  gzip,
+  await readFile(new URL("solitaire-setting.mesh.gz", dist)),
 );
-assert.deepEqual(
-  Array.from(source.index.array),
-  Array.from(packed.index.array),
-);
+const binary = gunzipSync(gzip),
+  packed = readSettingBinary(
+    binary.buffer.slice(
+      binary.byteOffset,
+      binary.byteOffset + binary.byteLength,
+    ),
+  );
+let obj;
+try {
+  obj = await readFile(new URL("solitaire-setting.obj", raw), "utf8");
+} catch (error) {
+  if (error.code !== "ENOENT") throw error;
+}
+if (obj) {
+  const source = readGemOBJ(obj, true);
+  assert.deepEqual(
+    source.attributes.position.array,
+    packed.attributes.position.array,
+  );
+  assert.deepEqual(
+    Array.from(source.index.array),
+    Array.from(packed.index.array),
+  );
+  originalsChecked++;
+}
 console.log(
   JSON.stringify({
-    roomBufferViewsRetainedExactly: a.bufferViews.length,
-    ringTrianglesRetainedExactly: source.index.count / 3,
-    largestRoomBufferBytes: Math.max(...buffers.map((b) => b.length)),
-    ringBinaryBytes: bin.length,
+    roomAndPropBufferViewsRetained: views,
+    originalAuthoringExportsCompared: originalsChecked,
+    ringTrianglesRetainedExactly: packed.index.count / 3,
+    largestGLTFBufferBytes: largest,
+    ringGzipBytes: gzip.length,
+    ringBinaryBytes: binary.length,
   }),
 );

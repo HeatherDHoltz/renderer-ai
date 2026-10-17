@@ -3,13 +3,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { solitaireGeometry, readGemOBJ } from "../src/geometry.js";
-function glbJSON(bytes) {
-  const n = bytes.readUInt32LE(12);
-  return JSON.parse(bytes.subarray(20, 20 + n).toString());
-}
 test("the study preserves separate source UVs, lighting UVs and distinct material responses", async () => {
-  const g = glbJSON(
-    await readFile(new URL("../assets/atelier/atelier.glb", import.meta.url)),
+  const g = JSON.parse(
+    await readFile(
+      new URL("../assets/atelier/atelier.gltf", import.meta.url),
+      "utf8",
+    ),
   );
   assert.ok(g.materials.length > 8);
   const pbr = g.materials.map((m) => m.pbrMetallicRoughness);

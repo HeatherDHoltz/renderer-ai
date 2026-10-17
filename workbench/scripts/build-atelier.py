@@ -8,6 +8,7 @@ created in the browser. Coordinates below use the application's +Y-up frame.
 import math
 import os
 import random
+import subprocess
 import runpy
 from pathlib import Path
 
@@ -381,9 +382,12 @@ for i,(source,rough,metal) in enumerate(original):
             texture=m.node_tree.nodes.new("ShaderNodeTexImage");texture.image=color;m.node_tree.links.new(uv.outputs["UV"],texture.inputs["Vector"]);m.node_tree.links.new(texture.outputs["Color"],bsdf.inputs["Base Color"])
         cache[key]=m
     room.data.materials[i]=cache[key]
-bpy.ops.export_scene.gltf(filepath=str(OUT / "atelier.glb"), use_selection=True, export_format="GLB", export_yup=True)
+raw=ROOT/"output/fidelity-research";raw.mkdir(parents=True,exist_ok=True)
+bpy.ops.export_scene.gltf(filepath=str(raw / "atelier.glb"), use_selection=True, export_format="GLB", export_yup=True)
+subprocess.run(["node",str(Path(__file__).with_name("pack-fidelity.mjs")),str(raw/"atelier.glb"),str(OUT/"atelier")],check=True)
 bpy.ops.object.select_all(action="DESELECT")
 for o in external:o.select_set(True)
 bpy.context.view_layer.objects.active=external[0]
-bpy.ops.export_scene.gltf(filepath=str(OUT/"study-props.glb"),use_selection=True,export_format="GLB",export_yup=True)
+bpy.ops.export_scene.gltf(filepath=str(raw/"study-props.glb"),use_selection=True,export_format="GLB",export_yup=True)
+subprocess.run(["node",str(Path(__file__).with_name("pack-fidelity.mjs")),str(raw/"study-props.glb"),str(OUT/"study-props")],check=True)
 print("ATELIER_BAKED", len(room.data.vertices), "vertices", OUT, flush=True)

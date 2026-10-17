@@ -192,11 +192,15 @@ export async function createWorkbench(host, onFatalError) {
   setting.add(mount);
   scene.add(spin);
   const response = await Promise.all(
-    ["cabochon.obj", "solitaire-setting.mesh", "solitaire-sample.obj"].map(
+    ["cabochon.obj", "solitaire-setting.mesh.gz", "solitaire-sample.obj"].map(
       async (name) => {
         const r = await fetch(new URL(`../assets/${name}`, import.meta.url));
         if (!r.ok) throw new Error("Jewelry mesh could not load");
-        return name.endsWith(".mesh") ? r.arrayBuffer() : r.text();
+        return name.endsWith(".gz")
+          ? new Response(
+              r.body.pipeThrough(new DecompressionStream("gzip")),
+            ).arrayBuffer()
+          : r.text();
       },
     ),
   );
