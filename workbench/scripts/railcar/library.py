@@ -5,7 +5,7 @@ import random
 import bmesh
 import bpy
 from geo import FLOOR, box, cyl, sphere, lathe, coll, anchor, adopt
-from mats import G, TEX
+from mats import G, TEX, runtime
 
 PAINT_DIR = "/Users/heatherholtz/Downloads/CS116A/Renderer/renderer-ai/workbench/assets/railcar/paintings"
 
@@ -53,7 +53,8 @@ def binding_material():
     g.set("Metallic", gilt)
     g.set("Roughness", g.mixf(gilt, 0.62, 0.25))
     g.b.inputs["Coat Weight"].default_value = 0.15
-    return g.m
+    return runtime(g.m, kind="bindings", palette=[list(c) for c in pal], label=[0.03, 0.01, 0.006],
+                   paper=[0.62, 0.53, 0.38], gilt=[0.85, 0.62, 0.26], coat=0.15)
 
 
 def fill_shelf(prefix, x0, x1, z, clear, depth_max, c, rnd, y_front=0.0):

@@ -123,6 +123,7 @@ import {
   bindExaminationLights,
 } from "./examination-light.js";
 import { createJewelryCache } from "./jewelry-cache.js";
+import { createBloom } from "./bloom.js";
 import { BenchOrbit } from "./orbit.js";
 import { GEMS } from "./gems.js";
 import { cutGeometry } from "./cuts.js";
@@ -436,7 +437,7 @@ export async function createWorkbench(host, onFatalError) {
     objectsMoving = false;
   updateMount();
   updateLight();
-  const workshop = await buildWorkshop(scene, surfaces, renderer);
+  const workshop = await buildWorkshop(scene, surfaces, renderer, host);
   const caustics = createCaustics(renderer, workshop.causticReceivers, host);
   objects = makeBenchObjects(scene, geometries, materials, surfaces, key);
   objects.select("gem", selectedGem);
@@ -683,6 +684,15 @@ export async function createWorkbench(host, onFatalError) {
   });
   target.depthTexture = new THREE.DepthTexture(1, 1, THREE.UnsignedIntType);
   const jewelryCache = createJewelryCache(renderer, scene, camera, target);
+  const bloom = createBloom(renderer, {
+    image: { value: target.texture },
+    depthImage: { value: target.depthTexture },
+    jewelry: { value: jewelryCache.texture },
+    jewelryDepth: { value: jewelryCache.depth },
+  });
+  // ?bloom= strength of the glow around lamps, bulbs and fire (0 disables).
+  const bloomParam = new URLSearchParams(location.search).get("bloom");
+  const bloomStrength = bloomParam !== null && Number(bloomParam) >= 0 ? Number(bloomParam) : 0.05;
   let jewelryDirty = true;
   const postScene = new THREE.Scene(),
     postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 2);
@@ -695,19 +705,27 @@ export async function createWorkbench(host, onFatalError) {
       depthImage: { value: target.depthTexture },
       viewLut: { value: viewLut },
       exposure: { value: viewExposure },
+      bloom: { value: bloom.texture },
+      bloomStrength: { value: bloomStrength },
+      grainSeed: { value: 0 },
     },
     toneMapped: false,
     depthTest: false,
     depthWrite: false,
     vertexShader:
       "varying vec2 vUV;void main(){vUV=uv;gl_Position=vec4(position.xy,0.,1.);}",
-    fragmentShader: `uniform sampler2D image,depthImage,jewelry,jewelryDepth;uniform highp sampler3D viewLut;uniform float exposure;varying vec2 vUV;
+    fragmentShader: `uniform sampler2D image,depthImage,jewelry,jewelryDepth,bloom;uniform highp sampler3D viewLut;uniform float exposure,bloomStrength,grainSeed;varying vec2 vUV;
       const float LO=${VIEW_LUT.lo},HI=${VIEW_LUT.hi},N=${VIEW_LUT.size}.;
       void main(){vec4 gem=texture2D(jewelry,vUV);float visible=step(texture2D(jewelryDepth,vUV).r,texture2D(depthImage,vUV).r+.000003);
       vec3 color=texture2D(image,vUV).rgb*(1.-gem.a*visible)+gem.rgb*visible;
+      color+=texture2D(bloom,vUV).rgb*bloomStrength;
       float vignette=1.-.12*pow(length((vUV-.5)*vec2(1.1,.85)),1.5);
       vec3 t=clamp((log2(max(color*vignette*exposure,vec3(exp2(LO))))-LO)/(HI-LO),0.,1.);
-      gl_FragColor=vec4(texture(viewLut,(t*(N-1.)+.5)/N).rgb,1.);
+      vec3 display=texture(viewLut,(t*(N-1.)+.5)/N).rgb;
+      // Fine film grain, strongest in the mid-tones, re-seeded per drawn frame.
+      float g=fract(sin(dot(gl_FragCoord.xy+grainSeed,vec2(12.9898,78.233)))*43758.5453)-.5;
+      display+=g*.018*(1.-abs(display*2.-1.));
+      gl_FragColor=vec4(display,1.);
       }`,
   });
   postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMaterial));
@@ -772,6 +790,8 @@ export async function createWorkbench(host, onFatalError) {
   function draw() {
     host.dataset.jewelryDraws = String(jewelryCache.render(jewelryDirty));
     jewelryDirty = false;
+    if (bloomStrength > 0) bloom.render();
+    postMaterial.uniforms.grainSeed.value = (draws % 64) * 7.31;
     renderer.setRenderTarget(null);
     renderer.render(postScene, postCamera);
     host.dataset.draws = String(++draws);
@@ -787,6 +807,7 @@ export async function createWorkbench(host, onFatalError) {
       Math.round(width * ratio),
       Math.round(heightPx * ratio),
     );
+    bloom.setSize(Math.round(width * ratio), Math.round(heightPx * ratio));
     jewelryDirty = true;
     host.dataset.renderQuality = "native";
     host.dataset.renderPixelRatio = String(ratio);

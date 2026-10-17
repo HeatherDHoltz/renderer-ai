@@ -2137,3 +2137,72 @@ dialog h2 {
   opacity: 1;
   text-shadow: none;
 }
+
+/* Loading: a softly focused still of the car, then the live room fades in. */
+.workshop-game .loading {
+  overflow: hidden;
+  transition: opacity 0.9s ease;
+}
+.loading-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(14px) brightness(0.55) saturate(1.1);
+  transform: scale(1.06);
+  z-index: -1;
+}
+.loading > *:not(.loading-poster) {
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
+}
+.loading-progress {
+  font-family: var(--sans, system-ui);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: #e3c188;
+  min-height: 1em;
+}
+.loading.static .loading-poster {
+  filter: none;
+  transform: none;
+}
+.loading.static > span {
+  display: none;
+}
+/* The still has no live bench: hide its controls. */
+body.static-mode .viewer-bottom,
+body.static-mode .tool-tray,
+body.static-mode #toggle-cabinet {
+  display: none;
+}
+.static-note {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 24px;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(20, 26, 20, 0.78);
+  backdrop-filter: blur(6px);
+  font-size: 14px;
+  text-align: center;
+}
+.static-note p {
+  margin: 0 0 10px;
+}
+.static-note button {
+  font: inherit;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #e3c188;
+  background: transparent;
+  color: #f3e6c8;
+  cursor: pointer;
+}
+.loading.fading {
+  opacity: 0;
+  pointer-events: none;
+}

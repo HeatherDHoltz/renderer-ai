@@ -1,10 +1,25 @@
-"""Material library for the 1890 private railcar (Blender 5.x, Cycles)."""
+"""Material library for the 1890 private railcar (Blender 5.x, Cycles).
+
+Materials the browser can rebuild exactly carry a JSON recipe in the custom
+property "lj" (see runtime()); export.py ships the recipe and its source
+textures instead of baking the surface into an atlas."""
+import json
 import os
 import bpy
 
 ROOT = os.environ.get("LJ_ROOT", "/Users/heatherholtz/Downloads/CS116A/Renderer/renderer-ai")
 TEX = os.path.join(ROOT, "workbench/assets/railcar/textures")
 MAT_ASSETS = os.path.join(ROOT, "workbench/assets/materials")
+
+
+def runtime(m, **recipe):
+    """Tag a material with its browser recipe (read by export.py)."""
+    m["lj"] = json.dumps(recipe)
+    return m
+
+
+def _rgb(c):
+    return [round(float(x), 4) for x in tuple(c)[:3]]
 
 
 class G:
@@ -125,7 +140,13 @@ def _pbr(name, tex, scale, tint=None, tint_mode="MULTIPLY", rough_mul=1.0, rough
     g.b.inputs["Sheen Weight"].default_value = sheen
     g.b.inputs["Sheen Tint"].default_value = sheen_tint
     g.b.inputs["Metallic"].default_value = metallic
-    return g.m
+    rough = "Rough" if "Rough" in tex else ("arm" if "arm" in tex else None)
+    return runtime(g.m, kind="box", space=space, scale=scale,
+                   maps={"color": tex["Diffuse"], "rough": tex.get(rough) if rough else None,
+                         "roughChannel": 1 if rough == "arm" else 0, "normal": tex.get("nor_gl")},
+                   tint=_rgb(tint) if tint is not None else None, tintMode=tint_mode, roughMul=rough_mul,
+                   roughAdd=rough_add, coat=coat, coatRough=coat_rough, normalStrength=normal_strength,
+                   sheen=sheen, sheenTint=_rgb(sheen_tint), metallic=metallic)
 
 
 def build_library(ph):
@@ -171,7 +192,7 @@ def build_library(ph):
     g.L(nz.outputs["Fac"], rr.inputs["Value"])
     g.set("Roughness", rr.outputs[0])
     g.b.inputs["Metallic"].default_value = 1.0
-    M["gilt"] = g.m
+    M["gilt"] = runtime(g.m, kind="gilt", noise=6, dark=[0.55, 0.36, 0.11], light=[0.95, 0.70, 0.30], rough=[0.42, 0.16])
 
     def metal(name, col, rough, aniso=0.0):
         g = G(name)
@@ -182,7 +203,7 @@ def build_library(ph):
         g.b.inputs["Metallic"].default_value = 1.0
         g.set("Roughness", g.math("ADD", g.math("MULTIPLY", nz.outputs["Fac"], 0.12), rough))
         g.b.inputs["Anisotropic"].default_value = aniso
-        return g.m
+        return runtime(g.m, kind="metal", color=_rgb(col), rough=rough, noise=40, noiseAmount=0.12)
 
     M["brass"] = metal("rc polished brass", (0.86, 0.62, 0.30, 1), 0.10)
     M["brass_aged"] = metal("rc aged brass", (0.62, 0.44, 0.20, 1), 0.28)
@@ -251,7 +272,8 @@ def build_library(ph):
     bump.inputs["Distance"].default_value = 0.05
     g.L(t.outputs[0], bump.inputs["Height"])
     g.set("Normal", bump.outputs[0])
-    M["lincrusta"] = g.m
+    M["lincrusta"] = runtime(g.m, kind="damask", mask=mask_img, axes=[0, 2], div=[1.5, 2.25], dark=[0.16, 0.06, 0.03],
+                             light=[0.85, 0.58, 0.24], rough=[0.6, 0.25], bump=0.6)
 
     # Painted clerestory ceiling: deep green with gilt stencil.
     g = G("rc stencilled ceiling")
@@ -266,7 +288,8 @@ def build_library(ph):
     g.set("Base Color", g.mix(t.outputs[0], (0.03, 0.07, 0.05, 1), (0.62, 0.42, 0.16, 1)))
     g.set("Metallic", t.outputs[0])
     g.set("Roughness", g.mixf(t.outputs[0], 0.55, 0.3))
-    M["ceiling"] = g.m
+    M["ceiling"] = runtime(g.m, kind="damask", mask=mask_img, axes=[0, 1], div=[1.4, 2.1], dark=[0.03, 0.07, 0.05],
+                           light=[0.62, 0.42, 0.16], rough=[0.55, 0.3], bump=0.0)
 
     # Carpet with pile bump.
     g = G("rc persian carpet")
@@ -306,5 +329,6 @@ def build_library(ph):
     g.set("Emission Color", pane)
     g.set("Emission Strength", g.math("MULTIPLY", g.math("SUBTRACT", 1.0, lead), 0.55))
     g.b.inputs["Roughness"].default_value = 0.35
-    M["art_glass"] = g.m
+    M["art_glass"] = runtime(g.m, kind="artglass", freq=1.6, lead=0.035, paneA=[0.95, 0.72, 0.32], paneB=[0.98, 0.90, 0.66],
+                             emission=0.55)
     return M

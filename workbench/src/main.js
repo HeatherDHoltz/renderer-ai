@@ -544,7 +544,49 @@ function fatal(error) {
   $("save-photo").disabled = true;
   announce("The 3D workbench could not open. The render gallery is available.");
 }
+let ambience = null;
+$("toggle-sound").addEventListener("click", async () => {
+  if (!ambience) ambience = (await import("./ambience.js")).createAmbience();
+  const on = ambience.toggle();
+  $("toggle-sound").textContent = on ? "Sound on" : "Sound off";
+  $("toggle-sound").setAttribute("aria-pressed", String(on));
+});
+function prefersStatic() {
+  const params = new URLSearchParams(location.search);
+  if (params.has("interactive")) return false;
+  if (params.has("static")) return true;
+  const gl2 = (() => {
+    try {
+      return !!document.createElement("canvas").getContext("webgl2");
+    } catch {
+      return false;
+    }
+  })();
+  const phone =
+    matchMedia("(pointer: coarse)").matches &&
+    Math.min(screen.width, screen.height) < 820;
+  return !gl2 || phone;
+}
+function showStatic() {
+  document.body.classList.add("static-mode");
+  $("loading").classList.add("static");
+  $("static-note").hidden = false;
+  $("open-interactive").addEventListener("click", () => {
+    const u = new URL(location.href);
+    u.searchParams.set("interactive", "");
+    location.href = u.href;
+  });
+}
+host.addEventListener("loadprogress", (e) => {
+  const { loaded, total } = e.detail;
+  if (total > 0)
+    $("loading-progress").textContent = `${Math.round((100 * loaded) / total)}%`;
+});
 async function boot() {
+  if (prefersStatic()) {
+    showStatic();
+    return;
+  }
   try {
     const { createWorkbench } = await import("./scene.js");
     app = await createWorkbench(host, fatal);
@@ -566,7 +608,9 @@ async function boot() {
     if (state.box) app.focusBox(state.box);
     if (notes.open) app.pause(true);
     updateLabels();
-    $("loading").hidden = true;
+    const loading = $("loading");
+    loading.classList.add("fading");
+    setTimeout(() => (loading.hidden = true), 950);
     viewer.dataset.ready = "true";
   } catch (error) {
     fatal(error);

@@ -14,5 +14,10 @@
  "globe-base-nasa.jpg": {
   "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/91/Land_shallow_topo_2048.jpg/1920px-Land_shallow_topo_2048.jpg",
   "license": "CC0 / public domain (Metropolitan Museum Open Access via Wikimedia Commons; NASA Blue Marble public domain)"
+ },
+ "lawrence-lady-maria-conyngham.jpg": {
+  "source": "https://www.metmuseum.org/art/collection/search/436853",
+  "work": "Sir Thomas Lawrence, Lady Maria Conyngham (died 1843), ca. 1824-25, The Metropolitan Museum of Art, 55.89",
+  "license": "public domain (Metropolitan Museum Open Access); the exact image download URL was not logged when the file was fetched on Oct 16, 2026"
  }
 }

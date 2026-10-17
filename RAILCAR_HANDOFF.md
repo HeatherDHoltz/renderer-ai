@@ -65,7 +65,7 @@ import export; export.run()           # bakes + writes workbench/assets/railcar/
 Long operations must be run from `bpy.app.timers` when driven through MCP (calls time out at 60 s).
 Progress log: `output/railcar/export-log.txt`. Renders for review: `output/railcar/renders/`.
 
-### Export (`export.py`)
+### Export (`export.py`) — superseded on Oct 17 by manifest v2, see "Full-resolution materials" below
 - Classifies objects into **desk / furnishings / architecture** groups; glassware (transmissive materials)
   → `railcar-glass.glb`; painting canvases → `railcar-paintings.glb` (full-res images); flames, window panes
   and the case stand-ins are skipped.
@@ -178,13 +178,54 @@ Next steps, in order:
   `dist/`, which it builds only at startup: run `npm run build --prefix workbench` after editing `src/`.**
 - FPS not re-measured after the glass change (same draw calls).
 
+- **Full-resolution materials + baked light only (Oct 17, manifest v2).** Heather found the browser car
+  blurry and glitchy next to the Cycles renders. Measured causes: the old export's 4096 colour atlases used
+  only 4% (furnishings) / 10% (architecture) of their area — ~14 mm per texel, 2 px per book spine — and
+  ~2.3 m² of visible same-plane, same-facing faces z-fought (window casings vs pier stiles, bookcase backs vs
+  sides, desk plinth vs gilt band...).
+  - `export.py` rewrite: `resolve_coplanar()` deletes a face wholly covered by a coplanar same-facing face of
+    another object and pushes partial overlaps back 1 mm (1,560 deleted, 1,074 pushed). Groups are split into
+    one mesh per Blender material (`<group>|<material>` node names). Lighting is baked to a separately packed
+    "LightUV" (coverage desk 0.71, furnishings 0.33, architecture 0.35; 4096 maps for the room, 2048 desk),
+    stored RGBM in lossless WebP. Surfaces are not baked: materials tagged with a recipe in `mats.runtime()`
+    (box-projected Poly Haven textures, gilt, metals, damask, art glass, book bindings) ship their recipe and
+    source textures; UV-mapped materials (Poly Haven furniture, carpet, desk leather, dial, globe, labels) are
+    baked onto their own UVs at up to 2 px/mm (colour, ORM, tangent normal); leftovers go to a small atlas.
+    Full export ~31 min (run from a `bpy.app.timers` job). Window panes now export as `railcar-windows.glb`.
+  - `src/railcar-materials.js` rebuilds each recipe in the shader (Cycles BOX projection, noise, damask mask,
+    leaded glass, bindings palette/bands) with RGBM light/emission. Bug found + fixed: the shared lightmap
+    texture's UV `channel` was being overwritten per material — clones per channel now.
+  - Room reflections: one 512 cube capture of the car at load (PMREM) replaces the studio probe on car
+    materials and glass, box-projected against the car's walls (parallax-corrected). Mirrors, brass and the new
+    window glazing now reflect the room; the panes show the sconce pairs and frieze like r13. Varnish/cloth get
+    0.35 of the probe (`?varnish=`), metals 1.0 (`?probe=`). Clearcoat and sheen live glints are scaled with the
+    rest (that clearcoat lobe was the returning pier "blob").
+  - Forest: the Cycles world HDRI (Poly Haven `sunset_forest`, rotation 200°, strength 0.55) as the backdrop
+    by view direction (`railcar-sky.webp`), sun clamped, plus two rows of out-of-focus trunks/boughs streaming
+    past for motion.
+  - Ambience: dual-filter bloom on lamps/bulbs/fire (`src/bloom.js`, `?bloom=`, default 0.05), fine film grain
+    in the post pass, optional synthesized soundscape (`src/ambience.js`: rumble, rail-joint clicks, fire
+    crackle; header "Sound off/on", off by default).
+  - Website: loading screen shows the blurred Cycles still (`assets/railcar/poster.jpg`) with a % from the
+    loaders, then fades to the live car; phones / no-WebGL2 get the still with "Open the interactive car anyway"
+    (`?static`, `?interactive`). Copy updated to the 1890 railcar with correct credits; the Lawrence portrait's
+    provenance added to `paintings/SOURCES.json` (Met 55.89; exact download URL was not logged).
+  - Tools: `workbench/scripts/measure-fps.mjs` (Chrome on Metal, 3456×2060 canvas; idle/orbit/case/loupe),
+    `workbench/scripts/capture.mjs` (full-res screenshots; `WHEEL`, `DRAG`, `EVAL` env). `?debug` exposes
+    `globalThis.__railcar`. Close the desktop preview pane while measuring — it competes for the GPU.
+  - FPS (same script, pane closed): previous commit idle 30 / orbit 33.7 / case 30 / loupe 30 / loupe drag ~18;
+    now idle 30 / orbit 32.5 (min 30.5) / case 30 (27.5 during the opening animation) / loupe 30 / loupe drag
+    ~20. With the car hidden entirely orbit is ~34, so the room is no longer the bottleneck. The earlier
+    "orbit 37–40, loupe drag 60" figures came from a different drag method and are not comparable.
+  - Shipped size: `dist/` ~183 MB, of which the car export is ~138 MB (textures 57 MB, GLBs 33 MB, lightmaps
+    31 MB). Loads in ~4.5 s locally.
+
 **Next**
-1. Cases polish (optional, Heather approved them as is): the lid mirror reads flat pale white rather than
-   aged glass; a light haze over the bottom of the inspection view; outer tray clips at narrow aspects.
-2. Forest outside the windows is procedural wavy bands; it reads nothing like r12's photographic forest.
-3. Desk brass (inkstand gallery and lids, lamp) reads pale and near-white next to r13's dark brass. Likely
-   the metals reflect the neutral studio probe (`surfaces.environment`, 0.55) instead of the car; a baked
-   room probe for the room metals is the probable fix. Not investigated.
-4. Real-display check on the 120 Hz panel (headless runs at 60 Hz vsync).
-5. Remaining original steps: verify hearth position; provenance for the generated textures (carpet, dial,
-   globe tint, ledger, labels, damask) in a manifest.
+1. Download size for the public site: GLBs could use meshopt/Draco (needs a decoder in `vendor/`), and
+   textures KTX2/Basis; ask Heather before lowering any texture or lightmap resolution.
+2. Loupe drag runs ~20 fps in the headless measurement (same as before this work) — profile the loupe path.
+3. Real-display check on the 120 Hz panel; a pass in Safari.
+4. Cases polish (optional, Heather approved them as is): lid mirror reads flat; light haze at the bottom of the
+   inspection view; outer tray clips at narrow aspects.
+5. Verify hearth position; provenance manifest for the generated textures (carpet, dial, globe tint, ledger,
+   labels, damask). Hosting (GitHub Pages or other) is Heather's call — nothing is published yet.

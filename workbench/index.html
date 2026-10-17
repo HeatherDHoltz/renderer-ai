@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#f6f4ed" />
     <meta
       name="description"
-      content="An after-hours jeweler’s study, circa 1905, by Heather Holtz. Turn the jewelry, move the light, and examine gemstones through a 3D loupe."
+      content="An after-hours jeweler’s desk aboard a private railcar, 1890, by Heather Holtz. Turn the jewelry, move the light, and examine gemstones through a 3D loupe while the forest slips past."
     />
     <title>The Little Jeweler · Heather Holtz</title>
     <link
@@ -42,6 +42,8 @@
           aria-controls="cabinet"
         >
           ◇ &nbsp; Bench controls</button
+        ><button type="button" id="toggle-sound" aria-pressed="false">
+          Sound off</button
         ><button type="button" id="open-notes">
           Render journal <span aria-hidden="true">↗</span></button
         ><a
@@ -52,11 +54,11 @@
           >GitHub ↗</a
         >
       </nav>
-      <span class="header-note">After hours, circa 1905.</span>
+      <span class="header-note">After hours, 1890.</span>
     </header>
     <main>
       <h1 class="sr-only" id="page-title">
-        The Little Jeweler — a jeweler’s study, circa 1905
+        The Little Jeweler — a jeweler’s private railcar, 1890
       </h1>
       <section
         class="workspace"
@@ -101,7 +103,16 @@
             ></div>
             <div id="object-hint" class="object-hint" hidden></div>
             <div class="loading" id="loading">
+              <img class="loading-poster" src="./assets/railcar/poster.jpg" alt="" />
               <span class="loading-gem">◇</span><span>Setting the stone…</span>
+              <span class="loading-progress" id="loading-progress" aria-live="polite"></span>
+              <div class="static-note" id="static-note" hidden>
+                <p>
+                  This is a still from the Cycles render. The interactive car is
+                  large and made for a laptop or desktop graphics card.
+                </p>
+                <button type="button" id="open-interactive">Open the interactive car anyway</button>
+              </div>
             </div>
             <div class="render-error" id="render-error" hidden>
               <h2>The bench couldn’t open.</h2>
@@ -479,14 +490,16 @@
           appearance studies.
         </p>
         <p>
-          The circa-1905 study is project-modeled in Blender, with Cycles-baked
-          fixed lighting. Jewelry, velvet cases, examination light and loupe
-          remain live. Photographed velvet and HDR panoramas are credited to
-          Poly Haven. The seamless solitaire setting and live gemstone cuts are
-          project-created. A photographed CC0 antique clock, shell and brass
-          vase retain their original PBR materials. The mantel painting is
-          William Trost Richards’ public-domain 1874 landscape, from the Met’s
-          Open Access collection.
+          The 1890 private railcar is project-modeled in Blender. Its lighting
+          is baked in Cycles; every surface is shaded live from its
+          full-resolution source textures. Jewelry, cantilever cases,
+          examination light and loupe remain live. Wood veneers, velvet,
+          leather, jacquard, marble, the armchairs, settee, gasoliers, desk
+          chair, microscope and pocket watch, and the Sunset Forest panorama
+          outside the windows are CC0 assets from Poly Haven. The paintings are
+          public-domain works from the Met’s Open Access collection (Church,
+          Bierstadt, Lawrence, Sargent); the globe uses NASA’s Blue Marble.
+          The carpet, clock dial, ledger, labels and damask are project-made.
           <a
             href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/GEM-COLOR.md"
             target="_blank"

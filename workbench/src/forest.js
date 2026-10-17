@@ -1,64 +1,109 @@
 import * as THREE from "../vendor/three.module.js";
 
-// A dusk forest streaming past both rows of windows. Procedural (no textures),
-// four layers moving at different speeds for depth: sky, distant ridge,
-// conifer stands, and close trunks that blur past. One cheap fragment shader
-// per side; drawn only where the window openings expose it.
-const VERT = `varying vec3 vWorld;void main(){vec4 w=modelMatrix*vec4(position,1.);vWorld=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`;
-const FRAG = `precision highp float;
-uniform float time;uniform float side;uniform float floorY;varying vec3 vWorld;
-float h1(float n){return fract(sin(n*127.1)*43758.5453);}
-float n1(float x){float i=floor(x),f=fract(x);f=f*f*(3.-2.*f);return mix(h1(i),h1(i+1.),f);}
-float ridge(float x){return n1(x)*.6+n1(x*2.3+7.)*.3+n1(x*5.1+3.)*.1;}
-// conifer stand: one tree per cell, soft-edged triangle crown + trunk (anti-aliased with fwidth)
-float conifers(vec2 p,float cell,float minH,float maxH,float seed){
-  float c=floor(p.x/cell),fx=fract(p.x/cell)-.5;
-  float r=h1(c+seed);if(r<.06)return 0.;
-  float hgt=mix(minH,maxH,h1(c*1.7+seed));
-  fx-=(h1(c*3.1+seed)-.5)*.35;
-  float y=p.y/cell;
-  float aa=max(fwidth(p.x/cell),fwidth(y))*1.5+.004;
-  float halfW=max(0.,(hgt-y)/hgt)*(.42+.05*sin(y*9.+c));
-  float crown=smoothstep(halfW+aa,halfW-aa,abs(fx))*smoothstep(.15*hgt-aa,.15*hgt+aa,y)*smoothstep(hgt+aa,hgt-aa,y);
-  float trunk=smoothstep(.04+aa,.04-aa,abs(fx))*smoothstep(hgt*.3+aa,hgt*.3-aa,y);
-  return max(crown,trunk);
+// The dusk forest outside both rows of windows.
+//
+// Backdrop: the same Poly Haven "sunset_forest" HDRI (CC0) the Cycles renders
+// see through the glass, looked up by view direction exactly as Blender's
+// world does (Environment Texture, Mapping rotation Z 200°, strength 0.55).
+// The train moves along the car's x axis, so on top of the distant photo two
+// layers of out-of-focus trunks and boughs stream past at different speeds;
+// the nearest ones catch the warm light spilling from the car's own windows.
+const VERT = /* glsl */ `
+varying vec3 vWorld;
+void main() {
+  vec4 w = modelMatrix * vec4(position, 1.0);
+  vWorld = w.xyz;
+  gl_Position = projectionMatrix * viewMatrix * w;
+}`;
+
+const FRAG = /* glsl */ `
+precision highp float;
+uniform sampler2D sky;
+uniform float rgbm;
+uniform float time;
+uniform float side;
+uniform float floorY;
+uniform float strength;
+uniform float yaw;
+varying vec3 vWorld;
+#define PI 3.14159265
+float h1(float n) { return fract(sin(n * 127.1) * 43758.5453); }
+float n1(float x) { float i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f); return mix(h1(i), h1(i + 1.0), f); }
+vec3 backdrop(vec3 d, float lod) {
+  // app -> Blender, then the world Mapping node's Z rotation.
+  vec3 b = vec3(d.x, -d.z, d.y);
+  float c = cos(yaw), s = sin(yaw);
+  b = vec3(c * b.x - s * b.y, s * b.x + c * b.y, b.z);
+  vec2 uv = vec2(0.5 - atan(b.y, b.x) / (2.0 * PI), 0.5 + asin(clamp(b.z, -1.0, 1.0)) / PI);
+  vec4 t = textureLod(sky, uv, lod);
+  // The panorama's sun is far brighter than anything Cycles shows through the
+  // glazing here; clamp it so it does not bloom into a streak.
+  return min(t.rgb * t.a * rgbm, vec3(3.0));
 }
-void main(){
-  float t=time;
-  float x=vWorld.x*side;
-  float y=vWorld.y-floorY;           // height above the car floor, 10 cm units
-  // sky: deep blue overhead warming to an amber horizon
-  float hz=clamp((y-6.)/26.,0.,1.);
-  vec3 col=mix(vec3(.62,.36,.20),vec3(.05,.08,.17),pow(hz,.6));
-  col+=vec3(.25,.12,.05)*exp(-pow((y-4.)/5.,2.));   // afterglow band
-  // distant ridge (slow)
-  float r=ridge((x+t*1.5)*.012)*9.+2.;
-  col=mix(col,vec3(.08,.10,.13),step(y,r));
-  // dense forest wall below an uneven treeline (dusk: mostly silhouette)
-  float tl=12.+7.*ridge((x+t*10.)*.07)+3.*n1((x+t*10.)*.4);
-  float wall=smoothstep(tl+.6,tl-.6,y);
-  float leaf=n1((x+t*10.)*1.3+y*.7)*.5+n1((x+t*10.)*3.7-y*1.9)*.5;
-  col=mix(col,mix(vec3(.025,.04,.035),vec3(.06,.08,.06),leaf),wall);
-  // far conifers (medium)
-  float far=conifers(vec2(x+t*10.,y),2.4,6.,10.,11.);
-  col=mix(col,vec3(.035,.055,.05),far);
-  // near conifers (fast)
-  float mid=conifers(vec2(x+t*24.,y+2.),4.5,5.,7.5,37.);
-  col=mix(col,vec3(.018,.028,.022),mid);
-  // trunks right beside the track: very fast, softened (motion blur)
-  float u=(x+t*70.)/14.;float c=floor(u),f=fract(u);
-  float present=step(.55,h1(c+91.));
-  float w=.08+.06*h1(c+5.);
-  float trunk=present*smoothstep(w+.06,w-.02,abs(f-.5));
-  col=mix(col,vec3(.012,.012,.011),trunk*.85);
-  // ground and embankment
-  col=mix(col,vec3(.03,.035,.025),smoothstep(5.,-2.,y));
-  gl_FragColor=vec4(col*.42,1.);
+// A row of trunks with boughs, blurred by distance (out of focus) and motion.
+// x: position along the track (already scrolled), y: height above rail, cell: spacing.
+float trunks(float x, float y, float cell, float blur, float seed, out float lit) {
+  float u = x / cell;
+  float c = floor(u);
+  float f = fract(u) - 0.5;
+  float a = 0.0;
+  lit = 0.0;
+  for (int k = -1; k <= 1; k++) {
+    float id = c + float(k);
+    if (h1(id + seed) < 0.35) continue;
+    float off = (h1(id * 1.7 + seed) - 0.5) * 0.6;
+    float fx = (f - float(k) - off) * cell;
+    float w = mix(0.35, 1.1, h1(id * 2.3 + seed));
+    float trunk = 1.0 - smoothstep(w - blur, w + blur, abs(fx + 0.15 * sin(y * 0.11 + id)));
+    // low boughs: sagging horizontal fans from the upper trunk
+    float bough = 0.0;
+    for (int j = 0; j < 4; j++) {
+      float by = 14.0 + float(j) * 6.0 + h1(id * 3.1 + float(j) + seed) * 4.0;
+      float len = mix(3.0, 8.0, h1(id + float(j) * 7.7 + seed));
+      float dy = y - by + 0.04 * fx * fx;
+      float reach = 1.0 - smoothstep(len - blur * 2.0, len + blur * 2.0, abs(fx));
+      float thick = 1.0 - smoothstep(0.6 - blur, 0.6 + blur + 0.8 * abs(fx) / len, abs(dy));
+      float needles = 0.65 + 0.35 * n1(fx * 1.7 + y * 2.3 + id * 9.0);
+      bough = max(bough, reach * thick * needles * step(0.3, h1(id * 5.3 + float(j))));
+    }
+    float m = max(trunk, bough * 0.92);
+    if (m > a) {
+      a = m;
+      lit = trunk;
+    }
+  }
+  return a;
+}
+void main() {
+  vec3 d = normalize(vWorld - cameraPosition);
+  float t = time;
+  float x = vWorld.x * side;
+  float y = vWorld.y - floorY;
+  // Distant photo, very slowly drifting (it is far away); slightly soft.
+  vec3 col = backdrop(d, 0.6) * strength;
+  // Haze between the backdrop and the near trees.
+  vec3 haze = vec3(0.10, 0.075, 0.06) * strength;
+  // Middle row: ~6 m out, 16 m/s (soft).
+  float litM;
+  float mid = trunks(x + t * 38.0, y + 4.0, 26.0, 1.6, 11.0, litM);
+  col = mix(col, mix(col, haze, 0.5) * 0.35, mid * 0.85);
+  // Near row: just beside the track, fast and well out of focus.
+  float litN;
+  float nearT = trunks(x + t * 110.0, y + 2.0, 42.0, 3.2, 37.0, litN);
+  vec3 bark = vec3(0.012, 0.010, 0.009);
+  // warm spill from the lit windows of the car, strongest at window height
+  // (a faint warm edge only: a lit trunk frozen in a still reads as a smudge)
+  float spill = exp(-pow((y - 12.0) / 9.0, 2.0)) * litN * (1.0 - nearT);
+  bark += vec3(0.05, 0.026, 0.011) * spill * strength;
+  col = mix(col, bark, nearT * 0.94);
+  // ground cutting and ballast below the sills
+  col = mix(col, vec3(0.012, 0.012, 0.010), smoothstep(6.0, -2.0, y));
+  gl_FragColor = vec4(col, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
 
-export function createForest(scene, room) {
+export function createForest(scene, room, sky, rgbm) {
   const floorY = room?.floor ?? -9;
   const back = room?.back_wall_z ?? -11;
   const front = room?.front_wall_z ?? 28;
@@ -69,7 +114,15 @@ export function createForest(scene, room) {
     [front + 9, -1, Math.PI],
   ]) {
     const mat = new THREE.ShaderMaterial({
-      uniforms: { time: uniforms.time, side: { value: side }, floorY: { value: floorY } },
+      uniforms: {
+        time: uniforms.time,
+        side: { value: side },
+        floorY: { value: floorY },
+        sky: { value: sky },
+        rgbm: { value: rgbm },
+        strength: { value: 0.55 },
+        yaw: { value: THREE.MathUtils.degToRad(200) },
+      },
       vertexShader: VERT,
       fragmentShader: FRAG,
       fog: false,

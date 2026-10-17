@@ -1,14 +1,14 @@
 import * as THREE from "../vendor/three.module.js";
 import { GLTFLoader } from "../vendor/addons/loaders/GLTFLoader.js";
-import { HDRLoader } from "../vendor/addons/loaders/HDRLoader.js";
 import { createHearth } from "./hearth.js";
 import { createForest } from "./forest.js";
+import { railcarMaterial, boxProjection } from "./railcar-materials.js";
 
-// The 1890 private railcar. Everything static is baked in Cycles
-// (workbench/scripts/railcar/export.py): a colour atlas in each GLB plus a
-// denoised irradiance lightmap and an emission map per group. At runtime the
-// whole car is ~40 lightmapped draw calls, so the frame budget stays with the
-// live jewellery, the fire volume and the moving forest outside.
+// The 1890 private railcar (workbench/scripts/railcar/export.py, manifest v2).
+// Light is baked in Cycles: a denoised irradiance lightmap and an emission map
+// per group, RGBM-encoded. Surfaces are not: each mesh is one Blender material,
+// shaded from its source textures at full resolution (railcar-materials.js),
+// so wood grain, damask, carpet and book spines stay as crisp as the renders.
 const BASE = "../assets/railcar/export/";
 const url = (name) => new URL(BASE + name, import.meta.url).href;
 const GROUPS = ["architecture", "furnishings", "desk"];
@@ -27,6 +27,10 @@ export const LIGHTMAP_INTENSITY = tuning("lm", 0.7);
 // ?env= reflection probe on the baked dielectrics. The probe is a neutral
 // studio, not the dark car, so it is kept to a faint polish.
 const ROOM_ENV = tuning("env", 0.08);
+// ?probe= strength of the room's own reflection probe on car materials.
+const ROOM_PROBE = tuning("probe", 1.0);
+// ?varnish= share of the probe on non-metals (varnish, cloth, paper).
+const ROOM_DIELECTRIC = tuning("varnish", 0.35);
 // ?spec= live-light glints on the car away from the desk. The jewellery lights
 // are aimed at the desk; at full strength they streak the velvet curtains and
 // wainscot far more than Cycles does. The desk keeps full glints. The walls
@@ -35,12 +39,15 @@ const ROOM_ENV = tuning("env", 0.08);
 const ROOM_SPECULAR = tuning("spec", 0.3);
 const WALL_SPECULAR = tuning("wallspec", 0);
 
-function hdr(loader, name) {
+function dataTexture(loader, name) {
   return loader.loadAsync(url(name)).then((t) => {
+    // Baked on glTF UVs: no flip, no colour transform, no mip blending
+    // across the packed islands.
     t.flipY = false;
-    t.channel = 0;
-    t.mapping = THREE.UVMapping;
-    t.colorSpace = THREE.LinearSRGBColorSpace;
+    t.colorSpace = THREE.NoColorSpace;
+    t.generateMipmaps = false;
+    t.minFilter = THREE.LinearFilter;
+    t.magFilter = THREE.LinearFilter;
     return t;
   });
 }
@@ -98,66 +105,93 @@ function glassMaterial(source) {
   return material;
 }
 
-export async function buildWorkshop(scene, surfaces, renderer) {
+export async function buildWorkshop(scene, surfaces, renderer, host) {
+  // Loading progress for the poster screen (GLTF + texture loaders share it).
+  THREE.DefaultLoadingManager.onProgress = (_url, loaded, total) =>
+    host?.dispatchEvent(new CustomEvent("loadprogress", { detail: { loaded, total } }));
   const gltf = new GLTFLoader();
-  const hdrLoader = new HDRLoader();
+  const images = new THREE.TextureLoader();
   const manifest = await fetch(url("railcar-manifest.json")).then((r) => r.json());
-  const [groups, glass, paintings] = await Promise.all([
+  const [groups, glass, paintings, sky, windows] = await Promise.all([
     Promise.all(
       GROUPS.map(async (g) => {
+        const info = manifest.groups[g];
         const [asset, light, emit] = await Promise.all([
-          gltf.loadAsync(url(`railcar-${g}.glb`)),
-          hdr(hdrLoader, `railcar-${g}-light.hdr`),
-          hdr(hdrLoader, `railcar-${g}-emit.hdr`),
+          gltf.loadAsync(url(info.file)),
+          dataTexture(images, info.light),
+          dataTexture(images, info.emit),
         ]);
-        return { g, asset, light, emit };
+        return { g, info, asset, light, emit };
       }),
     ),
     gltf.loadAsync(url("railcar-glass.glb")),
     gltf.loadAsync(url("railcar-paintings.glb")),
+    images.loadAsync(url(manifest.sky)).then((t) => {
+      t.colorSpace = THREE.NoColorSpace;
+      t.wrapS = THREE.RepeatWrapping;
+      return t;
+    }),
+    manifest.windows ? gltf.loadAsync(url(manifest.windows.file)) : null,
   ]);
   const roomMaterials = new Set();
+  const deskMaterials = new Set();
   const textures = [];
+  const cache = new Map();
   const maxAniso = renderer.capabilities.getMaxAnisotropy();
   const car = new THREE.Group();
-  car.name = "1890 private railcar — Cycles baked lighting";
-  for (const { g, asset, light, emit } of groups) {
+  car.name = "1890 private railcar — Cycles baked light, full-resolution materials";
+  const room = manifest.room;
+  const PROBE_AT = new THREE.Vector3(0, 2.2, 7);
+  const box = boxProjection(
+    PROBE_AT,
+    new THREE.Vector3(room.x[0], room.floor, room.back_wall_z),
+    new THREE.Vector3(room.x[1], room.ceiling, room.front_wall_z),
+  );
+  for (const { g, info, asset, light, emit } of groups) {
     textures.push(light, emit);
-    const specular = g === "desk" ? 1 : g === "architecture" ? WALL_SPECULAR : ROOM_SPECULAR;
-    asset.scene.traverse((o) => {
-      if (!o.isMesh) return;
-      const m = o.material;
-      m.lightMap = light;
-      m.lightMapIntensity = LIGHTMAP_INTENSITY;
-      m.emissive.set("#ffffff");
-      m.emissiveMap = emit;
-      m.emissiveIntensity = 1;
-      // Metals and polish read through the reflection probe; diffuse light is baked.
+    const ctx = {
+      base: new URL(BASE, import.meta.url).href,
+      loader: images,
+      cache,
+      aniso: maxAniso,
+      light,
+      emit,
+      rgbm: manifest.rgbmRange,
+      lightIntensity: LIGHTMAP_INTENSITY,
       // Bind the probe explicitly: with scene.environment alone, three replaces
       // envMapIntensity by scene.environmentIntensity (0.55) on every material.
-      m.envMap = surfaces.environment.texture;
-      m.envMapIntensity = m.metalness > 0.5 ? 0.55 : ROOM_ENV;
-      m.side = g === "architecture" ? THREE.DoubleSide : THREE.FrontSide;
+      envMap: surfaces.environment.texture,
+      metalEnv: 0.55,
+      roomEnv: ROOM_ENV,
       // Diffuse light is already in the bake: live lights may add glints
       // (specular) but must not light the room a second time.
-      m.onBeforeCompile = (shader) => {
-        shader.fragmentShader = shader.fragmentShader.replace(
-          "#include <lights_fragment_end>",
-          // Env diffuse (iblIrradiance) is also already in the bake.
-          "iblIrradiance = vec3(0.0);\n#include <lights_fragment_end>\n  reflectedLight.directDiffuse = vec3(0.0);\n" +
-            `  reflectedLight.directSpecular *= ${specular.toFixed(3)};`,
-        );
-      };
-      m.customProgramCacheKey = () => `railcar-baked-v3-${specular}`;
-      if (m.map) m.map.anisotropy = maxAniso;
+      specular: g === "desk" ? 1 : g === "architecture" ? WALL_SPECULAR : ROOM_SPECULAR,
+      box,
+    };
+    const made = new Map();
+    asset.scene.traverse((o) => {
+      if (!o.isMesh) return;
+      const full = o.userData.name || o.parent?.userData.name || o.name;
+      const matName = full.slice(full.indexOf("|") + 1);
+      const spec = info.materials[matName];
+      if (!spec) {
+        console.warn("railcar: no material recipe for", full);
+        return;
+      }
+      if (!made.has(matName)) made.set(matName, railcarMaterial(matName, spec, ctx));
+      o.material?.dispose?.();
+      o.material = made.get(matName);
+      o.material.side = g === "architecture" ? THREE.DoubleSide : THREE.FrontSide;
       o.castShadow = false;
       o.receiveShadow = g === "desk";
       o.matrixAutoUpdate = false;
       o.updateMatrix();
-      roomMaterials.add(m);
+      roomMaterials.add(o.material);
+      if (g === "desk") deskMaterials.add(o.material);
     });
     car.add(asset.scene);
   }
+  for (const t of cache.values()) textures.push(t);
   glass.scene.traverse((o) => {
     if (o.isMesh) {
       const old = o.material;
@@ -168,6 +202,17 @@ export async function buildWorkshop(scene, surfaces, renderer) {
     }
   });
   car.add(glass.scene);
+  // Window glazing: reflection-only glass, so the sconces and the warm room
+  // show faintly in the panes over the forest, as in the Cycles renders.
+  windows?.scene.traverse((o) => {
+    if (o.isMesh) {
+      const old = o.material;
+      o.material = glassMaterial(old);
+      old.dispose();
+      o.renderOrder = 2;
+    }
+  });
+  if (windows) car.add(windows.scene);
   paintings.scene.traverse((o) => {
     if (o.isMesh && o.material.map) {
       const map = o.material.map;
@@ -181,7 +226,8 @@ export async function buildWorkshop(scene, surfaces, renderer) {
   car.add(paintings.scene);
   scene.add(car);
 
-  const forest = createForest(scene, manifest.room);
+  textures.push(sky);
+  const forest = createForest(scene, manifest.room, sky, manifest.rgbmRange);
 
   // Velvet working pad under the ring (live object, unchanged).
   const padMaterial = surfaces.velvet.clone();
@@ -241,6 +287,44 @@ export async function buildWorkshop(scene, surfaces, renderer) {
     props: false,
   });
 
+  // Room probe: the car's own reflections. The studio probe (for the jewellery)
+  // made mirrors, brass and varnish reflect a bright neutral studio; Cycles
+  // reflects the dark panelled room. One cube capture at load from the middle
+  // of the car, prefiltered for roughness, replaces it on every car material.
+  const probeTarget = new THREE.WebGLCubeRenderTarget(512, { type: THREE.HalfFloatType });
+  const probe = new THREE.CubeCamera(0.1, 120, probeTarget);
+  probe.position.copy(PROBE_AT);
+  scene.add(probe);
+  probe.update(renderer, scene);
+  scene.remove(probe);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const roomProbe = pmrem.fromCubemap(probeTarget.texture).texture;
+  pmrem.dispose();
+  probeTarget.dispose();
+  textures.push(roomProbe);
+  // Metals, mirrors and gilt reflect it fully; for varnish and cloth a
+  // single-point probe over-reflects (no parallax, no occlusion), so less.
+  for (const m of roomMaterials) {
+    m.envMap = roomProbe;
+    m.envMapIntensity = (m.metalness > 0.5 || m.userData.metallic ? 1 : ROOM_DIELECTRIC) * ROOM_PROBE;
+  }
+  car.traverse((o) => {
+    if (o.isMesh && o.renderOrder === 2 && o.material.envMap !== undefined) {
+      const m = o.material;
+      m.envMap = roomProbe;
+      m.envMapIntensity = m.envMapIntensity > 1 ? 1.4 : 1;
+      const previous = m.onBeforeCompile;
+      m.onBeforeCompile = (shader, r) => {
+        previous.call(m, shader, r);
+        box.patch(shader);
+      };
+      const key = m.customProgramCacheKey.bind(m);
+      m.customProgramCacheKey = () => key() + "|box";
+      m.needsUpdate = true;
+    }
+  });
+
+  if (new URLSearchParams(globalThis.location?.search || "").has("debug")) globalThis.__railcar = { car, scene, renderer };
   const focusTargets = new THREE.Group();
   scene.add(focusTargets);
   focusTargets.attach(car);
@@ -250,7 +334,7 @@ export async function buildWorkshop(scene, surfaces, renderer) {
     focusTargets,
     room: manifest.room,
     needsAnimation: (camera) => hearth.needsAnimation(camera) || forest.needsAnimation(camera),
-    causticReceivers: [mat.material, ...roomMaterials],
+    causticReceivers: [mat.material, ...deskMaterials],
     animate(t, motion) {
       hearth.animate(t, motion);
       forest.animate(t, motion);

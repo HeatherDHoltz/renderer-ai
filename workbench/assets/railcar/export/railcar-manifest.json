@@ -1,29 +1,12 @@
 {
- "groups": {
-  "desk": {
-   "faces": 47868,
-   "materials": 7,
-   "file": "railcar-desk.glb",
-   "light": "railcar-desk-light.hdr",
-   "emit": "railcar-desk-emit.hdr"
-  },
-  "furnishings": {
-   "faces": 237580,
-   "materials": 8,
-   "file": "railcar-furnishings.glb",
-   "light": "railcar-furnishings-light.hdr",
-   "emit": "railcar-furnishings-emit.hdr"
-  },
-  "architecture": {
-   "faces": 128724,
-   "materials": 5,
-   "file": "railcar-architecture.glb",
-   "light": "railcar-architecture-light.hdr",
-   "emit": "railcar-architecture-emit.hdr"
-  }
- },
+ "version": 2,
  "units": "1 unit = 10 cm; app coords (x, y-up, z)",
- "fire": null,
+ "rgbmRange": 16.0,
+ "fire": [
+  -25.0,
+  -7.0,
+  8.5
+ ],
  "room": {
   "x": [
    -26.0,
@@ -34,6 +17,1451 @@
   "front_wall_z": 28.0,
   "ceiling": 20.299999999999997
  },
+ "groups": {
+  "desk": {
+   "faces": 47765,
+   "meshes": 23,
+   "file": "railcar-desk.glb",
+   "light": "railcar-desk-light.webp",
+   "emit": "railcar-desk-emit.webp",
+   "materials": {
+    "vintage_pocket_watch_hands": {
+     "kind": "plain",
+     "color": [
+      0.0028,
+      0.0028,
+      0.0028
+     ],
+     "roughness": 0.282,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 1.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc mahogany": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.09,
+     "maps": {
+      "color": "tex/sapele_veneer_diff_2k.jpg",
+      "rough": "tex/sapele_veneer_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/sapele_veneer_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.62,
+      0.3,
+      0.2
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 0.8,
+     "roughAdd": 0.0,
+     "coat": 0.55,
+     "coatRough": 0.14,
+     "normalStrength": 0.4,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc water gilt": {
+     "kind": "gilt",
+     "noise": 6,
+     "dark": [
+      0.55,
+      0.36,
+      0.11
+     ],
+     "light": [
+      0.95,
+      0.7,
+      0.3
+     ],
+     "rough": [
+      0.42,
+      0.16
+     ],
+     "uv": 0
+    },
+    "rc tooled green leather": {
+     "kind": "uvbake",
+     "size": 4096,
+     "color": "tex/desk-rc-tooled-green-leather-color.jpg",
+     "orm": "tex/desk-rc-tooled-green-leather-orm.jpg",
+     "normal": "tex/desk-rc-tooled-green-leather-normal.jpg",
+     "sheen": 0.25,
+     "coat": 0.2,
+     "uv": 1
+    },
+    "rc mahogany dark": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.09,
+     "maps": {
+      "color": "tex/sapele_veneer_diff_2k.jpg",
+      "rough": "tex/sapele_veneer_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/sapele_veneer_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.36,
+      0.15,
+      0.1
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 0.8,
+     "roughAdd": 0.0,
+     "coat": 0.5,
+     "coatRough": 0.16,
+     "normalStrength": 0.4,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc rosewood panel": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.07,
+     "maps": {
+      "color": "tex/rosewood_veneer1_diff_2k.jpg",
+      "rough": "tex/rosewood_veneer1_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/rosewood_veneer1_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.75,
+      0.42,
+      0.32
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 0.7,
+     "roughAdd": 0.0,
+     "coat": 0.6,
+     "coatRough": 0.1,
+     "normalStrength": 0.3,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc polished brass": {
+     "kind": "metal",
+     "color": [
+      0.86,
+      0.62,
+      0.3
+     ],
+     "rough": 0.1,
+     "noise": 40,
+     "noiseAmount": 0.12,
+     "uv": 0
+    },
+    "rc satinwood stringing": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.2,
+     "maps": {
+      "color": "tex/white_maple_veneer_diff_2k.jpg",
+      "rough": "tex/white_maple_veneer_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/white_maple_veneer_nor_gl_2k.jpg"
+     },
+     "tint": [
+      1.0,
+      0.72,
+      0.38
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 1.0,
+     "roughAdd": 0.0,
+     "coat": 0.6,
+     "coatRough": 0.1,
+     "normalStrength": 1.0,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc green cased glass": {
+     "kind": "plain",
+     "color": [
+      0.05,
+      0.28,
+      0.12
+     ],
+     "roughness": 0.15,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 1.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc opal glass lining": {
+     "kind": "plain",
+     "color": [
+      0.95,
+      0.92,
+      0.84
+     ],
+     "roughness": 0.5,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": [
+      3.0,
+      2.55,
+      1.8
+     ],
+     "uv": 0
+    },
+    "rc blackened iron": {
+     "kind": "metal",
+     "color": [
+      0.05,
+      0.05,
+      0.055
+     ],
+     "rough": 0.45,
+     "noise": 40,
+     "noiseAmount": 0.12,
+     "uv": 0
+    },
+    "rc emerald velvet": {
+     "kind": "box",
+     "space": "object",
+     "scale": 0.25,
+     "maps": {
+      "color": "tex/velour_velvet_diff_2k.jpg",
+      "rough": "tex/velour_velvet_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/velour_velvet_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.03,
+      0.16,
+      0.09
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 1.0,
+     "roughAdd": 0.2,
+     "coat": 0.0,
+     "coatRough": 0.1,
+     "normalStrength": 1.0,
+     "sheen": 1.0,
+     "sheenTint": [
+      0.6,
+      1.0,
+      0.75
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc japanned black": {
+     "kind": "plain",
+     "color": [
+      0.012,
+      0.01,
+      0.01
+     ],
+     "roughness": 0.12,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc ivory": {
+     "kind": "plain",
+     "color": [
+      0.78,
+      0.7,
+      0.55
+     ],
+     "roughness": 0.3,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc 18k gold": {
+     "kind": "metal",
+     "color": [
+      1.0,
+      0.76,
+      0.36
+     ],
+     "rough": 0.07,
+     "noise": 40,
+     "noiseAmount": 0.12,
+     "uv": 0
+    },
+    "rc paper white": {
+     "kind": "plain",
+     "color": [
+      0.88,
+      0.86,
+      0.8
+     ],
+     "roughness": 0.8,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc paper blue": {
+     "kind": "plain",
+     "color": [
+      0.36,
+      0.52,
+      0.8
+     ],
+     "roughness": 0.75,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc nickel plate": {
+     "kind": "metal",
+     "color": [
+      0.8,
+      0.78,
+      0.74
+     ],
+     "rough": 0.08,
+     "noise": 40,
+     "noiseAmount": 0.12,
+     "uv": 0
+    },
+    "rc oxblood leather": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.35,
+     "maps": {
+      "color": "tex/brown_leather_albedo_2k.jpg",
+      "rough": "tex/brown_leather_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/brown_leather_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.75,
+      0.42,
+      0.4
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 1.0,
+     "roughAdd": 0.0,
+     "coat": 0.25,
+     "coatRough": 0.35,
+     "normalStrength": 1.4,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc laid paper": {
+     "kind": "plain",
+     "color": [
+      0.8,
+      0.74,
+      0.6
+     ],
+     "roughness": 0.9,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc ledger pages": {
+     "kind": "uvbake",
+     "size": 512,
+     "color": "tex/desk-rc-ledger-pages-color.jpg",
+     "orm": "tex/desk-rc-ledger-pages-orm.jpg",
+     "normal": "tex/desk-rc-ledger-pages-normal.jpg",
+     "sheen": 0.0,
+     "coat": 0.0,
+     "uv": 1
+    },
+    "vintage_pocket_watch_glass": {
+     "kind": "plain",
+     "color": [
+      0.0542,
+      0.0542,
+      0.0542
+     ],
+     "roughness": 0.0,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "vintage_pocket_watch": {
+     "kind": "uvbake",
+     "size": 256,
+     "color": "tex/desk-vintage-pocket-watch-color.jpg",
+     "orm": "tex/desk-vintage-pocket-watch-orm.jpg",
+     "normal": "tex/desk-vintage-pocket-watch-normal.jpg",
+     "sheen": 0.0,
+     "coat": 0.0,
+     "uv": 1
+    }
+   },
+   "lightCoverage": 0.708
+  },
+  "furnishings": {
+   "faces": 237420,
+   "meshes": 46,
+   "file": "railcar-furnishings.glb",
+   "light": "railcar-furnishings-light.webp",
+   "emit": "railcar-furnishings-emit.webp",
+   "materials": {
+    "rc laid paper": {
+     "kind": "plain",
+     "color": [
+      0.8,
+      0.74,
+      0.6
+     ],
+     "roughness": 0.9,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc mahogany": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.09,
+     "maps": {
+      "color": "tex/sapele_veneer_diff_2k.jpg",
+      "rough": "tex/sapele_veneer_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/sapele_veneer_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.62,
+      0.3,
+      0.2
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 0.8,
+     "roughAdd": 0.0,
+     "coat": 0.55,
+     "coatRough": 0.14,
+     "normalStrength": 0.4,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc carrara marble": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.06,
+     "maps": {
+      "color": "tex/marble_01_diff_2k.jpg",
+      "rough": "tex/marble_01_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/marble_01_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.95,
+      0.9,
+      0.82
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 1.0,
+     "roughAdd": 0.0,
+     "coat": 0.4,
+     "coatRough": 0.08,
+     "normalStrength": 1.0,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc verde antico": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.06,
+     "maps": {
+      "color": "tex/marble_01_diff_2k.jpg",
+      "rough": "tex/marble_01_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/marble_01_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.08,
+      0.16,
+      0.12
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 1.0,
+     "roughAdd": 0.0,
+     "coat": 0.5,
+     "coatRough": 0.06,
+     "normalStrength": 1.0,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc water gilt": {
+     "kind": "gilt",
+     "noise": 6,
+     "dark": [
+      0.55,
+      0.36,
+      0.11
+     ],
+     "light": [
+      0.95,
+      0.7,
+      0.3
+     ],
+     "rough": [
+      0.42,
+      0.16
+     ],
+     "uv": 0
+    },
+    "rc blackened iron": {
+     "kind": "metal",
+     "color": [
+      0.05,
+      0.05,
+      0.055
+     ],
+     "rough": 0.45,
+     "noise": 40,
+     "noiseAmount": 0.12,
+     "uv": 0
+    },
+    "rc polished brass": {
+     "kind": "metal",
+     "color": [
+      0.86,
+      0.62,
+      0.3
+     ],
+     "rough": 0.1,
+     "noise": 40,
+     "noiseAmount": 0.12,
+     "uv": 0
+    },
+    "rc charred log": {
+     "kind": "atlas",
+     "color": "tex/furnishings-atlas-color.jpg",
+     "orm": "tex/furnishings-atlas-orm.jpg",
+     "size": 2048,
+     "uv": 1
+    },
+    "rc embers": {
+     "kind": "atlas",
+     "color": "tex/furnishings-atlas-color.jpg",
+     "orm": "tex/furnishings-atlas-orm.jpg",
+     "size": 2048,
+     "uv": 1
+    },
+    "rc aged brass": {
+     "kind": "metal",
+     "color": [
+      0.62,
+      0.44,
+      0.2
+     ],
+     "rough": 0.28,
+     "noise": 40,
+     "noiseAmount": 0.12,
+     "uv": 0
+    },
+    "rc japanned black": {
+     "kind": "plain",
+     "color": [
+      0.012,
+      0.01,
+      0.01
+     ],
+     "roughness": 0.12,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc mirror": {
+     "kind": "plain",
+     "color": [
+      0.42,
+      0.4,
+      0.36
+     ],
+     "roughness": 0.03,
+     "metallic": 1.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc oxblood velvet": {
+     "kind": "box",
+     "space": "object",
+     "scale": 0.25,
+     "maps": {
+      "color": "tex/velour_velvet_diff_2k.jpg",
+      "rough": "tex/velour_velvet_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/velour_velvet_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.42,
+      0.035,
+      0.04
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 1.0,
+     "roughAdd": 0.2,
+     "coat": 0.0,
+     "coatRough": 0.1,
+     "normalStrength": 1.0,
+     "sheen": 1.0,
+     "sheenTint": [
+      1.0,
+      0.55,
+      0.5
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc longcase dial": {
+     "kind": "uvbake",
+     "size": 512,
+     "color": "tex/furnishings-rc-longcase-dial-color.jpg",
+     "orm": "tex/furnishings-rc-longcase-dial-orm.jpg",
+     "normal": "tex/furnishings-rc-longcase-dial-normal.jpg",
+     "sheen": 0.0,
+     "coat": 0.0,
+     "uv": 1
+    },
+    "rc etched tulip glass": {
+     "kind": "plain",
+     "color": [
+      1.0,
+      0.92,
+      0.8
+     ],
+     "roughness": 0.45,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": [
+      2.5,
+      1.75,
+      1.0
+     ],
+     "uv": 0
+    },
+    "rc rosewood panel": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.07,
+     "maps": {
+      "color": "tex/rosewood_veneer1_diff_2k.jpg",
+      "rough": "tex/rosewood_veneer1_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/rosewood_veneer1_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.75,
+      0.42,
+      0.32
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 0.7,
+     "roughAdd": 0.0,
+     "coat": 0.6,
+     "coatRough": 0.1,
+     "normalStrength": 0.3,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc label backbar bottle A0": {
+     "kind": "plain",
+     "color": [
+      0.85,
+      0.8,
+      0.62
+     ],
+     "roughness": 0.8,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc label backbar bottle A1": {
+     "kind": "plain",
+     "color": [
+      0.92,
+      0.88,
+      0.75
+     ],
+     "roughness": 0.8,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc label backbar bottle A2": {
+     "kind": "plain",
+     "color": [
+      0.75,
+      0.15,
+      0.1
+     ],
+     "roughness": 0.8,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc 18k gold": {
+     "kind": "metal",
+     "color": [
+      1.0,
+      0.76,
+      0.36
+     ],
+     "rough": 0.07,
+     "noise": 40,
+     "noiseAmount": 0.12,
+     "uv": 0
+    },
+    "rc label backbar bottle A3": {
+     "kind": "plain",
+     "color": [
+      0.1,
+      0.12,
+      0.25
+     ],
+     "roughness": 0.8,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc label backbar bottle A4": {
+     "kind": "plain",
+     "color": [
+      0.85,
+      0.8,
+      0.62
+     ],
+     "roughness": 0.8,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc label backbar bottle A5": {
+     "kind": "plain",
+     "color": [
+      0.92,
+      0.88,
+      0.75
+     ],
+     "roughness": 0.8,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc label backbar bottle A6": {
+     "kind": "plain",
+     "color": [
+      0.75,
+      0.15,
+      0.1
+     ],
+     "roughness": 0.8,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc sterling": {
+     "kind": "metal",
+     "color": [
+      0.96,
+      0.95,
+      0.93
+     ],
+     "rough": 0.06,
+     "noise": 40,
+     "noiseAmount": 0.12,
+     "uv": 0
+    },
+    "rc nickel plate": {
+     "kind": "metal",
+     "color": [
+      0.8,
+      0.78,
+      0.74
+     ],
+     "rough": 0.08,
+     "noise": 40,
+     "noiseAmount": 0.12,
+     "uv": 0
+    },
+    "rc label whisky bottle": {
+     "kind": "plain",
+     "color": [
+      0.9,
+      0.86,
+      0.72
+     ],
+     "roughness": 0.8,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc emerald velvet": {
+     "kind": "box",
+     "space": "object",
+     "scale": 0.25,
+     "maps": {
+      "color": "tex/velour_velvet_diff_2k.jpg",
+      "rough": "tex/velour_velvet_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/velour_velvet_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.03,
+      0.16,
+      0.09
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 1.0,
+     "roughAdd": 0.2,
+     "coat": 0.0,
+     "coatRough": 0.1,
+     "normalStrength": 1.0,
+     "sheen": 1.0,
+     "sheenTint": [
+      0.6,
+      1.0,
+      0.75
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc library bindings": {
+     "kind": "bindings",
+     "palette": [
+      [
+       0.26,
+       0.035,
+       0.03
+      ],
+      [
+       0.32,
+       0.12,
+       0.05
+      ],
+      [
+       0.13,
+       0.06,
+       0.03
+      ],
+      [
+       0.04,
+       0.12,
+       0.06
+      ],
+      [
+       0.04,
+       0.06,
+       0.15
+      ],
+      [
+       0.26,
+       0.14,
+       0.06
+      ],
+      [
+       0.3,
+       0.06,
+       0.045
+      ],
+      [
+       0.09,
+       0.04,
+       0.025
+      ],
+      [
+       0.22,
+       0.1,
+       0.045
+      ],
+      [
+       0.18,
+       0.025,
+       0.04
+      ]
+     ],
+     "label": [
+      0.03,
+      0.01,
+      0.006
+     ],
+     "paper": [
+      0.62,
+      0.53,
+      0.38
+     ],
+     "gilt": [
+      0.85,
+      0.62,
+      0.26
+     ],
+     "coat": 0.15,
+     "uv": 0
+    },
+    "Armchair_01": {
+     "kind": "uvbake",
+     "size": 2048,
+     "color": "tex/furnishings-armchair-01-color.jpg",
+     "orm": "tex/furnishings-armchair-01-orm.jpg",
+     "normal": "tex/furnishings-armchair-01-normal.jpg",
+     "sheen": 0.0,
+     "coat": 0.0,
+     "uv": 1
+    },
+    "Armchair_01.001": {
+     "kind": "uvbake",
+     "size": 2048,
+     "color": "tex/furnishings-armchair-01-001-color.jpg",
+     "orm": "tex/furnishings-armchair-01-001-orm.jpg",
+     "normal": "tex/furnishings-armchair-01-001-normal.jpg",
+     "sheen": 0.0,
+     "coat": 0.0,
+     "uv": 1
+    },
+    "Armchair_01.002": {
+     "kind": "uvbake",
+     "size": 2048,
+     "color": "tex/furnishings-armchair-01-002-color.jpg",
+     "orm": "tex/furnishings-armchair-01-002-orm.jpg",
+     "normal": "tex/furnishings-armchair-01-002-normal.jpg",
+     "sheen": 0.0,
+     "coat": 0.0,
+     "uv": 1
+    },
+    "sofa_03": {
+     "kind": "uvbake",
+     "size": 2048,
+     "color": "tex/furnishings-sofa-03-color.jpg",
+     "orm": "tex/furnishings-sofa-03-orm.jpg",
+     "normal": "tex/furnishings-sofa-03-normal.jpg",
+     "sheen": 0.0,
+     "coat": 0.0,
+     "uv": 1
+    },
+    "sofa_03_fringe": {
+     "kind": "uvbake",
+     "size": 1024,
+     "color": "tex/furnishings-sofa-03-fringe-color.jpg",
+     "orm": "tex/furnishings-sofa-03-fringe-orm.jpg",
+     "normal": "tex/furnishings-sofa-03-fringe-normal.jpg",
+     "sheen": 0.0,
+     "coat": 0.0,
+     "uv": 1
+    },
+    "Chandelier_02": {
+     "kind": "uvbake",
+     "size": 1024,
+     "color": "tex/furnishings-chandelier-02-color.jpg",
+     "orm": "tex/furnishings-chandelier-02-orm.jpg",
+     "normal": "tex/furnishings-chandelier-02-normal.jpg",
+     "sheen": 0.0,
+     "coat": 0.0,
+     "uv": 1
+    },
+    "Chandelier_02_bulb": {
+     "kind": "plain",
+     "color": [
+      0.8,
+      0.8,
+      0.8
+     ],
+     "roughness": 0.273,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "Chandelier_02.001": {
+     "kind": "uvbake",
+     "size": 1024,
+     "color": "tex/furnishings-chandelier-02-001-color.jpg",
+     "orm": "tex/furnishings-chandelier-02-001-orm.jpg",
+     "normal": "tex/furnishings-chandelier-02-001-normal.jpg",
+     "sheen": 0.0,
+     "coat": 0.0,
+     "uv": 1
+    },
+    "Chandelier_02_bulb.001": {
+     "kind": "plain",
+     "color": [
+      0.8,
+      0.8,
+      0.8
+     ],
+     "roughness": 0.273,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "Chandelier_02.002": {
+     "kind": "uvbake",
+     "size": 1024,
+     "color": "tex/furnishings-chandelier-02-002-color.jpg",
+     "orm": "tex/furnishings-chandelier-02-002-orm.jpg",
+     "normal": "tex/furnishings-chandelier-02-002-normal.jpg",
+     "sheen": 0.0,
+     "coat": 0.0,
+     "uv": 1
+    },
+    "Chandelier_02_bulb.002": {
+     "kind": "plain",
+     "color": [
+      0.8,
+      0.8,
+      0.8
+     ],
+     "roughness": 0.273,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "dining_chair_02": {
+     "kind": "uvbake",
+     "size": 2048,
+     "color": "tex/furnishings-dining-chair-02-color.jpg",
+     "orm": "tex/furnishings-dining-chair-02-orm.jpg",
+     "normal": "tex/furnishings-dining-chair-02-normal.jpg",
+     "sheen": 0.0,
+     "coat": 0.0,
+     "uv": 1
+    },
+    "vintage_microscope": {
+     "kind": "uvbake",
+     "size": 1024,
+     "color": "tex/furnishings-vintage-microscope-color.jpg",
+     "orm": "tex/furnishings-vintage-microscope-orm.jpg",
+     "normal": "tex/furnishings-vintage-microscope-normal.jpg",
+     "sheen": 0.0,
+     "coat": 0.0,
+     "uv": 1
+    },
+    "vintage_microscope_glass": {
+     "kind": "uvbake",
+     "size": 512,
+     "color": "tex/furnishings-vintage-microscope-glass-color.jpg",
+     "orm": "tex/furnishings-vintage-microscope-glass-orm.jpg",
+     "normal": "tex/furnishings-vintage-microscope-glass-normal.jpg",
+     "sheen": 0.0,
+     "coat": 0.0,
+     "uv": 1
+    },
+    "rc ivory": {
+     "kind": "plain",
+     "color": [
+      0.78,
+      0.7,
+      0.55
+     ],
+     "roughness": 0.3,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "uv": 0
+    },
+    "rc antique globe": {
+     "kind": "atlas",
+     "color": "tex/furnishings-atlas-color.jpg",
+     "orm": "tex/furnishings-atlas-orm.jpg",
+     "size": 2048,
+     "uv": 1
+    },
+    "rc oxblood leather": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.35,
+     "maps": {
+      "color": "tex/brown_leather_albedo_2k.jpg",
+      "rough": "tex/brown_leather_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/brown_leather_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.75,
+      0.42,
+      0.4
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 1.0,
+     "roughAdd": 0.0,
+     "coat": 0.25,
+     "coatRough": 0.35,
+     "normalStrength": 1.4,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    }
+   },
+   "lightCoverage": 0.333
+  },
+  "architecture": {
+   "faces": 127427,
+   "meshes": 11,
+   "file": "railcar-architecture.glb",
+   "light": "railcar-architecture-light.webp",
+   "emit": "railcar-architecture-emit.webp",
+   "materials": {
+    "rc persian carpet": {
+     "kind": "uvbake",
+     "size": 2048,
+     "color": "tex/architecture-rc-persian-carpet-color.jpg",
+     "orm": "tex/architecture-rc-persian-carpet-orm.jpg",
+     "normal": "tex/architecture-rc-persian-carpet-normal.jpg",
+     "sheen": 0.6,
+     "coat": 0.0,
+     "uv": 1
+    },
+    "rc mahogany dark": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.09,
+     "maps": {
+      "color": "tex/sapele_veneer_diff_2k.jpg",
+      "rough": "tex/sapele_veneer_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/sapele_veneer_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.36,
+      0.15,
+      0.1
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 0.8,
+     "roughAdd": 0.0,
+     "coat": 0.5,
+     "coatRough": 0.16,
+     "normalStrength": 0.4,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc water gilt": {
+     "kind": "gilt",
+     "noise": 6,
+     "dark": [
+      0.55,
+      0.36,
+      0.11
+     ],
+     "light": [
+      0.95,
+      0.7,
+      0.3
+     ],
+     "rough": [
+      0.42,
+      0.16
+     ],
+     "uv": 0
+    },
+    "rc mahogany": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.09,
+     "maps": {
+      "color": "tex/sapele_veneer_diff_2k.jpg",
+      "rough": "tex/sapele_veneer_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/sapele_veneer_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.62,
+      0.3,
+      0.2
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 0.8,
+     "roughAdd": 0.0,
+     "coat": 0.55,
+     "coatRough": 0.14,
+     "normalStrength": 0.4,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc rosewood panel": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.07,
+     "maps": {
+      "color": "tex/rosewood_veneer1_diff_2k.jpg",
+      "rough": "tex/rosewood_veneer1_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/rosewood_veneer1_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.75,
+      0.42,
+      0.32
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 0.7,
+     "roughAdd": 0.0,
+     "coat": 0.6,
+     "coatRough": 0.1,
+     "normalStrength": 0.3,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc satinwood stringing": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.2,
+     "maps": {
+      "color": "tex/white_maple_veneer_diff_2k.jpg",
+      "rough": "tex/white_maple_veneer_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/white_maple_veneer_nor_gl_2k.jpg"
+     },
+     "tint": [
+      1.0,
+      0.72,
+      0.38
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 1.0,
+     "roughAdd": 0.0,
+     "coat": 0.6,
+     "coatRough": 0.1,
+     "normalStrength": 1.0,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc art glass": {
+     "kind": "artglass",
+     "freq": 1.6,
+     "lead": 0.035,
+     "paneA": [
+      0.95,
+      0.72,
+      0.32
+     ],
+     "paneB": [
+      0.98,
+      0.9,
+      0.66
+     ],
+     "emission": 0.55,
+     "uv": 0
+    },
+    "rc polished brass": {
+     "kind": "metal",
+     "color": [
+      0.86,
+      0.62,
+      0.3
+     ],
+     "rough": 0.1,
+     "noise": 40,
+     "noiseAmount": 0.12,
+     "uv": 0
+    },
+    "rc oxblood velvet": {
+     "kind": "box",
+     "space": "object",
+     "scale": 0.25,
+     "maps": {
+      "color": "tex/velour_velvet_diff_2k.jpg",
+      "rough": "tex/velour_velvet_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/velour_velvet_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.42,
+      0.035,
+      0.04
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 1.0,
+     "roughAdd": 0.2,
+     "coat": 0.0,
+     "coatRough": 0.1,
+     "normalStrength": 1.0,
+     "sheen": 1.0,
+     "sheenTint": [
+      1.0,
+      0.55,
+      0.5
+     ],
+     "metallic": 0.0,
+     "uv": 0
+    },
+    "rc lincrusta frieze": {
+     "kind": "damask",
+     "mask": "tex/damask-mask.png",
+     "axes": [
+      0,
+      2
+     ],
+     "div": [
+      1.5,
+      2.25
+     ],
+     "dark": [
+      0.16,
+      0.06,
+      0.03
+     ],
+     "light": [
+      0.85,
+      0.58,
+      0.24
+     ],
+     "rough": [
+      0.6,
+      0.25
+     ],
+     "bump": 0.6,
+     "uv": 0
+    },
+    "rc stencilled ceiling": {
+     "kind": "damask",
+     "mask": "tex/damask-mask.png",
+     "axes": [
+      0,
+      1
+     ],
+     "div": [
+      1.4,
+      2.1
+     ],
+     "dark": [
+      0.03,
+      0.07,
+      0.05
+     ],
+     "light": [
+      0.62,
+      0.42,
+      0.16
+     ],
+     "rough": [
+      0.55,
+      0.3
+     ],
+     "bump": 0.0,
+     "uv": 0
+    }
+   },
+   "lightCoverage": 0.353
+  }
+ },
  "glass": {
   "objects": 142,
   "file": "railcar-glass.glb"
@@ -42,5 +1470,10 @@
   "objects": 4,
   "file": "railcar-paintings.glb"
  },
- "seconds": 521
+ "seconds": 1865,
+ "sky": "railcar-sky.webp",
+ "windows": {
+  "objects": 8,
+  "file": "railcar-windows.glb"
+ }
 }

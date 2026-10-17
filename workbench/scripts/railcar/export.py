@@ -1,45 +1,65 @@
-"""Bake the railcar into browser assets.
+"""Export the railcar for the browser: full-resolution materials, baked light.
 
 Run inside Blender after build.main() (or on output/railcar/railcar.blend):
     import export; export.run()
 
-Produces in workbench/assets/railcar/export/:
-  railcar-{desk,furnishings,architecture}.glb   static geometry, colour atlas (JPEG) on UV0,
-                                                materials quantised to a few roughness/metal buckets
-  railcar-{group}-light.hdr                     denoised diffuse irradiance (UV0)  -> three lightMap
-  railcar-{group}-emit.hdr                      emission (UV0)                     -> three emissiveMap
-  railcar-glass.glb                             glassware/loose stones, rendered cheaply at runtime
-  railcar-paintings.glb                         canvases with their own full-resolution images
-  railcar-manifest.json                         counts, sizes, runtime anchors (fire, windows)
+The first export baked every surface's colour into one 4096 atlas per group.
+With tens of thousands of tiny islands that left 4-10% of the atlas in use
+(~14 mm per texel) and the room went soft. This version ships what Cycles
+actually shades:
 
-Static lighting is baked, so the browser draws ~40 draw calls of lightmapped
-MeshStandardMaterial for the whole room - the budget stays with the jewellery.
+  * every static object keeps its own material; each group is split into one
+    mesh per material (node name "<group>|<material>")
+  * materials the browser can rebuild exactly carry a recipe (mats.runtime):
+    box-projected photo textures, gilt, metals, damask, art glass, bindings.
+    Their source textures are copied to export/tex at full resolution.
+  * UV-mapped materials (Poly Haven furniture, carpet, desk leather, dial,
+    globe, labels...) are baked onto their own UVs at up to 2 px/mm
+    (colour, roughness/metal, tangent normal)
+  * plain constant materials ship as numbers
+  * anything else (logs, embers, a few procedural props) falls back to a
+    small per-group atlas
+  * light: diffuse irradiance and emission are baked per group onto a second,
+    properly packed UV ("LightUV"), stored RGBM in lossless 8-bit WebP
+
+Coplanar faces of different objects that face the same way z-fight in a
+rasteriser; resolve_coplanar() deletes the covered one or pushes the smaller
+one back 1 mm before anything is merged.
+
+Outputs in workbench/assets/railcar/export/:
+  railcar-{group}.glb, railcar-{group}-light.webp, railcar-{group}-emit.webp,
+  tex/*  (recipe textures + per-material bakes), railcar-glass.glb,
+  railcar-paintings.glb, railcar-sky.webp (window HDRI), railcar-manifest.json
 """
 import json
 import math
 import os
-import struct
+import shutil
 import subprocess
 import time
 import zlib
+from collections import defaultdict
 
+import bmesh
 import bpy
 import numpy as np
 from mathutils import Vector
 
 ROOT = os.environ.get("LJ_ROOT", "/Users/heatherholtz/Downloads/CS116A/Renderer/renderer-ai")
 OUT = os.path.join(ROOT, "workbench/assets/railcar/export")
+TEXOUT = os.path.join(OUT, "tex")
 TMP = os.path.join(ROOT, "output/railcar/export-tmp")
 OIDN = os.path.join(ROOT, "output/oidn-2.3.3.arm64.macos/bin/oidnDenoise")
 LOG = os.path.join(ROOT, "output/railcar/export-log.txt")
 
-GROUPS = {  # name: (colour atlas, light atlas, emission atlas, light samples)
-    "desk": (4096, 2048, 1024, 768),
-    "furnishings": (4096, 2048, 1024, 512),
-    "architecture": (4096, 1024, 1024, 512),
+GROUPS = {  # name: (lightmap size, emission size, light samples, px per unit for UV bakes, max bake size)
+    "desk": (2048, 1024, 384, 200, 4096),
+    "furnishings": (4096, 2048, 256, 100, 2048),
+    "architecture": (4096, 2048, 256, 100, 2048),
 }
 SKIP_COLLECTIONS = {"jewellery cases"}  # rebuilt live in the browser
-ROUGH_BUCKETS = (0.08, 0.2, 0.35, 0.5, 0.7, 0.9)
+RGBM_RANGE = 16.0
+PACK_MARGIN = 0.0015
 
 
 def log(*a):
@@ -52,6 +72,11 @@ def principled(m):
     if not m or not m.use_nodes:
         return None
     return next((n for n in m.node_tree.nodes if n.type == "BSDF_PRINCIPLED"), None)
+
+
+def output_node(nt):
+    return next((n for n in nt.nodes if n.type == "OUTPUT_MATERIAL" and n.is_active_output), None) or \
+        next((n for n in nt.nodes if n.type == "OUTPUT_MATERIAL"), None)
 
 
 def is_glass(m):
@@ -69,12 +94,6 @@ def is_glass(m):
     return "glass" in lower and not any(k in lower for k in ("art glass", "cased glass", "tulip", "opal"))
 
 
-def top_collection(o):
-    for c in o.users_collection:
-        return c.name
-    return ""
-
-
 def world_bbox(o):
     pts = [o.matrix_world @ Vector(c) for c in o.bound_box]
     mn = Vector([min(p[i] for p in pts) for i in range(3)])
@@ -84,7 +103,7 @@ def world_bbox(o):
 
 def classify():
     groups = {g: [] for g in GROUPS}
-    glass, canvases, skipped = [], [], []
+    glass, canvases, skipped, windows = [], [], [], []
     for o in bpy.context.scene.objects:
         if o.type not in ("MESH", "CURVE") or o.hide_render:
             continue
@@ -94,6 +113,9 @@ def classify():
             continue
         mats = [s.material for s in o.material_slots if s.material]
         names = " ".join(m.name for m in mats)
+        if " window " in o.name and o.name.endswith(" pane"):
+            windows.append(o)  # glazing: reflection-only glass in the browser
+            continue
         if "rc flame" in names or " pane" in o.name:
             skipped.append(o)
             continue
@@ -106,14 +128,14 @@ def classify():
         mn, mx = world_bbox(o)
         cen = (mn + mx) / 2
         size = mx - mn
-        col = top_collection(o)
+        col = next((c.name for c in o.users_collection), "")
         if col.startswith("car "):
             groups["architecture"].append(o)
         elif -8.8 < cen.x < 8.8 and -4.8 < cen.y < 6.4 and -9.2 < cen.z < 4.0 and max(size) < 18:
             groups["desk"].append(o)
         else:
             groups["furnishings"].append(o)
-    return groups, glass, canvases, skipped
+    return groups, glass, canvases, skipped, windows
 
 
 def realise(objs):
@@ -128,10 +150,13 @@ def realise(objs):
     return [o for o in bpy.context.selected_objects if o.type == "MESH"]
 
 
+# ---------------------------------------------------------------- attributes
+
 def coordinate_attributes(objs):
-    """Freeze per-object texture coordinates (Generated, Object, Object Info
-    random) into mesh attributes so pieces can be merged before baking without
-    changing how their procedural materials look."""
+    """Freeze per-object texture coordinates (Generated, Object + object-space
+    normal, Object Info random) into mesh attributes so pieces can be merged
+    without changing how their materials look, and so the browser can rebuild
+    object-space projections. Names start with "_" so glTF exports them."""
     for o in objs:
         me = o.data
         n = len(me.vertices)
@@ -140,19 +165,21 @@ def coordinate_attributes(objs):
         co = np.empty(n * 3, dtype=np.float32)
         me.vertices.foreach_get("co", co)
         co = co.reshape(-1, 3)
+        nrm = np.empty(n * 3, dtype=np.float32)
+        me.vertex_normals.foreach_get("vector", nrm)
         mn, mx = co.min(0), co.max(0)
         gen = (co - mn) / np.maximum(mx - mn, 1e-6)
-        for name, values in (("lj_gen", gen), ("lj_obj", co)):
+        for name, values in (("_lj_gen", gen), ("_lj_obj", co), ("_lj_onrm", nrm.reshape(-1, 3))):
             a = me.attributes.get(name) or me.attributes.new(name, "FLOAT_VECTOR", "POINT")
             a.data.foreach_set("vector", np.ascontiguousarray(values, dtype=np.float32).ravel())
-        r = me.attributes.get("lj_rand") or me.attributes.new("lj_rand", "FLOAT", "POINT")
+        r = me.attributes.get("_lj_rand") or me.attributes.new("_lj_rand", "FLOAT", "POINT")
         r.data.foreach_set("value", np.full(n, (zlib.crc32(o.name.encode()) & 0xFFFFFF) / float(0xFFFFFF), dtype=np.float32))
     mats = {s.material for o in objs for s in o.material_slots if s.material and s.material.use_nodes}
     for m in mats:
         nt = m.node_tree
         for node in list(nt.nodes):
             if node.type == "TEX_COORD":
-                for out, attr in (("Generated", "lj_gen"), ("Object", "lj_obj")):
+                for out, attr in (("Generated", "_lj_gen"), ("Object", "_lj_obj")):
                     if node.outputs[out].is_linked:
                         a = nt.nodes.new("ShaderNodeAttribute")
                         a.attribute_type = "GEOMETRY"
@@ -162,41 +189,239 @@ def coordinate_attributes(objs):
             if node.type == "OBJECT_INFO" and node.outputs["Random"].is_linked:
                 a = nt.nodes.new("ShaderNodeAttribute")
                 a.attribute_type = "GEOMETRY"
-                a.attribute_name = "lj_rand"
+                a.attribute_name = "_lj_rand"
                 for link in list(node.outputs["Random"].links):
                     nt.links.new(a.outputs["Fac"], link.to_socket)
 
 
-def merge(name, objs):
-    bpy.ops.object.select_all(action="DESELECT")
-    for o in objs:
-        o.select_set(True)
-    bpy.context.view_layer.objects.active = objs[0]
-    bpy.ops.object.parent_clear(type="CLEAR_KEEP_TRANSFORM")
-    bpy.ops.object.join()
-    j = bpy.context.view_layer.objects.active
-    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-    j.name = f"railcar {name}"
-    return j
+# ---------------------------------------------------------------- coplanar faces
+
+def _inside(pt, poly, eps=1e-4):
+    x, y = pt
+    c = False
+    for i in range(len(poly)):
+        x1, y1 = poly[i]
+        x2, y2 = poly[i - 1]
+        # on an edge counts as inside
+        ex, ey = x2 - x1, y2 - y1
+        L2 = ex * ex + ey * ey
+        if L2 > 0:
+            t = max(0.0, min(1.0, ((x - x1) * ex + (y - y1) * ey) / L2))
+            if (x - x1 - t * ex) ** 2 + (y - y1 - t * ey) ** 2 < eps * eps:
+                return True
+        if (y1 > y) != (y2 > y) and x < ex * (y - y1) / (ey if ey else 1e-12) + x1:
+            c = not c
+    return c
 
 
-def normalise_uvs(objs):
-    fallback = bpy.data.materials.get("rc default") or bpy.data.materials.new("rc default")
-    mats = set()
-    for o in objs:
-        me = o.data
-        if not o.material_slots:
-            me.materials.append(fallback)
-        layers = list(me.uv_layers)
-        for extra in layers[1:]:
-            me.uv_layers.remove(extra)
-        if me.uv_layers:
-            me.uv_layers[0].name = "UVMap"
-        for s in o.material_slots:
-            if s.material:
-                mats.add(s.material)
+def _area(poly):
+    return abs(sum(poly[i - 1][0] * poly[i][1] - poly[i][0] * poly[i - 1][1] for i in range(len(poly)))) / 2
+
+
+def resolve_coplanar(objs, step=0.002, push=0.01):
+    """Axis-aligned faces of different objects lying in one plane and facing
+    the same way: delete a face wholly covered by another (identical look, no
+    flicker); push the smaller of two partly overlapping faces back by `push`."""
+    faces = []
+    bms = []
+    for oi, o in enumerate(objs):
+        bm = bmesh.new()
+        bm.from_mesh(o.data)
+        bm.faces.ensure_lookup_table()
+        bms.append(bm)
+        M = o.matrix_world
+        R = M.to_3x3().inverted().transposed()
+        for f in bm.faces:
+            n = R @ f.normal
+            if n.length < 1e-9:
+                continue
+            n.normalize()
+            ax = max(range(3), key=lambda i: abs(n[i]))
+            if abs(n[ax]) < 0.9995:
+                continue
+            vs = [M @ v.co for v in f.verts]
+            o2 = [i for i in range(3) if i != ax]
+            poly = [(v[o2[0]], v[o2[1]]) for v in vs]
+            area = _area(poly)
+            if area < 1e-6:
+                continue
+            xs = [p[0] for p in poly]
+            ys = [p[1] for p in poly]
+            plane = sum(v[ax] for v in vs) / len(vs)
+            faces.append((oi, f.index, ax, 1 if n[ax] > 0 else -1, plane, poly, (min(xs), max(xs), min(ys), max(ys)), area))
+    buckets = defaultdict(list)
+    for k, f in enumerate(faces):
+        buckets[(f[2], f[3], round(f[4] / step))].append(k)
+    delete, pushed = set(), set()
+    for k, a in enumerate(faces):
+        ka = (a[0], a[1])
+        cands = []
+        for d in (-1, 0, 1):
+            cands += buckets.get((a[2], a[3], round(a[4] / step) + d), [])
+        cx = sum(p[0] for p in a[5]) / len(a[5])
+        cy = sum(p[1] for p in a[5]) / len(a[5])
+        shrunk = [(cx + (p[0] - cx) * 0.999, cy + (p[1] - cy) * 0.999) for p in a[5]]
+        for j in cands:
+            if j == k:
+                continue
+            b = faces[j]
+            if abs(a[4] - b[4]) > step:
+                continue
+            if b[0] == a[0]:
+                continue  # one object's own faces are modelled on purpose
+            A, B = a[6], b[6]
+            w = min(A[1], B[1]) - max(A[0], B[0])
+            h = min(A[3], B[3]) - max(A[2], B[2])
+            if w <= 1e-4 or h <= 1e-4:
+                continue
+            a_in_b = all(_inside(p, b[5]) for p in shrunk)
+            if a_in_b:
+                bcx = sum(p[0] for p in b[5]) / len(b[5])
+                bcy = sum(p[1] for p in b[5]) / len(b[5])
+                b_in_a = all(_inside((bcx + (p[0] - bcx) * 0.999, bcy + (p[1] - bcy) * 0.999), a[5]) for p in b[5])
+                if not b_in_a or (b[0], b[1]) < ka:
+                    delete.add(ka)
+                    break
+            elif a[7] <= b[7]:
+                pushed.add(ka)
+    pushed -= delete
+    for oi, (o, bm) in enumerate(zip(objs, bms)):
+        dels = [bm.faces[fi] for (oj, fi) in delete if oj == oi]
+        pushes = [bm.faces[fi] for (oj, fi) in pushed if oj == oi]
+        if not dels and not pushes:
+            bm.free()
+            continue
+        scale = max(o.matrix_world.to_scale())
+        moved = set()
+        for f in pushes:
+            off = -f.normal * (push / max(scale, 1e-6))
+            for v in f.verts:
+                if v.index not in moved:
+                    v.co += off
+                    moved.add(v.index)
+        if dels:
+            bmesh.ops.delete(bm, geom=dels, context="FACES_ONLY")
+        bm.to_mesh(o.data)
+        bm.free()
+    log("coplanar: deleted", len(delete), "faces, pushed", len(pushed))
+    return len(delete), len(pushed)
+
+
+# ---------------------------------------------------------------- materials
+
+def recipe(m):
+    if m and "lj" in m:
+        return json.loads(m["lj"])
+    return None
+
+
+def _uses_uv(sock, depth=0):
+    """True when a texture vector input ultimately comes from a UV map."""
+    if not sock.is_linked:
+        return True
+    n = sock.links[0].from_node
+    if n.type == "UVMAP":
+        return True
+    if n.type == "TEX_COORD":
+        return sock.links[0].from_socket.name == "UV"
+    if depth > 8:
+        return False
+    ins = [i for i in n.inputs if i.type == "VECTOR" and i.is_linked]
+    return bool(ins) and all(_uses_uv(i, depth + 1) for i in ins)
+
+
+def classify_material(m):
+    r = recipe(m)
+    if r:
+        return r
+    if not m or not m.use_nodes:
+        return {"kind": "plain", "color": [0.5, 0.5, 0.5], "roughness": 0.6, "metallic": 0.0}
+    nt = m.node_tree
+    b = principled(m)
+    imgs = [n for n in nt.nodes if n.type == "TEX_IMAGE" and n.image]
+    procs = [n for n in nt.nodes if n.type.startswith("TEX_") and n.type not in ("TEX_IMAGE", "TEX_COORD")]
+    linked = b and any(b.inputs[k].is_linked for k in
+                       ("Base Color", "Roughness", "Metallic", "Emission Color", "Emission Strength", "Normal", "Alpha"))
+    if b and not imgs and not procs and not linked:
+        em = b.inputs["Emission Strength"].default_value
+        return {"kind": "plain", "color": [round(x, 4) for x in b.inputs["Base Color"].default_value[:3]],
+                "roughness": round(b.inputs["Roughness"].default_value, 3),
+                "metallic": round(b.inputs["Metallic"].default_value, 3),
+                "sheen": round(b.inputs["Sheen Weight"].default_value, 3),
+                "coat": round(b.inputs["Coat Weight"].default_value, 3),
+                "emission": [round(x * em, 4) for x in b.inputs["Emission Color"].default_value[:3]] if em > 0 else None}
+    if imgs and all(_uses_uv(n.inputs["Vector"]) for n in imgs):
+        return {"kind": "uvbake"}
+    return {"kind": "atlas"}
+
+
+def albedo_copy(m):
+    c = m.copy()
+    c.name = m.name + " [albedo]"
+    nt = c.node_tree
+    b = principled(c)
+    out = output_node(nt)
+    if not b or not out:
+        return c
+    em = nt.nodes.new("ShaderNodeEmission")
+    em.inputs["Strength"].default_value = 1.0
+    if b.inputs["Base Color"].is_linked:
+        nt.links.new(b.inputs["Base Color"].links[0].from_socket, em.inputs["Color"])
+    else:
+        em.inputs["Color"].default_value = b.inputs["Base Color"].default_value
+    for l in list(out.inputs["Volume"].links):
+        nt.links.remove(l)
+    nt.links.new(em.outputs[0], out.inputs["Surface"])
+    return c
+
+
+def orm_copy(m):
+    """Emit (1, roughness, metallic) - the glTF ORM layout."""
+    c = m.copy()
+    c.name = m.name + " [orm]"
+    nt = c.node_tree
+    b = principled(c)
+    out = output_node(nt)
+    if not out:
+        return c
+    comb = nt.nodes.new("ShaderNodeCombineColor")
+    comb.inputs[0].default_value = 1.0
+    for idx, key in ((1, "Roughness"), (2, "Metallic")):
+        if b and b.inputs[key].is_linked:
+            nt.links.new(b.inputs[key].links[0].from_socket, comb.inputs[idx])
+        else:
+            comb.inputs[idx].default_value = b.inputs[key].default_value if b else (0.6 if idx == 1 else 0.0)
+    em = nt.nodes.new("ShaderNodeEmission")
+    nt.links.new(comb.outputs[0], em.inputs["Color"])
+    for l in list(out.inputs["Volume"].links):
+        nt.links.remove(l)
+    nt.links.new(em.outputs[0], out.inputs["Surface"])
+    return c
+
+
+def diffuse_copy(m):
+    """White diffuse with the material's emission kept off: the bake records
+    irradiance only. Normal maps stay out of the bake (they are low frequency
+    at lightmap scale and the browser applies them to reflections)."""
+    c = m.copy()
+    c.name = m.name + " [irradiance]"
+    nt = c.node_tree
+    out = output_node(nt)
+    if not out:
+        return c
+    d = nt.nodes.new("ShaderNodeBsdfDiffuse")
+    d.inputs["Color"].default_value = (1, 1, 1, 1)
+    for l in list(out.inputs["Volume"].links):
+        nt.links.remove(l)
+    nt.links.new(d.outputs[0], out.inputs["Surface"])
+    return c
+
+
+def normalise_material_uvs(mats):
+    """Make every image lookup that relied on the default UV name UVMap
+    explicitly, so baking onto other UV layers never moves the textures."""
     for m in mats:
-        if not m.use_nodes:
+        if not m or not m.use_nodes:
             continue
         nt = m.node_tree
         for n in list(nt.nodes):
@@ -211,22 +436,139 @@ def normalise_uvs(objs):
                 uv.uv_map = "UVMap"
                 for link in list(n.outputs["UV"].links):
                     nt.links.new(uv.outputs[0], link.to_socket)
+            if n.type == "NORMAL_MAP":
+                n.uv_map = "UVMap"
+
+
+# ---------------------------------------------------------------- meshes
+
+def ensure_uvmap(objs):
     for o in objs:
         me = o.data
-        bake = me.uv_layers.new(name="BakeUV")
-        me.uv_layers.active = bake
-        bake.active_render = True
+        for extra in list(me.uv_layers)[1:]:
+            me.uv_layers.remove(extra)
+        if me.uv_layers:
+            me.uv_layers[0].name = "UVMap"
+        else:
+            me.uv_layers.new(name="UVMap")
 
 
-def unwrap(objs):
+def select(objs, active=None):
     bpy.ops.object.select_all(action="DESELECT")
     for o in objs:
         o.select_set(True)
-    bpy.context.view_layer.objects.active = objs[0]
+    bpy.context.view_layer.objects.active = active or objs[0]
+
+
+def merge(name, objs):
+    select(objs)
+    bpy.ops.object.parent_clear(type="CLEAR_KEEP_TRANSFORM")
+    bpy.ops.object.join()
+    j = bpy.context.view_layer.objects.active
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    j.name = f"railcar {name}"
+    return j
+
+
+def split_by_material(group, obj):
+    """One object per material, named '<group>|<material>'."""
+    select([obj])
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.uv.smart_project(angle_limit=math.radians(60), island_margin=0.0025, area_weight=0.0, scale_to_bounds=False)
+    bpy.ops.mesh.separate(type="MATERIAL")
     bpy.ops.object.mode_set(mode="OBJECT")
+    pieces = [o for o in bpy.context.selected_objects if o.type == "MESH"]
+    out = {}
+    for o in pieces:
+        used = {p.material_index for p in o.data.polygons}
+        if not used:
+            bpy.data.objects.remove(o, do_unlink=True)
+            continue
+        mat = o.material_slots[next(iter(used))].material
+        o.data.materials.clear()
+        o.data.materials.append(mat)
+        for p in o.data.polygons:
+            p.material_index = 0
+        name = mat.name if mat else "rc default"
+        o.name = o.data.name = f"{group}|{name}"
+        out[name] = o
+    return out
+
+
+def unwrap(objs, layer, angle=66.0):
+    """Smart-project `layer` across all objs together, then pack tightly."""
+    for o in objs:
+        me = o.data
+        uv = me.uv_layers.get(layer) or me.uv_layers.new(name=layer)
+        me.uv_layers.active = uv
+    select(objs)
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.select_all(action="SELECT")
+    bpy.ops.uv.smart_project(angle_limit=math.radians(angle), island_margin=0.0, area_weight=0.0,
+                             correct_aspect=True, scale_to_bounds=False)
+    bpy.ops.uv.average_islands_scale()
+    bpy.ops.uv.pack_islands(udim_source="CLOSEST_UDIM", rotate=True, rotate_method="ANY", scale=True,
+                            merge_overlap=False, margin_method="FRACTION", margin=PACK_MARGIN, pin=False,
+                            shape_method="CONCAVE")
+    bpy.ops.object.mode_set(mode="OBJECT")
+    for o in objs:
+        o.data.uv_layers.active = o.data.uv_layers["UVMap"]
+
+
+def uv_coverage(objs, layer):
+    """Fraction of the unit square covered by `layer` (sum of UV triangle areas)."""
+    total = 0.0
+    for o in objs:
+        me = o.data
+        uv = me.uv_layers[layer].data
+        for p in me.polygons:
+            pts = [uv[i].uv for i in p.loop_indices]
+            total += abs(sum(pts[i - 1].x * pts[i].y - pts[i].x * pts[i - 1].y for i in range(len(pts)))) / 2
+    return total
+
+
+def world_area(objs):
+    return sum(p.area for o in objs for p in o.data.polygons)
+
+
+def pow2(x, lo, hi):
+    return int(min(hi, max(lo, 2 ** math.ceil(math.log2(max(x, 1))))))
+
+
+# ---------------------------------------------------------------- baking
+
+def attach_target(objs, image, uv_layer):
+    seen = set()
+    for o in objs:
+        for s in o.material_slots:
+            m = s.material
+            if not m or m.name in seen:
+                continue
+            seen.add(m.name)
+            nt = m.node_tree
+            n = nt.nodes.get("__bake_target__") or nt.nodes.new("ShaderNodeTexImage")
+            n.name = "__bake_target__"
+            n.image = image
+            uv = nt.nodes.get("__bake_uv__") or nt.nodes.new("ShaderNodeUVMap")
+            uv.name = "__bake_uv__"
+            uv.uv_map = uv_layer
+            nt.links.new(uv.outputs[0], n.inputs["Vector"])
+            for x in nt.nodes:
+                x.select = False
+            n.select = True
+            nt.nodes.active = n
+
+
+def detach_target(objs):
+    for o in objs:
+        for s in o.material_slots:
+            m = s.material
+            if m and m.use_nodes:
+                for nm in ("__bake_target__", "__bake_uv__"):
+                    n = m.node_tree.nodes.get(nm)
+                    if n:
+                        m.node_tree.nodes.remove(n)
 
 
 def swap(objs, maker, cache):
@@ -249,98 +591,35 @@ def restore(objs, originals):
             s.material = m
 
 
-def albedo_copy(m):
-    c = m.copy()
-    c.name = m.name + " [albedo]"
-    nt = c.node_tree
-    b = principled(c)
-    out = next((n for n in nt.nodes if n.type == "OUTPUT_MATERIAL" and n.is_active_output), None) or \
-        next((n for n in nt.nodes if n.type == "OUTPUT_MATERIAL"), None)
-    if not b or not out:
-        return c
-    em = nt.nodes.new("ShaderNodeEmission")
-    em.inputs["Strength"].default_value = 1.0
-    if b.inputs["Base Color"].is_linked:
-        nt.links.new(b.inputs["Base Color"].links[0].from_socket, em.inputs["Color"])
-    else:
-        em.inputs["Color"].default_value = b.inputs["Base Color"].default_value
-    for l in list(out.inputs["Volume"].links):
-        nt.links.remove(l)
-    nt.links.new(em.outputs[0], out.inputs["Surface"])
-    return c
-
-
-def diffuse_copy(m):
-    c = m.copy()
-    c.name = m.name + " [irradiance]"
-    nt = c.node_tree
-    b = principled(c)
-    out = next((n for n in nt.nodes if n.type == "OUTPUT_MATERIAL" and n.is_active_output), None) or \
-        next((n for n in nt.nodes if n.type == "OUTPUT_MATERIAL"), None)
-    if not out:
-        return c
-    d = nt.nodes.new("ShaderNodeBsdfDiffuse")
-    d.inputs["Color"].default_value = (1, 1, 1, 1)
-    if b and b.inputs["Normal"].is_linked:
-        nt.links.new(b.inputs["Normal"].links[0].from_socket, d.inputs["Normal"])
-    for l in list(out.inputs["Volume"].links):
-        nt.links.remove(l)
-    nt.links.new(d.outputs[0], out.inputs["Surface"])
-    return c
-
-
-def attach_target(objs, image):
-    seen = set()
-    for o in objs:
-        for s in o.material_slots:
-            m = s.material
-            if not m or m.name in seen:
-                continue
-            seen.add(m.name)
-            nt = m.node_tree
-            n = nt.nodes.get("__bake_target__") or nt.nodes.new("ShaderNodeTexImage")
-            n.name = "__bake_target__"
-            n.image = image
-            uv = nt.nodes.get("__bake_uv__") or nt.nodes.new("ShaderNodeUVMap")
-            uv.name = "__bake_uv__"
-            uv.uv_map = "BakeUV"
-            nt.links.new(uv.outputs[0], n.inputs["Vector"])
-            for x in nt.nodes:
-                x.select = False
-            n.select = True
-            nt.nodes.active = n
-
-
-def detach_target(objs):
-    for o in objs:
-        for s in o.material_slots:
-            m = s.material
-            if m and m.use_nodes:
-                for nm in ("__bake_target__", "__bake_uv__"):
-                    n = m.node_tree.nodes.get(nm)
-                    if n:
-                        m.node_tree.nodes.remove(n)
-
-
-def run_bake(objs, kind, image, samples, passes=None):
+def bake(objs, kind, image, uv_layer, samples, maker=None, passes=None, normal_space=None):
     s = bpy.context.scene
     s.cycles.samples = samples
     s.render.bake.target = "IMAGE_TEXTURES"
     s.render.bake.use_clear = True
-    s.render.bake.margin = max(8, image.size[0] // 256)
+    s.render.bake.margin = max(4, image.size[0] // 512)
     s.render.bake.margin_type = "EXTEND"
     if passes is not None:
         s.render.bake.use_pass_direct = "DIRECT" in passes
         s.render.bake.use_pass_indirect = "INDIRECT" in passes
         s.render.bake.use_pass_color = "COLOR" in passes
-    bpy.ops.object.select_all(action="DESELECT")
+    if normal_space:
+        s.render.bake.normal_space = normal_space
     for o in objs:
-        o.select_set(True)
-    bpy.context.view_layer.objects.active = objs[0]
-    attach_target(objs, image)
+        uv = o.data.uv_layers[uv_layer]
+        o.data.uv_layers.active = uv
+        uv.active_render = True
+    orig = swap(objs, maker, {}) if maker else None
+    select(objs)
+    attach_target(objs, image, uv_layer)
     t = time.time()
     bpy.ops.object.bake(type=kind)
-    log("  bake", kind, image.name, f"{time.time() - t:.0f}s")
+    detach_target(objs)
+    if orig:
+        restore(objs, orig)
+    for o in objs:
+        o.data.uv_layers.active = o.data.uv_layers["UVMap"]
+        o.data.uv_layers["UVMap"].active_render = True
+    log("  bake", kind, image.name, f"{image.size[0]}px", f"{time.time() - t:.0f}s")
 
 
 def write_pfm(path, img):
@@ -351,102 +630,138 @@ def write_pfm(path, img):
         f.write(np.ascontiguousarray(px).astype("<f4").tobytes())
 
 
-def read_pfm_into(path, img):
+def read_pfm(path):
     with open(path, "rb") as f:
         assert f.readline().strip() == b"PF"
         w, h = map(int, f.readline().split())
         scale = float(f.readline())
-        data = np.frombuffer(f.read(), dtype="<f4" if scale < 0 else ">f4").reshape(h, w, 3)
-    rgba = np.ones((h, w, 4), dtype=np.float32)
-    rgba[..., :3] = data
-    img.pixels.foreach_set(rgba.ravel())
+        return np.frombuffer(f.read(), dtype="<f4" if scale < 0 else ">f4").reshape(h, w, 3)
 
 
 def denoise(img):
+    w, h = img.size
+    px = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, 4)[..., :3]
     if not os.path.exists(OIDN):
         log("  oidn missing; skipping denoise")
-        return
+        return px
     os.makedirs(TMP, exist_ok=True)
     src, dst = os.path.join(TMP, img.name + ".pfm"), os.path.join(TMP, img.name + ".dn.pfm")
     write_pfm(src, img)
     r = subprocess.run([OIDN, "--hdr", src, "-o", dst, "-q", "high"], capture_output=True, text=True)
     if r.returncode != 0:
         log("  oidn failed", r.stderr[-400:])
-        return
-    read_pfm_into(dst, img)
+        return px
     log("  denoised", img.name)
+    return np.array(read_pfm(dst))
 
 
-def save(img, path, fmt):
+def save_rgbm(px, path):
+    """Float RGB -> RGBM (value = rgb * a * RGBM_RANGE), 8-bit lossless WebP
+    (bit-exact, ~40% smaller than PNG). `path` may say .png; .webp is written."""
+    path = os.path.splitext(path)[0] + ".webp"
+    h, w, _ = px.shape
+    c = np.clip(px / RGBM_RANGE, 0, 1)
+    m = np.clip(np.ceil(c.max(-1, keepdims=True) * 255) / 255, 1 / 255, 1)
+    rgba = np.concatenate([c / m, m], -1).astype(np.float32)
+    img = bpy.data.images.new(os.path.basename(path), w, h, alpha=True)
+    img.colorspace_settings.name = "Non-Color"
+    img.alpha_mode = "CHANNEL_PACKED"
+    img.pixels.foreach_set(rgba.ravel())
+    s = bpy.context.scene.render.image_settings
+    s.file_format = "WEBP"
+    s.color_mode = "RGBA"
+    s.quality = 100  # lossless
+    img.save_render(path, scene=bpy.context.scene)
+    bpy.data.images.remove(img)
+
+
+def save_image(img, path, fmt, quality=90):
     img.filepath_raw = path
     img.file_format = fmt
+    s = bpy.context.scene.render.image_settings
+    s.quality = quality
     img.save()
 
 
-def bucket(m):
-    if m.name.startswith("rc mirror"):
-        return 0.03, 1.0
-    b = principled(m)
-    if not b:
-        return 0.6, 0.0
-    r = 0.5 if b.inputs["Roughness"].is_linked else b.inputs["Roughness"].default_value
-    if b.inputs["Metallic"].is_linked:
-        mt = 1.0 if any(k in m.name for k in ("gilt", "brass", "gold", "nickel", "silver", "iron")) else 0.0
-    else:
-        mt = 1.0 if b.inputs["Metallic"].default_value >= 0.5 else 0.0
-    if any(k in m.name for k in ("gilt", "brass", "gold")):
-        mt = 1.0
-    r = min(ROUGH_BUCKETS, key=lambda x: abs(x - r))
-    if b.inputs["Coat Weight"].default_value > 0.3 and mt == 0:
-        r = min(r, 0.2)
-    return r, mt
+def new_image(name, size, data=True, alpha=False, float_buffer=False):
+    img = bpy.data.images.new(name, size, size, alpha=alpha, float_buffer=float_buffer)
+    if data:
+        img.colorspace_settings.name = "Non-Color"
+    return img
 
 
-def export_group(name, objs, color_img):
-    made = {}
-    for o in objs:
-        for s in o.material_slots:
-            r, mt = bucket(s.material) if s.material else (0.6, 0.0)
-            key = (r, mt)
-            if key not in made:
-                m = bpy.data.materials.new(f"railcar {name} r{r:.2f} m{int(mt)}")
-                m.use_nodes = True
-                b = m.node_tree.nodes["Principled BSDF"]
-                t = m.node_tree.nodes.new("ShaderNodeTexImage")
-                t.image = color_img
-                m.node_tree.links.new(t.outputs[0], b.inputs["Base Color"])
-                b.inputs["Roughness"].default_value = r
-                b.inputs["Metallic"].default_value = mt
-                made[key] = m
-            s.material = made[key]
+def slug(name):
+    return "".join(ch if ch.isalnum() else "-" for ch in name.lower()).strip("-")
+
+
+# ---------------------------------------------------------------- export
+
+def copy_texture(path, used):
+    """Copy a recipe texture into export/tex once; return its published name."""
+    if not path:
+        return None
+    base = os.path.basename(path)
+    if base not in used:
+        shutil.copyfile(path, os.path.join(TEXOUT, base))
+        used.add(base)
+    return "tex/" + base
+
+
+def set_uv_layers(me, names):
+    """Reorder/keep UV layers so `names` become TEXCOORD_0, _1 ..."""
+    data = {}
+    for n in names:
+        lay = me.uv_layers[n]
+        buf = np.empty(len(lay.data) * 2, dtype=np.float32)
+        lay.data.foreach_get("uv", buf)
+        data[n] = buf
+    while me.uv_layers:
+        me.uv_layers.remove(me.uv_layers[0])
+    for n in names:
+        lay = me.uv_layers.new(name=n)
+        lay.data.foreach_set("uv", data[n])
+
+
+def keep_attributes(me, names):
+    for a in [a for a in me.attributes if a.name.startswith("_lj_") and a.name not in names]:
+        me.attributes.remove(a)
+
+
+def export_group(name, pieces, specs):
+    """pieces: {material name: object}; one node per material."""
+    objs = list(pieces.values())
+    for mat, o in pieces.items():
+        spec = specs[mat]
         me = o.data
-        for l in [l for l in me.uv_layers if l.name != "BakeUV"]:
-            me.uv_layers.remove(l)
-    bpy.ops.object.select_all(action="DESELECT")
-    for o in objs:
-        o.select_set(True)
-    bpy.context.view_layer.objects.active = objs[0]
-    if len(objs) > 1:
-        bpy.ops.object.parent_clear(type="CLEAR_KEEP_TRANSFORM")
-        bpy.ops.object.join()
-    joined = bpy.context.view_layer.objects.active
-    joined.name = f"railcar {name}"
+        uv_names = ["UVMap", "LightUV"] if spec["kind"] in ("uvbake", "atlas") else ["LightUV"]
+        if spec["kind"] == "atlas":
+            # the atlas UV replaces the material's own UVs for export
+            me.uv_layers.remove(me.uv_layers["UVMap"])
+            me.uv_layers["AtlasUV"].name = "UVMap"
+        set_uv_layers(me, uv_names)
+        spec["uv"] = len(uv_names) - 1  # TEXCOORD index of the lightmap
+        keep = set()
+        if spec["kind"] == "box" and spec.get("space") == "object":
+            keep |= {"_lj_obj", "_lj_onrm"}
+        if spec["kind"] == "bindings":
+            keep |= {"_lj_gen", "_lj_rand"}
+        keep_attributes(me, keep)
+        o.data.materials.clear()
+    select(objs)
     path = os.path.join(OUT, f"railcar-{name}.glb")
     bpy.ops.export_scene.gltf(filepath=path, use_selection=True, export_format="GLB", export_yup=True,
-                              export_image_format="JPEG", export_jpeg_quality=92, export_apply=True,
-                              export_materials="EXPORT", export_texcoords=True, export_normals=True,
-                              export_cameras=False, export_lights=False)
-    log("  exported", path, len(joined.data.polygons), "faces", len(made), "materials")
-    return {"faces": len(joined.data.polygons), "materials": len(made), "file": os.path.basename(path)}
+                              export_materials="NONE", export_texcoords=True, export_normals=True,
+                              export_attributes=True, export_apply=True, export_cameras=False,
+                              export_lights=False)
+    faces = sum(len(o.data.polygons) for o in objs)
+    log("  exported", path, faces, "faces", len(objs), "meshes")
+    return {"faces": faces, "meshes": len(objs), "file": os.path.basename(path)}
 
 
 def export_simple(name, objs):
     if not objs:
         return None
-    bpy.ops.object.select_all(action="DESELECT")
-    for o in objs:
-        o.select_set(True)
-    bpy.context.view_layer.objects.active = objs[0]
+    select(objs)
     bpy.ops.object.parent_clear(type="CLEAR_KEEP_TRANSFORM")
     path = os.path.join(OUT, f"railcar-{name}.glb")
     bpy.ops.export_scene.gltf(filepath=path, use_selection=True, export_format="GLB", export_yup=True,
@@ -456,13 +771,30 @@ def export_simple(name, objs):
     return {"objects": len(objs), "file": os.path.basename(path)}
 
 
+def export_sky(manifest=None):
+    """The world HDRI the windows show (lights.py), as RGBM for the browser."""
+    import ph
+    path = ph.hdri("sunset_forest")
+    img = bpy.data.images.load(path, check_existing=True)
+    w, h = img.size
+    px = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, 4)[..., :3]
+    save_rgbm(px, os.path.join(OUT, "railcar-sky.webp"))
+    log("  sky", w, h)
+    if manifest is not None:
+        manifest["sky"] = "railcar-sky.webp"
+    return "railcar-sky.webp"
+
+
 def app(v):
     """Blender (x, y, z) -> application (x, z, -y)."""
     return [round(v[0], 3), round(v[2], 3), round(-v[1], 3)]
 
 
-def run():
+def run(groups_only=None):
     os.makedirs(OUT, exist_ok=True)
+    if os.path.isdir(TEXOUT):
+        shutil.rmtree(TEXOUT)
+    os.makedirs(TEXOUT)
     open(LOG, "w").close()
     t0 = time.time()
     s = bpy.context.scene
@@ -473,72 +805,102 @@ def run():
     import fireplace
     import shell
     fire = getattr(fireplace, "FIRE_WORLD", None)
-    groups, glass, canvases, skipped = classify()
+    groups, glass, canvases, skipped, windows = classify()
     log("classified", {k: len(v) for k, v in groups.items()}, "glass", len(glass), "canvas", len(canvases), "skipped", len(skipped))
     for o in skipped:
         o.hide_render = True
     statics = [o for g in groups.values() for o in g]
-    realised = realise(statics + glass + canvases)
+    realised = realise(statics + glass + canvases + windows)
     rset = {o.name for o in realised}
     for k in groups:
-        groups[k] = [bpy.data.objects[o.name] for o in groups[k] if o.name in rset]
+        groups[k] = [bpy.data.objects[o.name] for o in groups[k] if o.name in rset and len(bpy.data.objects[o.name].data.polygons)]
     glass = [bpy.data.objects[o.name] for o in glass if o.name in rset]
     canvases = [bpy.data.objects[o.name] for o in canvases if o.name in rset]
-    for k in groups:
-        groups[k] = [o for o in groups[k] if len(o.data.polygons) > 0]
+    windows = [bpy.data.objects[o.name] for o in windows if o.name in rset]
     allstatic = [o for g in groups.values() for o in g]
     coordinate_attributes(allstatic)
-    # rename first UV layer to UVMap on every piece so the merge keeps one shared layer
-    for o in allstatic:
-        me = o.data
-        for extra in list(me.uv_layers)[1:]:
-            me.uv_layers.remove(extra)
-        if me.uv_layers:
-            me.uv_layers[0].name = "UVMap"
-    for k in groups:
-        groups[k] = [merge(k, groups[k])]
-        log("merged", k, len(groups[k][0].data.polygons), "faces", len(groups[k][0].material_slots), "slots")
-    normalise_uvs([o for g in groups.values() for o in g])
-    log("uvs normalised", f"{time.time() - t0:.0f}s")
-    manifest = {"groups": {}, "units": "1 unit = 10 cm; app coords (x, y-up, z)",
+    ensure_uvmap(allstatic)
+    normalise_material_uvs({sl.material for o in allstatic for sl in o.material_slots if sl.material})
+    resolve_coplanar(allstatic)
+    log("prepared", f"{time.time() - t0:.0f}s")
+
+    manifest = {"version": 2, "units": "1 unit = 10 cm; app coords (x, y-up, z)", "rgbmRange": RGBM_RANGE,
                 "fire": app(fire) if fire else None,
                 "room": {"x": [shell.X0, shell.X1], "floor": -9.0, "back_wall_z": -shell.Y_BACK, "front_wall_z": -shell.Y_FRONT,
-                         "ceiling": shell.CL_TOP + 0.9}}
-    images = {}
-    for name, (csize, lsize, esize, samples) in GROUPS.items():
-        objs = groups[name]
-        log("group", name, len(objs), "objects")
-        unwrap(objs)
-        log("  unwrapped")
-        color = bpy.data.images.new(f"railcar-{name}-color", csize, csize, alpha=False)
-        light = bpy.data.images.new(f"railcar-{name}-light", lsize, lsize, alpha=False, float_buffer=True)
-        light.colorspace_settings.name = "Non-Color"
-        emit = bpy.data.images.new(f"railcar-{name}-emit", esize, esize, alpha=False, float_buffer=True)
-        emit.colorspace_settings.name = "Non-Color"
-        cache = {}
-        orig = swap(objs, albedo_copy, cache)
-        run_bake(objs, "EMIT", color, 4)
-        detach_target(objs)
-        restore(objs, orig)
-        cache = {}
-        orig = swap(objs, diffuse_copy, cache)
-        run_bake(objs, "DIFFUSE", light, samples, {"DIRECT", "INDIRECT"})
-        detach_target(objs)
-        restore(objs, orig)
-        run_bake(objs, "EMIT", emit, 16)
-        detach_target(objs)
-        denoise(light)
-        save(color, os.path.join(TMP, f"railcar-{name}-color.png"), "PNG")
-        save(light, os.path.join(OUT, f"railcar-{name}-light.hdr"), "HDR")
-        save(emit, os.path.join(OUT, f"railcar-{name}-emit.hdr"), "HDR")
-        images[name] = color
-        log("  baked", name, f"{time.time() - t0:.0f}s")
-    for name in GROUPS:
-        manifest["groups"][name] = export_group(name, groups[name], images[name])
-        manifest["groups"][name]["light"] = f"railcar-{name}-light.hdr"
-        manifest["groups"][name]["emit"] = f"railcar-{name}-emit.hdr"
-    manifest["glass"] = export_simple("glass", glass)
-    manifest["paintings"] = export_simple("paintings", canvases)
+                         "ceiling": shell.CL_TOP + 0.9},
+                "groups": {}}
+    used_tex = set()
+    for name, (lsize, esize, samples, density, max_bake) in GROUPS.items():
+        if groups_only and name not in groups_only:
+            continue
+        tg = time.time()
+        pieces = split_by_material(name, merge(name, groups[name]))
+        objs = list(pieces.values())
+        specs = {mat: classify_material(o.material_slots[0].material) for mat, o in pieces.items()}
+        log("group", name, len(objs), "materials", {k: sum(1 for s in specs.values() if s["kind"] == k) for k in
+                                                       sorted({s["kind"] for s in specs.values()})})
+        # ---- light
+        unwrap(objs, "LightUV")
+        log("  LightUV coverage", f"{uv_coverage(objs, 'LightUV'):.2f}")
+        light = new_image(f"railcar-{name}-light", lsize, float_buffer=True)
+        bake(objs, "DIFFUSE", light, "LightUV", samples, maker=diffuse_copy, passes={"DIRECT", "INDIRECT"})
+        save_rgbm(denoise(light), os.path.join(OUT, f"railcar-{name}-light.webp"))
+        emit = new_image(f"railcar-{name}-emit", esize, float_buffer=True)
+        bake(objs, "EMIT", emit, "LightUV", 16)
+        w, h = emit.size
+        save_rgbm(np.array(emit.pixels[:], dtype=np.float32).reshape(h, w, 4)[..., :3],
+                  os.path.join(OUT, f"railcar-{name}-emit.webp"))
+        # ---- surfaces
+        for mat, o in pieces.items():
+            spec = specs[mat]
+            if spec["kind"] == "uvbake":
+                cov = max(uv_coverage([o], "UVMap"), 0.05)
+                size = pow2(math.sqrt(world_area([o]) / cov) * density, 256, max_bake)
+                stem = slug(f"{name}-{mat}")
+                col = new_image(stem + "-color", size, data=False)
+                bake([o], "EMIT", col, "UVMap", 4, maker=albedo_copy)
+                save_image(col, os.path.join(TEXOUT, stem + "-color.jpg"), "JPEG", 90)
+                orm = new_image(stem + "-orm", size)
+                bake([o], "EMIT", orm, "UVMap", 4, maker=orm_copy)
+                save_image(orm, os.path.join(TEXOUT, stem + "-orm.jpg"), "JPEG", 90)
+                nrm = new_image(stem + "-normal", size)
+                bake([o], "NORMAL", nrm, "UVMap", 4, normal_space="TANGENT")
+                save_image(nrm, os.path.join(TEXOUT, stem + "-normal.jpg"), "JPEG", 92)
+                b = principled(o.material_slots[0].material)
+                spec.update(size=size, color=f"tex/{stem}-color.jpg", orm=f"tex/{stem}-orm.jpg",
+                            normal=f"tex/{stem}-normal.jpg",
+                            sheen=round(b.inputs["Sheen Weight"].default_value, 3) if b else 0,
+                            coat=round(b.inputs["Coat Weight"].default_value, 3) if b else 0)
+            elif spec["kind"] in ("box", "damask"):
+                if spec["kind"] == "box":
+                    maps = spec["maps"]
+                    for key in ("color", "rough", "normal"):
+                        maps[key] = copy_texture(maps.get(key), used_tex)
+                else:
+                    spec["mask"] = copy_texture(spec["mask"], used_tex)
+        atlas = [o for mat, o in pieces.items() if specs[mat]["kind"] == "atlas"]
+        if atlas:
+            unwrap(atlas, "AtlasUV")
+            size = pow2(math.sqrt(world_area(atlas) / max(uv_coverage(atlas, "AtlasUV"), 0.05)) * density, 512, 4096)
+            col = new_image(f"railcar-{name}-atlas-color", size, data=False)
+            bake(atlas, "EMIT", col, "AtlasUV", 4, maker=albedo_copy)
+            save_image(col, os.path.join(TEXOUT, f"{name}-atlas-color.jpg"), "JPEG", 90)
+            orm = new_image(f"railcar-{name}-atlas-orm", size)
+            bake(atlas, "EMIT", orm, "AtlasUV", 4, maker=orm_copy)
+            save_image(orm, os.path.join(TEXOUT, f"{name}-atlas-orm.jpg"), "JPEG", 90)
+            for mat, o in pieces.items():
+                if specs[mat]["kind"] == "atlas":
+                    specs[mat].update(color=f"tex/{name}-atlas-color.jpg", orm=f"tex/{name}-atlas-orm.jpg", size=size)
+        info = export_group(name, pieces, specs)
+        info.update(light=f"railcar-{name}-light.webp", emit=f"railcar-{name}-emit.webp", materials=specs,
+                    lightCoverage=round(uv_coverage(objs, "LightUV"), 3) if all("LightUV" in o.data.uv_layers for o in objs) else None)
+        manifest["groups"][name] = info
+        log("  group done", name, f"{time.time() - tg:.0f}s")
+    if not groups_only:
+        manifest["glass"] = export_simple("glass", glass)
+        manifest["paintings"] = export_simple("paintings", canvases)
+        manifest["windows"] = export_simple("windows", windows)
+        export_sky(manifest)
     manifest["seconds"] = round(time.time() - t0)
     json.dump(manifest, open(os.path.join(OUT, "railcar-manifest.json"), "w"), indent=1)
     log("DONE", manifest["seconds"], "s")
