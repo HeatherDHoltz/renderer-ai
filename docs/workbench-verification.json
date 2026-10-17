@@ -533,7 +533,18 @@
       "gallery/workbench/fidelity-emerald.jpg",
       "gallery/workbench/fidelity-metals.jpg"
     ],
-    "publication": "pending corrected same-Site source upload; oversized unpublished source objects replaced losslessly using a fresh helper checkout of the unchanged remote",
+    "publication": {
+      "project_id": "appgprj_6ad1d1ee181c819186c337d3573bdaea",
+      "source_commit": "90e28535f1540cd386a5cf446fb69c9723408e5d",
+      "version_id": "appgprj_6ad1d1ee181c819186c337d3573bdaea~appgver_4d833af66c248191811e8bc96e29b801",
+      "deployment_id": "appgdep_6ad2c1c1ffc4819193571f0b4665a2e4",
+      "status": "succeeded",
+      "url": "https://heathers-little-jeweler.zoeholtz2000.chatgpt.site/",
+      "audience": "Existing owner-private audience preserved",
+      "github_implementation_commit": "1c7f49d",
+      "github_transport_commit": "680330b",
+      "hosted_browser": "Canonical page opened and retained at normal ChatGPT sign-in. No new hosted WebGL interaction QA is claimed; actual visual QA/screenshots are local."
+    },
     "performance": "Native pixels, larger textures and geometry are intentionally more costly. No new whole-view/mobile FPS or temperature guarantee; older adaptive-scene measurements are historical."
   }
 }
