@@ -1,0 +1,46 @@
+{
+ "groups": {
+  "desk": {
+   "faces": 47868,
+   "materials": 7,
+   "file": "railcar-desk.glb",
+   "light": "railcar-desk-light.hdr",
+   "emit": "railcar-desk-emit.hdr"
+  },
+  "furnishings": {
+   "faces": 237580,
+   "materials": 8,
+   "file": "railcar-furnishings.glb",
+   "light": "railcar-furnishings-light.hdr",
+   "emit": "railcar-furnishings-emit.hdr"
+  },
+  "architecture": {
+   "faces": 128724,
+   "materials": 5,
+   "file": "railcar-architecture.glb",
+   "light": "railcar-architecture-light.hdr",
+   "emit": "railcar-architecture-emit.hdr"
+  }
+ },
+ "units": "1 unit = 10 cm; app coords (x, y-up, z)",
+ "fire": null,
+ "room": {
+  "x": [
+   -26.0,
+   26.0
+  ],
+  "floor": -9.0,
+  "back_wall_z": -11.0,
+  "front_wall_z": 28.0,
+  "ceiling": 20.299999999999997
+ },
+ "glass": {
+  "objects": 142,
+  "file": "railcar-glass.glb"
+ },
+ "paintings": {
+  "objects": 4,
+  "file": "railcar-paintings.glb"
+ },
+ "seconds": 521
+}

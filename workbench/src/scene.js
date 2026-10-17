@@ -126,8 +126,10 @@ export async function createWorkbench(host, onFatalError) {
     powerPreference: "default",
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  // AgX matches the Blender/Cycles view transform used for the baked car.
+  renderer.toneMapping = THREE.AgXToneMapping;
+  const expParam = Number(new URLSearchParams(location.search).get("exp"));
+  renderer.toneMappingExposure = Number.isFinite(expParam) && expParam > 0 ? expParam : 0.95; // ?exp= for calibration
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.transmissionResolutionScale = 0.75;
@@ -139,24 +141,24 @@ export async function createWorkbench(host, onFatalError) {
   });
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#120d0a");
-  scene.fog = new THREE.Fog("#120d0a", 32, 65);
+  scene.fog = new THREE.Fog("#120d0a", 70, 160);
   const surfaces = await loadSurfaces(renderer);
   scene.environment = surfaces.environment.texture;
   scene.environmentIntensity = 0.55;
   const reflectionTarget = new THREE.WebGLCubeRenderTarget(256, {
     type: THREE.HalfFloatType,
   });
-  const reflectionCamera = new THREE.CubeCamera(0.04, 65, reflectionTarget);
+  const reflectionCamera = new THREE.CubeCamera(0.04, 160, reflectionTarget);
   const reflectionGenerator = new THREE.PMREMGenerator(renderer);
   let reflectionFiltered = null,
     reflectionDirty = true,
     lastReflection = -Infinity,
     reflectionRevision = 0;
-  const camera = new THREE.PerspectiveCamera(46, 1, 0.025, 70);
+  const camera = new THREE.PerspectiveCamera(46, 1, 0.025, 180);
   camera.position.set(0, 2.6, 6.4);
   camera.lookAt(0, -0.15, -0.2);
   camera.layers.enable(1);
-  const inspectionCamera = new THREE.PerspectiveCamera(55 / 3, 1, 0.025, 70);
+  const inspectionCamera = new THREE.PerspectiveCamera(55 / 3, 1, 0.025, 180);
   inspectionCamera.position.set(0, 1.5, 2.7);
   inspectionCamera.lookAt(0, 0.55, 0.2);
   scene.add(inspectionCamera);
@@ -245,15 +247,14 @@ export async function createWorkbench(host, onFatalError) {
   key.shadow.autoUpdate = false;
   key.shadow.needsUpdate = true;
   scene.add(key);
-  scene.add(new THREE.HemisphereLight("#e7ecf5", "#665549", 0.28));
-  const fill = new THREE.DirectionalLight("#f5f7ff", 0.32);
-  fill.position.set(-3, 4, -2);
-  scene.add(fill);
+  // The car itself is baked; these only light the live jewellery, cases and loupe.
+  scene.add(new THREE.HemisphereLight("#e7ecf5", "#665549", 0.12));
   const benchBounce = new THREE.RectAreaLight("#fffaf4", 1.2, 7, 4);
   benchBounce.position.set(0, 2.0, 5);
   benchBounce.lookAt(0, -0.3, 0);
   scene.add(benchBounce);
-  const collectionFill = new THREE.RectAreaLight("#ffffff", 4, 7, 5);
+  // Bright, neutral examination light over the cases so stone and metal colour read true.
+  const collectionFill = new THREE.RectAreaLight("#fffaf2", 9, 8, 5);
   collectionFill.position.set(0, 5.5, 0.5);
   collectionFill.lookAt(0, -1, 0);
   scene.add(collectionFill);
@@ -753,6 +754,15 @@ export async function createWorkbench(host, onFatalError) {
     host.dataset.renderPixelRatio = String(ratio);
     needsFrame = true;
   }
+  let fpsFrames = 0,
+    fpsStart = performance.now(),
+    fpsLabel = null;
+  if (new URLSearchParams(location.search).has("fps")) {
+    fpsLabel = document.createElement("div");
+    fpsLabel.style.cssText =
+      "position:fixed;left:8px;bottom:8px;z-index:99;font:12px/1 ui-monospace,monospace;color:#f3e6c8;background:#0009;padding:4px 6px;border-radius:4px;pointer-events:none";
+    document.body.append(fpsLabel);
+  }
   function frame(now) {
     scheduled = 0;
     clearTimeout(ambientTimer);
@@ -830,12 +840,21 @@ export async function createWorkbench(host, onFatalError) {
       draw();
       needsFrame = false;
       lastDraw = now;
+      // Frame-rate readout: data-fps on the host, and an overlay with ?fps.
+      fpsFrames++;
+      if (now - fpsStart >= 1000) {
+        const fps = (fpsFrames * 1000) / (now - fpsStart);
+        host.dataset.fps = fps.toFixed(1);
+        if (fpsLabel) fpsLabel.textContent = `${fps.toFixed(0)} fps`;
+        fpsFrames = 0;
+        fpsStart = now;
+      }
     }
     host.dataset.renderState =
       moving || objectsMoving || caustics.settling ? "settling" : "resting";
     if (moving || objectsMoving || caustics.settling) requestFrame();
     else if (!reduced.matches && workshop.needsAnimation(camera))
-      ambientTimer = setTimeout(requestFrame, 1000 / 24);
+      ambientTimer = setTimeout(requestFrame, 1000 / 30);
   }
   function requestFrame() {
     if (!scheduled && !stopped) scheduled = requestAnimationFrame(frame);

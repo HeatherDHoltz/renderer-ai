@@ -3,3 +3,7 @@
 /output/
 __pycache__/
 /workbench/dist/
+
+# Poly Haven sources re-download via workbench/scripts/railcar/ph.py; keep only the credits.
+/workbench/assets/railcar/polyhaven/*
+!/workbench/assets/railcar/polyhaven/credits.json

@@ -1,0 +1,267 @@
+{
+ "ArmChair_01": {
+  "authors": [
+   "Kirill Sannikov"
+  ],
+  "files": [
+   "ArmChair_01_2k.gltf"
+  ],
+  "license": "CC0",
+  "name": "Arm Chair 01",
+  "source": "https://polyhaven.com/a/ArmChair_01",
+  "type": "model"
+ },
+ "Chandelier_02": {
+  "authors": [
+   "Kirill Sannikov"
+  ],
+  "files": [
+   "Chandelier_02_2k.gltf"
+  ],
+  "license": "CC0",
+  "name": "Chandelier 02",
+  "source": "https://polyhaven.com/a/Chandelier_02",
+  "type": "model"
+ },
+ "antique_ceramic_vase_01": {
+  "authors": [
+   "James Ray Cock"
+  ],
+  "files": [
+   "antique_ceramic_vase_01_2k.gltf"
+  ],
+  "license": "CC0",
+  "name": "Antique Ceramic Vase 01",
+  "source": "https://polyhaven.com/a/antique_ceramic_vase_01",
+  "type": "model"
+ },
+ "brass_candleholders": {
+  "authors": [
+   "Tina"
+  ],
+  "files": [
+   "brass_candleholders_2k.gltf"
+  ],
+  "license": "CC0",
+  "name": "Brass Candleholders",
+  "source": "https://polyhaven.com/a/brass_candleholders",
+  "type": "model"
+ },
+ "brown_leather": {
+  "authors": [
+   "Rob Tuytel"
+  ],
+  "files": [
+   "brown_leather_albedo_2k.jpg",
+   "brown_leather_arm_2k.jpg",
+   "brown_leather_nor_gl_2k.jpg",
+   "brown_leather_rough_2k.jpg"
+  ],
+  "license": "CC0",
+  "name": "Brown Leather",
+  "source": "https://polyhaven.com/a/brown_leather",
+  "type": "texture"
+ },
+ "dining_chair_02": {
+  "authors": [
+   "James Ray Cock"
+  ],
+  "files": [
+   "dining_chair_02_2k.gltf"
+  ],
+  "license": "CC0",
+  "name": "Dining Chair 02",
+  "source": "https://polyhaven.com/a/dining_chair_02",
+  "type": "model"
+ },
+ "floral_jacquard": {
+  "authors": [
+   "colormass",
+   "Rico Cilliers"
+  ],
+  "files": [
+   "floral_jacquard_arm_2k.jpg",
+   "floral_jacquard_diff_2k.jpg",
+   "floral_jacquard_nor_gl_2k.jpg",
+   "floral_jacquard_rough_2k.jpg"
+  ],
+  "license": "CC0",
+  "name": "Floral Jacquard",
+  "source": "https://polyhaven.com/a/floral_jacquard",
+  "type": "texture"
+ },
+ "leather_red_03": {
+  "authors": [
+   "Rob Tuytel"
+  ],
+  "files": [
+   "leather_red_03_arm_2k.jpg",
+   "leather_red_03_nor_gl_2k.jpg",
+   "leather_red_03_rough_2k.jpg"
+  ],
+  "license": "CC0",
+  "name": "Leather Red 03",
+  "source": "https://polyhaven.com/a/leather_red_03",
+  "type": "texture"
+ },
+ "magnifying_glass_01": {
+  "authors": [
+   "Nazar Borodavka"
+  ],
+  "files": [
+   "magnifying_glass_01_2k.gltf"
+  ],
+  "license": "CC0",
+  "name": "Magnifying Glass 01",
+  "source": "https://polyhaven.com/a/magnifying_glass_01",
+  "type": "model"
+ },
+ "marble_01": {
+  "authors": [
+   "Rob Tuytel"
+  ],
+  "files": [
+   "marble_01_arm_2k.jpg",
+   "marble_01_diff_2k.jpg",
+   "marble_01_nor_gl_2k.jpg",
+   "marble_01_rough_2k.jpg"
+  ],
+  "license": "CC0",
+  "name": "Marble 01",
+  "source": "https://polyhaven.com/a/marble_01",
+  "type": "texture"
+ },
+ "rosewood_veneer1": {
+  "authors": [
+   "Jenelle van Heerden"
+  ],
+  "files": [
+   "rosewood_veneer1_arm_2k.jpg",
+   "rosewood_veneer1_diff_2k.jpg",
+   "rosewood_veneer1_nor_gl_2k.jpg",
+   "rosewood_veneer1_rough_2k.jpg"
+  ],
+  "license": "CC0",
+  "name": "Rosewood Veneer1",
+  "source": "https://polyhaven.com/a/rosewood_veneer1",
+  "type": "texture"
+ },
+ "round_spectacles": {
+  "authors": [
+   "Sean Buckley"
+  ],
+  "files": [
+   "round_spectacles_2k.gltf"
+  ],
+  "license": "CC0",
+  "name": "Round Spectacles",
+  "source": "https://polyhaven.com/a/round_spectacles",
+  "type": "model"
+ },
+ "sapele_veneer": {
+  "authors": [
+   "Jenelle van Heerden"
+  ],
+  "files": [
+   "sapele_veneer_arm_2k.jpg",
+   "sapele_veneer_diff_2k.jpg",
+   "sapele_veneer_nor_gl_2k.jpg",
+   "sapele_veneer_rough_2k.jpg"
+  ],
+  "license": "CC0",
+  "name": "Sapele Veneer",
+  "source": "https://polyhaven.com/a/sapele_veneer",
+  "type": "texture"
+ },
+ "sofa_03": {
+  "authors": [
+   "Fran Calvente"
+  ],
+  "files": [
+   "sofa_03_2k.gltf"
+  ],
+  "license": "CC0",
+  "name": "Sofa 03",
+  "source": "https://polyhaven.com/a/sofa_03",
+  "type": "model"
+ },
+ "sunset_forest": {
+  "authors": [
+   "Andreas Mischok"
+  ],
+  "files": [
+   "sunset_forest_2k.hdr"
+  ],
+  "license": "CC0",
+  "name": "Sunset Forest",
+  "source": "https://polyhaven.com/a/sunset_forest",
+  "type": "hdri"
+ },
+ "velour_velvet": {
+  "authors": [
+   "colormass",
+   "Rico Cilliers"
+  ],
+  "files": [
+   "velour_velvet_arm_2k.jpg",
+   "velour_velvet_diff_2k.jpg",
+   "velour_velvet_nor_gl_2k.jpg",
+   "velour_velvet_rough_2k.jpg"
+  ],
+  "license": "CC0",
+  "name": "Velour Velvet",
+  "source": "https://polyhaven.com/a/velour_velvet",
+  "type": "texture"
+ },
+ "vintage_microscope": {
+  "authors": [
+   "Luis Jos\u00e9 Fern\u00e1ndez Rodr\u00edguez"
+  ],
+  "files": [
+   "vintage_microscope_2k.gltf"
+  ],
+  "license": "CC0",
+  "name": "Vintage Microscope",
+  "source": "https://polyhaven.com/a/vintage_microscope",
+  "type": "model"
+ },
+ "vintage_oil_lamp": {
+  "authors": [
+   "Monsta3D"
+  ],
+  "files": [
+   "vintage_oil_lamp_2k.gltf"
+  ],
+  "license": "CC0",
+  "name": "Vintage Oil Lamp",
+  "source": "https://polyhaven.com/a/vintage_oil_lamp",
+  "type": "model"
+ },
+ "vintage_pocket_watch": {
+  "authors": [
+   "Tal Swicegood"
+  ],
+  "files": [
+   "vintage_pocket_watch_2k.gltf"
+  ],
+  "license": "CC0",
+  "name": "Vintage Pocket Watch",
+  "source": "https://polyhaven.com/a/vintage_pocket_watch",
+  "type": "model"
+ },
+ "white_maple_veneer": {
+  "authors": [
+   "Jenelle van Heerden"
+  ],
+  "files": [
+   "white_maple_veneer_arm_2k.jpg",
+   "white_maple_veneer_diff_2k.jpg",
+   "white_maple_veneer_nor_gl_2k.jpg",
+   "white_maple_veneer_rough_2k.jpg"
+  ],
+  "license": "CC0",
+  "name": "White Maple Veneer",
+  "source": "https://polyhaven.com/a/white_maple_veneer",
+  "type": "texture"
+ }
+}

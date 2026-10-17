@@ -55,13 +55,16 @@ test("pointer zoom changes pivot toward focus, pullback preserves it, limits rem
   }
   settle(rig, camera);
   assert.equal(rig.goal.radius, 1.35);
-  assert.ok(camera.position.y >= -0.75 && camera.position.z >= -5.8);
+  // Inside the railcar, and never inside the desk.
+  const p = camera.position;
+  assert.ok(p.x >= -24.5 && p.x <= 24.5 && p.y >= -8.3 && p.z >= -10.2 && p.z <= 26.5);
+  if (Math.abs(p.x) < 8.4 && p.z > -6 && p.z < 3.6) assert.ok(p.y >= -0.75);
   rig.zoom(NaN);
   rig.zoom(0);
   assert.ok(Number.isFinite(rig.goal.radius));
   rig.focus(new THREE.Vector3(100, -100, -100));
   settle(rig, camera);
-  assert.deepEqual(rig.destination.toArray(), [7, -0.9, -10]);
+  assert.deepEqual(rig.destination.toArray(), [23, -8.5, -9.5]);
 });
 test("fine trackpad deltas accumulate and wheel units agree", () => {
   assert.ok(wheelScale(-1) < 1 && wheelScale(-1) > 0.99);

@@ -1,6 +1,6 @@
 # Renderer implementation instructions
 
-Read `IMPLEMENTATION_HANDOFF.md`, `PLAN.md`, and `STATUS.md` before implementation.
+Read `RAILCAR_HANDOFF.md` first (current room: the 1890 private railcar, October 16, 2026), then `IMPLEMENTATION_HANDOFF.md`, `PLAN.md`, and `STATUS.md` before implementation.
 
 - Work only in this AI-assisted repository. Never modify `../renderer-project` or course materials.
 - Heather authorized local milestone commits without asking again on October 15, 2026. Inspect status/diffs, verify the change, and commit related work directly. Preserve unrelated edits.

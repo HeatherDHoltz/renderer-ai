@@ -3,9 +3,13 @@ import * as THREE from "../vendor/three.module.js";
 // Art-directed participating flame volume, not a fluid/combustion solver.
 // A repeatable3D noise texture is advected upward; front-to-back integration
 // gives a translucent turbulent body instead of overlapping striped billboards.
-export function createHearth(scene) {
+export function createHearth(scene, options = {}) {
   const group = new THREE.Group();
-  group.position.set(2.15, -1.4, -6.95);
+  if (options.position) group.position.copy(options.position);
+  else group.position.set(2.15, -1.4, -6.95);
+  group.rotation.y = options.rotationY ?? 0;
+  group.scale.setScalar(options.scale ?? 1);
+  const withProps = options.props !== false;
   scene.add(group);
   let seed = 419;
   const n = 64,
@@ -79,7 +83,7 @@ export function createHearth(scene) {
    float cracks=sin(vViewPosition.x*133.)*sin(vViewPosition.y*97.+sin(vViewPosition.z*57.));diffuseColor.rgb*=.68+.32*smoothstep(-.8,.8,cracks);`,
     );
   };
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; withProps && i < 6; i++) {
     const log = new THREE.Mesh(
       new THREE.CylinderGeometry(0.095, 0.13, 0.85 + (i % 3) * 0.12, 48, 8),
       bark,
@@ -95,7 +99,7 @@ export function createHearth(scene) {
   const emberMat = new THREE.MeshBasicMaterial({
     color: new THREE.Color(2.4, 0.11, 0.004),
   });
-  for (let i = 0; i < 42; i++) {
+  for (let i = 0; withProps && i < 42; i++) {
     const e = new THREE.Mesh(
       new THREE.IcosahedronGeometry(0.025 + (i % 4) * 0.009, 2),
       emberMat,
@@ -108,9 +112,10 @@ export function createHearth(scene) {
     e.scale.set(1, 0.3, 0.7);
     group.add(e);
   }
-  const light = new THREE.PointLight("#ff9348", 4, 6, 2);
-  light.position.set(2.15, -0.75, -6.65);
-  scene.add(light);
+  // Flicker light for live objects near the hearth (room glow is baked).
+  const light = new THREE.PointLight("#ff9348", options.position ? 14 : 4, options.position ? 14 : 6, 2);
+  light.position.set(0, 0.65, 0.35);
+  group.add(light);
   const frustum = new THREE.Frustum(),
     projection = new THREE.Matrix4(),
     bounds = new THREE.Box3();
