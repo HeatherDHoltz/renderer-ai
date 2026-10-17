@@ -1,53 +1,45 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createHash } from "node:crypto";
 import { solitaireGeometry, readGemOBJ } from "../src/geometry.js";
-test("the study preserves separate source UVs, lighting UVs and distinct material responses", async () => {
-  const g = JSON.parse(
-    await readFile(
-      new URL("../assets/atelier/atelier.gltf", import.meta.url),
-      "utf8",
-    ),
-  );
-  assert.ok(g.materials.length > 8);
-  const pbr = g.materials.map((m) => m.pbrMetallicRoughness);
-  assert.ok(pbr.some((m) => m.metallicFactor > 0.8));
-  assert.ok(pbr.some((m) => m.roughnessFactor > 0.9));
-  assert.ok(g.materials.some((m) => m.normalTexture));
-  for (const mesh of g.meshes)
-    for (const p of mesh.primitives) {
-      assert.ok(p.attributes.TEXCOORD_0 !== undefined);
-      assert.ok(p.attributes.TEXCOORD_1 !== undefined);
+function readGLB(bytes) {
+  // GLB: 12-byte header, then the JSON chunk (length, type, payload).
+  return JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString("utf8"));
+}
+const railcar = (name) => new URL("../assets/railcar/" + name, import.meta.url);
+test("the railcar ships every baked group with an atlas, lightmap and distinct material responses", async () => {
+  const manifest = JSON.parse(await readFile(railcar("export/railcar-manifest.json"), "utf8"));
+  assert.deepEqual(Object.keys(manifest.groups).sort(), ["architecture", "desk", "furnishings"]);
+  for (const group of Object.values(manifest.groups)) {
+    const g = readGLB(await readFile(railcar("export/" + group.file)));
+    assert.equal(g.materials.length, group.materials);
+    const pbr = g.materials.map((m) => m.pbrMetallicRoughness);
+    assert.ok(pbr.every((m) => m.baseColorTexture), "colour atlas on every material");
+    assert.ok(pbr.some((m) => (m.metallicFactor ?? 1) === 1));
+    assert.ok(pbr.some((m) => m.metallicFactor === 0 && m.roughnessFactor > 0.85));
+    for (const mesh of g.meshes)
+      for (const p of mesh.primitives) assert.ok(p.attributes.TEXCOORD_0 !== undefined);
+    for (const map of [group.light, group.emit]) {
+      const header = (await readFile(railcar("export/" + map))).subarray(0, 10).toString("latin1");
+      assert.match(header, /^#\?RADIANCE/);
     }
+  }
+  for (const extra of [manifest.glass, manifest.paintings])
+    assert.ok(readGLB(await readFile(railcar("export/" + extra.file))).meshes.length > 0);
 });
-test("new photographed objects retain full PBR dependencies and their source hashes", async () => {
-  const records = JSON.parse(
-    await readFile(
-      new URL("../assets/study-props/sources.json", import.meta.url),
-      "utf8",
-    ),
-  );
-  assert.equal(records.length, 3);
-  for (const r of records) {
-    assert.equal(r.license, "CC0-1.0");
-    const root = new URL(
-      "../assets/study-props/" + r.asset + "/",
-      import.meta.url,
-    );
-    const gltf = JSON.parse(
-      await readFile(new URL("model.gltf", root), "utf8"),
-    );
-    assert.ok(gltf.materials.some((m) => m.normalTexture));
-    assert.ok(
-      gltf.materials.some(
-        (m) => m.pbrMetallicRoughness.metallicRoughnessTexture,
-      ),
-    );
-    for (const f of r.files) {
-      const bytes = await readFile(new URL("../" + f.file, import.meta.url));
-      assert.equal(createHash("sha256").update(bytes).digest("hex"), f.sha256);
-    }
+test("railcar sources are credited: Poly Haven CC0 models and public-domain paintings", async () => {
+  const polyhaven = JSON.parse(await readFile(railcar("polyhaven/credits.json"), "utf8"));
+  assert.ok(Object.keys(polyhaven).length > 0);
+  for (const asset of Object.values(polyhaven)) {
+    assert.equal(asset.license, "CC0");
+    assert.match(asset.source, /^https:\/\/polyhaven\.com\/a\//);
+    assert.ok(asset.authors.length > 0);
+  }
+  const paintings = JSON.parse(await readFile(railcar("paintings/SOURCES.json"), "utf8"));
+  for (const [file, record] of Object.entries(paintings)) {
+    await readFile(railcar("paintings/" + file));
+    assert.match(record.source, /^https:\/\//);
+    assert.match(record.license, /public domain/);
   }
 });
 test("the new collection setting is closed, connected, smooth and does not smear the brushing UV seam", async () => {

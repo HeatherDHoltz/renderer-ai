@@ -29,8 +29,11 @@ export const LIGHTMAP_INTENSITY = tuning("lm", 0.7);
 const ROOM_ENV = tuning("env", 0.08);
 // ?spec= live-light glints on the car away from the desk. The jewellery lights
 // are aimed at the desk; at full strength they streak the velvet curtains and
-// wainscot far more than Cycles does. The desk keeps full glints.
+// wainscot far more than Cycles does. The desk keeps full glints. The walls
+// take none: the key light put a soft white highlight on the varnished panel
+// between the windows that the Cycles render does not have.
 const ROOM_SPECULAR = tuning("spec", 0.3);
+const WALL_SPECULAR = tuning("wallspec", 0);
 
 function hdr(loader, name) {
   return loader.loadAsync(url(name)).then((t) => {
@@ -50,17 +53,49 @@ function glassMaterial(source) {
   const tint = source.color ? source.color.clone() : new THREE.Color(1, 1, 1);
   // Cheap, honest glass: env reflection + tinted transparency, no extra
   // transmission render pass (which would cost a full scene redraw).
-  return new THREE.MeshStandardMaterial({
+  if (spirit) {
+    return new THREE.MeshStandardMaterial({
+      name: source.name,
+      color: tint.multiplyScalar(0.9),
+      roughness: 0.03,
+      metalness: 0,
+      transparent: true,
+      opacity: 0.82,
+      envMapIntensity: 1.6,
+      depthWrite: true,
+      side: THREE.DoubleSide,
+    });
+  }
+  // Clear glass and stones have no diffuse body: lit as a tinted diffuser
+  // (the old opacity blend) the desk lights turned the inkwells, lamp chimney
+  // and papered diamonds solid white. Here the surface only adds its
+  // reflections, and the scene behind is multiplied by the per-surface
+  // transmittance (blendColor), so the black ink reads through the crystal.
+  const body = gin ? tint.lerp(new THREE.Color(1, 1, 1), 0.3) : gem ? tint : tint.lerp(new THREE.Color(1, 1, 1), 0.6);
+  // Rays cross two surfaces of a solid and four of a hollow vessel.
+  const perSurface = gem ? 0.5 : 0.25;
+  const material = new THREE.MeshStandardMaterial({
     name: source.name,
-    color: spirit ? tint.multiplyScalar(0.9) : gem ? tint : tint.lerp(new THREE.Color(1, 1, 1), 0.6),
+    color: "#000000",
     roughness: 0.03,
     metalness: 0,
     transparent: true,
-    opacity: spirit ? 0.82 : gin ? 0.25 : gem ? 0.65 : 0.16,
-    envMapIntensity: gem ? 2.2 : 1.6,
-    depthWrite: spirit,
+    depthWrite: false,
     side: THREE.DoubleSide,
+    blending: THREE.CustomBlending,
+    blendEquation: THREE.AddEquation,
+    blendSrc: THREE.OneFactor,
+    blendDst: THREE.ConstantColorFactor,
   });
+  material.blendColor.setRGB(body.r ** perSurface, body.g ** perSurface, body.b ** perSurface);
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <opaque_fragment>",
+      "gl_FragColor = vec4(outgoingLight, 1.0);",
+    );
+  };
+  material.customProgramCacheKey = () => "railcar-glass-v1";
+  return material;
 }
 
 export async function buildWorkshop(scene, surfaces, renderer) {
@@ -88,7 +123,7 @@ export async function buildWorkshop(scene, surfaces, renderer) {
   car.name = "1890 private railcar — Cycles baked lighting";
   for (const { g, asset, light, emit } of groups) {
     textures.push(light, emit);
-    const specular = g === "desk" ? 1 : ROOM_SPECULAR;
+    const specular = g === "desk" ? 1 : g === "architecture" ? WALL_SPECULAR : ROOM_SPECULAR;
     asset.scene.traverse((o) => {
       if (!o.isMesh) return;
       const m = o.material;

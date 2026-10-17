@@ -135,3 +135,55 @@ Next steps, in order:
 - After the glTF import, Poly Haven chairs share one material for frame + upholstery; `furnish.recolor_fabric`
   recolours by luminance.
 - One device commit once wrote stale files; grep the device copy after committing.
+
+## Session progress (Claude Code, Oct 16–17 2026)
+
+**Done**
+- Dev server runs clean (`npm run dev --prefix workbench`); 788114a was already on origin, so no push was needed.
+- **Brightness / grade (committed + pushed as f1c0d0c).** Calibrated against `r12-hero.png` using pixel
+  measurements, not by eye. Viewing the PNGs makes them look brighter than their pixel values; the earlier
+  by-eye calibration was off because of this.
+  - New `/?hero` view uses the exact Blender camera (r12 hero framing at 1280×720) for side-by-side checks.
+  - Post pass now applies Blender 5.2's exact AgX "Medium High Contrast" view at +1.1 EV from a baked 64³ LUT
+    (`workbench/scripts/railcar/lut.py` → `workbench/assets/railcar/agx-mhc-lut.bin`), replacing three's older AgX.
+  - Fixed a grey wash: three ignores `envMapIntensity` when a material relies on `scene.environment`, so
+    the studio probe lit the whole car at 0.55. The probe is now bound per material (dielectrics 0.08, metals 0.55).
+  - Live-light specular on the room scaled to 0.3 away from the desk (desk keeps 1.0); `LIGHTMAP_INTENSITY` 0.7.
+    The pure bake matches the render's walls at 0.7 (textbook π is ~3 stops too bright; cause not investigated).
+  - New URL knobs: `?lm= ?env= ?spec= ?exp=`. Caustic receivers now chain their program cache key.
+  - Measured (sRGB mean, r12 → browser): walls 73,19,0 → 83,23,2; curtains 65,23,15 → 68,29,25;
+    leather 82,88,82 → 86,92,91. Before: walls 97,40,26, with a grey veil everywhere.
+- **FPS** (M1 Max, Chrome headless on Metal, 3456×2234 native canvas, DPR 2; vsync 60 Hz):
+  idle 30 (was 20, a timer + vsync bug, now fixed and gated to 30), orbit 37–40, case open 30,
+  loupe idle 30, loupe drag 60. Rechecked after the case rebuild: unchanged.
+- **Cantilever cases (uncommitted, in the working tree).** `bench-objects.js` `makeCase` rebuilt to match
+  `cases.py`: rosewood + brass body and corners, velvet well, two tiers of half-trays per side on brass
+  parallel-arm linkages (top tier swings out/down, lower tier rises to the inner step), lid with an aged
+  mirror (live room capture, direct specular suppressed so the jewellery lights don't flash in it).
+  12 gems = 2 per tray + 4 in the well; 18 rings = one metal × 3 finishes per tray + 2 metals in the well.
+  `caseInspectionView` drops its `sign` argument and frames the box centre. Picking verified in the browser
+  (amethyst and a rose-gold ring selected from opened trays). `npm test` 37/37.
+  - Behaviour change: a closed case shows only its top tier (4 gems / 6 rings); the rest appear on opening.
+
+- **Glass and wall highlight (Oct 17, committed).** Clear glass and loose stones in `workshop.js` no
+  longer have a diffuse body: the surface adds only its reflections, and the scene behind is multiplied by a
+  per-surface transmittance (`CustomBlending`, `blendDst = ConstantColorFactor`, `material.blendColor`).
+  Inkwells now show their black ink like r13, the student-lamp chimney is clear, and the papered diamonds read
+  as glints instead of white chips. Spirits keep the old tinted-opacity path. The soft white blob on the
+  panel between the windows was the key light's specular on the varnish (`?spec=0` removed it). The
+  architecture group now takes no live specular (`?wallspec=`, default 0); furnishings stay at 0.3, desk 1.0.
+- `tests/fidelity.test.mjs` now checks the railcar export (groups, atlases, HDR lightmaps, glass/paintings
+  GLBs) and the Poly Haven / paintings credits instead of the retired atelier assets. `npm test` 37/37.
+- `.claude/launch.json` starts the dev server for the desktop app's preview pane. **The dev server serves
+  `dist/`, which it builds only at startup: run `npm run build --prefix workbench` after editing `src/`.**
+- FPS not re-measured after the glass change (same draw calls).
+
+**Next**
+1. Heather to review the cases at http://127.0.0.1:4173/?fps, then commit + push them.
+2. Forest outside the windows is procedural wavy bands; it reads nothing like r12's photographic forest.
+3. Desk brass (inkstand gallery and lids, lamp) reads pale and near-white next to r13's dark brass. Likely
+   the metals reflect the neutral studio probe (`surfaces.environment`, 0.55) instead of the car; a baked
+   room probe for the room metals is the probable fix. Not investigated.
+4. Real-display check on the 120 Hz panel (headless runs at 60 Hz vsync).
+5. Remaining original steps: verify hearth position; provenance for the generated textures (carpet, dial,
+   globe tint, ledger, labels, damask) in a manifest.
