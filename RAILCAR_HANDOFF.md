@@ -105,12 +105,13 @@ Progress log: `output/railcar/export-log.txt`. Renders for review: `output/railc
   (onBeforeCompile in workshop.js), `LIGHTMAP_INTENSITY` 1.2, `toneMappingExposure` 0.95. Both tunable via
   URL: `?lm=…&exp=…`. Browser still reads a little flatter than Cycles (no AgX "Medium High Contrast" look).
 - `npm test` (node --test tests/*.test.mjs): **37/37 pass**.
-- Not committed (agent VM can't remove git lock files) and `npm run build` must run on the Mac (VM can't
-  delete old `dist/`).
+- Committed locally as 788114a ("Replace the atelier with an 1890 private railcar room") and `dist/` rebuilt.
+  **Not pushed**: the agent VM's network proxy blocks github.com — run `git push` from the Mac.
+  Poly Haven source files are git-ignored (re-downloaded by `ph.py`); only `polyhaven/credits.json` is tracked.
 - **FPS not measured on real hardware yet.** Open `http://127.0.0.1:4173/?fps` on the Mac.
 
 Next steps, in order:
-1. Commit (see above) and `npm run build --prefix workbench`.
+1. `git push` (commit 788114a is local only).
 2. `npm run dev --prefix workbench`, open http://127.0.0.1:4173/?fps. Fix load errors. Compare the seated view
    with `output/railcar/renders/r12-hero.png`; tune `LIGHTMAP_INTENSITY` and `toneMappingExposure`.
 3. Verify the hearth sits in the firebox (manifest.fire) and the forest shows through every window.
