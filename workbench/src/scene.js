@@ -9,6 +9,29 @@ import {
   readSettingBinary,
 } from "./geometry.js";
 
+// Blender 5.2 "AgX - Medium High Contrast" view, baked by
+// scripts/railcar/lut.py: log2-shaped scene-linear in, display sRGB out.
+const VIEW_LUT = { size: 64, lo: -12.47393, hi: 12.5260688 };
+async function loadViewLut() {
+  const response = await fetch(
+    new URL("../assets/railcar/agx-mhc-lut.bin", import.meta.url),
+  );
+  if (!response.ok) throw new Error(`View LUT: ${response.status}`);
+  const n = VIEW_LUT.size;
+  const lut = new THREE.Data3DTexture(
+    new Uint8Array(await response.arrayBuffer()),
+    n,
+    n,
+    n,
+  );
+  lut.format = THREE.RGBAFormat;
+  lut.minFilter = lut.magFilter = THREE.LinearFilter;
+  lut.wrapS = lut.wrapT = lut.wrapR = THREE.ClampToEdgeWrapping;
+  lut.unpackAlignment = 1;
+  lut.needsUpdate = true;
+  return lut;
+}
+
 function tigerMaterial() {
   const uniforms = {
     fiberLight: { value: new THREE.Vector3(3, 4, 3) },
@@ -126,10 +149,13 @@ export async function createWorkbench(host, onFatalError) {
     powerPreference: "default",
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
-  // AgX matches the Blender/Cycles view transform used for the baked car.
-  renderer.toneMapping = THREE.AgXToneMapping;
+  // The post pass applies Blender's own view transform (AgX, Medium High
+  // Contrast) from a baked LUT, so the browser grades like the Cycles renders.
+  // Exposure is the renders' +1.1 stops; ?exp= overrides it (linear factor).
   const expParam = Number(new URLSearchParams(location.search).get("exp"));
-  renderer.toneMappingExposure = Number.isFinite(expParam) && expParam > 0 ? expParam : 0.95; // ?exp= for calibration
+  const viewExposure =
+    Number.isFinite(expParam) && expParam > 0 ? expParam : 2 ** 1.1;
+  const viewLut = await loadViewLut();
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.transmissionResolutionScale = 0.75;
@@ -154,9 +180,15 @@ export async function createWorkbench(host, onFatalError) {
     reflectionDirty = true,
     lastReflection = -Infinity,
     reflectionRevision = 0;
+  // ?hero frames the bench exactly like output/railcar/renders/r12-hero.png
+  // (Blender camera at the same seat, pitched 10° down) for lighting calibration.
+  const heroView = new URLSearchParams(location.search).has("hero");
+  const benchTarget = heroView
+    ? new THREE.Vector3(0, 2.6 - 6.6 * Math.tan(THREE.MathUtils.degToRad(10)), -0.2)
+    : new THREE.Vector3(0, -0.15, -0.2);
   const camera = new THREE.PerspectiveCamera(46, 1, 0.025, 180);
   camera.position.set(0, 2.6, 6.4);
-  camera.lookAt(0, -0.15, -0.2);
+  camera.lookAt(benchTarget);
   camera.layers.enable(1);
   const inspectionCamera = new THREE.PerspectiveCamera(55 / 3, 1, 0.025, 180);
   inspectionCamera.position.set(0, 1.5, 2.7);
@@ -168,7 +200,7 @@ export async function createWorkbench(host, onFatalError) {
     orbitFov = 46;
   const orbit = new BenchOrbit(
     benchPosition,
-    new THREE.Vector3(0, -0.15, -0.2),
+    benchTarget,
   );
   let collectionReturn = null;
   let inspection = 0,
@@ -661,17 +693,21 @@ export async function createWorkbench(host, onFatalError) {
       jewelry: { value: jewelryCache.texture },
       jewelryDepth: { value: jewelryCache.depth },
       depthImage: { value: target.depthTexture },
+      viewLut: { value: viewLut },
+      exposure: { value: viewExposure },
     },
+    toneMapped: false,
     depthTest: false,
     depthWrite: false,
     vertexShader:
       "varying vec2 vUV;void main(){vUV=uv;gl_Position=vec4(position.xy,0.,1.);}",
-    fragmentShader: `uniform sampler2D image,depthImage,jewelry,jewelryDepth;varying vec2 vUV;
+    fragmentShader: `uniform sampler2D image,depthImage,jewelry,jewelryDepth;uniform highp sampler3D viewLut;uniform float exposure;varying vec2 vUV;
+      const float LO=${VIEW_LUT.lo},HI=${VIEW_LUT.hi},N=${VIEW_LUT.size}.;
       void main(){vec4 gem=texture2D(jewelry,vUV);float visible=step(texture2D(jewelryDepth,vUV).r,texture2D(depthImage,vUV).r+.000003);
       vec3 color=texture2D(image,vUV).rgb*(1.-gem.a*visible)+gem.rgb*visible;
-      float vignette=1.-.12*pow(length((vUV-.5)*vec2(1.1,.85)),1.5);gl_FragColor=vec4(color*vignette,1.);
-      #include <tonemapping_fragment>
-      #include <colorspace_fragment>
+      float vignette=1.-.12*pow(length((vUV-.5)*vec2(1.1,.85)),1.5);
+      vec3 t=clamp((log2(max(color*vignette*exposure,vec3(exp2(LO))))-LO)/(HI-LO),0.,1.);
+      gl_FragColor=vec4(texture(viewLut,(t*(N-1.)+.5)/N).rgb,1.);
       }`,
   });
   postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMaterial));
@@ -692,13 +728,15 @@ export async function createWorkbench(host, onFatalError) {
     heightPx = host.clientHeight;
     if (width < 1 || heightPx < 1) return;
     setQuality(false, true);
-    const framingPose = benchFraming(width / heightPx);
+    const framingPose = heroView
+      ? { fov: 46, y: 2.6, z: 6.4 }
+      : benchFraming(width / heightPx);
     benchFov = framingPose.fov;
     orbitFov = benchFov;
     benchPosition.set(0, framingPose.y, framingPose.z);
     const framing = new THREE.PerspectiveCamera();
     framing.position.copy(benchPosition);
-    framing.lookAt(0, -0.15, -0.2);
+    framing.lookAt(benchTarget);
     benchQuaternion.copy(framing.quaternion);
     if (flight) {
       flight.benchPosition.copy(benchPosition);
@@ -708,10 +746,10 @@ export async function createWorkbench(host, onFatalError) {
     if (collectionReturn) {
       collectionReturn.position.copy(benchPosition);
       collectionReturn.quaternion.copy(benchQuaternion);
-      collectionReturn.center.set(0, -0.15, -0.2);
+      collectionReturn.center.copy(benchTarget);
       collectionReturn.fov = benchFov;
     }
-    orbit.adopt(benchPosition, new THREE.Vector3(0, -0.15, -0.2));
+    orbit.adopt(benchPosition, benchTarget);
     camera.aspect = width / heightPx;
     camera.fov = benchFov;
     camera.updateProjectionMatrix();
@@ -790,7 +828,9 @@ export async function createWorkbench(host, onFatalError) {
       inspection !== inspectionDestination ||
       now < interactionUntil;
     setQuality(moving);
-    if (needsFrame || now - lastDraw > 16) {
+    // Ambient-only frames (fire, forest) hold 30 fps; interaction draws every vsync.
+    const ambientOnly = !needsFrame && !moving && !objectsMoving && !caustics.settling;
+    if (ambientOnly ? now - lastDraw > 1000 / 30 - 4 : needsFrame || now - lastDraw > 16) {
       if (auto && inspection === 0) {
         const q = new THREE.Quaternion().setFromAxisAngle(
           new THREE.Vector3(0, 1, 0),
@@ -854,7 +894,12 @@ export async function createWorkbench(host, onFatalError) {
       moving || objectsMoving || caustics.settling ? "settling" : "resting";
     if (moving || objectsMoving || caustics.settling) requestFrame();
     else if (!reduced.matches && workshop.needsAnimation(camera))
-      ambientTimer = setTimeout(requestFrame, 1000 / 30);
+      // Wake a little before the 30 fps deadline: requestAnimationFrame then
+      // lands on the next vsync. A full 33 ms timer plus the vsync wait gave 20 fps.
+      ambientTimer = setTimeout(
+        requestFrame,
+        Math.max(0, lastDraw + 1000 / 30 - performance.now() - 8),
+      );
   }
   function requestFrame() {
     if (!scheduled && !stopped) scheduled = requestAnimationFrame(frame);
@@ -978,7 +1023,7 @@ export async function createWorkbench(host, onFatalError) {
     },
     reset() {
       spin.quaternion.copy(neutral);
-      orbit.adopt(benchPosition, new THREE.Vector3(0, -0.15, -0.2));
+      orbit.adopt(benchPosition, benchTarget);
       orbitFov = benchFov;
       collectionReturn = null;
       boxFlight = null;

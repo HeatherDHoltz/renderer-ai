@@ -161,7 +161,10 @@ export function createCaustics(renderer, receivers, host) {
         reflectedLight.indirectDiffuse+=diffuseColor.rgb*texture2D(benchCausticMap,causticUV).rgb*(benchCausticEnabled*onBench*inMap/3.14159265);`,
       );
     };
-    material.customProgramCacheKey = () => "bench-photon-caustic-v1";
+    // Chain the receiver's own key: its onBeforeCompile may differ per material.
+    const previousKey = material.customProgramCacheKey.bind(material);
+    material.customProgramCacheKey = () =>
+      `${previousKey()}|bench-photon-caustic-v1`;
     material.needsUpdate = true;
   }
   const geometry = new THREE.BufferGeometry();

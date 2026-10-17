@@ -12,10 +12,25 @@ import { createForest } from "./forest.js";
 const BASE = "../assets/railcar/export/";
 const url = (name) => new URL(BASE + name, import.meta.url).href;
 const GROUPS = ["architecture", "furnishings", "desk"];
-// Cycles bakes irradiance; three multiplies lightMap by albedo/pi.
-// Tunable from the URL for calibration against the Cycles renders: ?lm=3.14
-const lmParam = Number(new URLSearchParams(globalThis.location?.search || "").get("lm"));
-export const LIGHTMAP_INTENSITY = Number.isFinite(lmParam) && lmParam > 0 ? lmParam : 1.2; // calibrated by eye against output/railcar/renders/r12-hero.png
+// Calibrated against output/railcar/renders/r12-hero.png from the matching
+// /?hero view (same camera, same AgX view LUT): measured region colours of the
+// walls, wainscot, bookcase, curtains, desk front and leather agree within a
+// few sRGB levels. The URL overrides exist for re-calibration after a rebake.
+function tuning(name, fallback) {
+  const raw = new URLSearchParams(globalThis.location?.search || "").get(name);
+  const value = raw === null ? NaN : Number(raw);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+// ?lm= Cycles diffuse bake → three lightMap. (π would be the textbook factor;
+// the pure bake matches the render's walls at 0.7.)
+export const LIGHTMAP_INTENSITY = tuning("lm", 0.7);
+// ?env= reflection probe on the baked dielectrics. The probe is a neutral
+// studio, not the dark car, so it is kept to a faint polish.
+const ROOM_ENV = tuning("env", 0.08);
+// ?spec= live-light glints on the car away from the desk. The jewellery lights
+// are aimed at the desk; at full strength they streak the velvet curtains and
+// wainscot far more than Cycles does. The desk keeps full glints.
+const ROOM_SPECULAR = tuning("spec", 0.3);
 
 function hdr(loader, name) {
   return loader.loadAsync(url(name)).then((t) => {
@@ -73,6 +88,7 @@ export async function buildWorkshop(scene, surfaces, renderer) {
   car.name = "1890 private railcar — Cycles baked lighting";
   for (const { g, asset, light, emit } of groups) {
     textures.push(light, emit);
+    const specular = g === "desk" ? 1 : ROOM_SPECULAR;
     asset.scene.traverse((o) => {
       if (!o.isMesh) return;
       const m = o.material;
@@ -82,7 +98,10 @@ export async function buildWorkshop(scene, surfaces, renderer) {
       m.emissiveMap = emit;
       m.emissiveIntensity = 1;
       // Metals and polish read through the reflection probe; diffuse light is baked.
-      m.envMapIntensity = m.metalness > 0.5 ? 0.9 : 0.35;
+      // Bind the probe explicitly: with scene.environment alone, three replaces
+      // envMapIntensity by scene.environmentIntensity (0.55) on every material.
+      m.envMap = surfaces.environment.texture;
+      m.envMapIntensity = m.metalness > 0.5 ? 0.55 : ROOM_ENV;
       m.side = g === "architecture" ? THREE.DoubleSide : THREE.FrontSide;
       // Diffuse light is already in the bake: live lights may add glints
       // (specular) but must not light the room a second time.
@@ -90,10 +109,11 @@ export async function buildWorkshop(scene, surfaces, renderer) {
         shader.fragmentShader = shader.fragmentShader.replace(
           "#include <lights_fragment_end>",
           // Env diffuse (iblIrradiance) is also already in the bake.
-          "iblIrradiance = vec3(0.0);\n#include <lights_fragment_end>\n  reflectedLight.directDiffuse = vec3(0.0);",
+          "iblIrradiance = vec3(0.0);\n#include <lights_fragment_end>\n  reflectedLight.directDiffuse = vec3(0.0);\n" +
+            `  reflectedLight.directSpecular *= ${specular.toFixed(3)};`,
         );
       };
-      m.customProgramCacheKey = () => "railcar-baked-v2";
+      m.customProgramCacheKey = () => `railcar-baked-v3-${specular}`;
       if (m.map) m.map.anisotropy = maxAniso;
       o.castShadow = false;
       o.receiveShadow = g === "desk";
