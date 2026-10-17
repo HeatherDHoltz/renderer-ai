@@ -85,10 +85,56 @@ export function makeBenchObjects(
     return p;
   }
   const cases = {};
+  // Victorian cantilever jewellery boxes (matching scripts/railcar/cases.py):
+  // rosewood with brass, a velvet well, and on each side two tiers of trays on
+  // brass parallel arms. Opening swings the top tier out and down to the outer
+  // step while the tier below rises to the inner, higher step; a parallelogram
+  // linkage keeps every tray level. The lid stands open with a silvered mirror.
+  const rosewood = wood.clone();
+  rosewood.color.set("#6a3326");
+  // Old silvered glass, darker than a modern mirror. It shows only the live
+  // room capture: the jewellery fill lights are invisible studio lights, and a
+  // lit mirror would flash them back as a white panel.
+  const mirror = new THREE.MeshStandardMaterial({
+    color: "#8c9091",
+    metalness: 1,
+    roughness: 0.035,
+    envMapIntensity: 0.5,
+  });
+  mirror.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <lights_fragment_end>",
+      "#include <lights_fragment_end>\n  reflectedLight.directSpecular = vec3(0.0);",
+    );
+  };
+  mirror.customProgramCacheKey = () => "case-mirror-v1";
+  const BODY = { width: 2.25, depth: 1.85, height: 1.28 },
+    TRAY = { width: 1.02, depth: 1.72 },
+    ARM_SPREAD = 0.08;
+  // Tray base positions (x toward the side the tier opens, y up), case-local.
+  // Each pivot sits on the perpendicular bisector of its closed/open positions,
+  // so one rigid arm length carries the tray between them.
+  const TIERS = [
+    { closed: [0.53, 1.3], open: [2.0, 0.8], pivotY: 0.55, from: 0, to: 0.65, armZ: 1.07 },
+    { closed: [0.53, 0.68], open: [1.0, 1.4], pivotY: 0.86, from: 0.3, to: 1, armZ: 1.02 },
+  ].map((tier) => {
+    const [cx, cy] = tier.closed,
+      [ox, oy] = tier.open;
+    const mx = (cx + ox) / 2,
+      my = (cy + oy) / 2;
+    const px = mx + ((my - tier.pivotY) * (oy - cy)) / (ox - cx);
+    return {
+      ...tier,
+      pivot: [px, tier.pivotY],
+      radius: Math.hypot(cx - px, cy - tier.pivotY),
+      closedAngle: Math.atan2(cy - tier.pivotY, cx - px),
+      openAngle: Math.atan2(oy - tier.pivotY, ox - px),
+    };
+  });
   function tray(parent, width, depth, lining, pockets, rings = false) {
     const t = new THREE.Group();
     parent.add(t);
-    bevelBox([width, 0.16, depth], [0, 0.07, 0], wood, t);
+    bevelBox([width, 0.16, depth], [0, 0.07, 0], rosewood, t);
     mesh(
       velvetInsert(width - 0.12, depth - 0.12, pockets, rings),
       lining,
@@ -96,14 +142,15 @@ export function makeBenchObjects(
       t,
     );
     for (const sign of [-1, 1]) {
-      bevelBox([width, 0.15, 0.055], [0, 0.24, (sign * depth) / 2], wood, t);
-      bevelBox([0.055, 0.15, depth], [(sign * width) / 2, 0.24, 0], wood, t);
+      bevelBox([width, 0.15, 0.055], [0, 0.24, (sign * depth) / 2], rosewood, t);
+      bevelBox([0.055, 0.15, depth], [(sign * width) / 2, 0.24, 0], rosewood, t);
     }
+    // Brass edge on the front lip, as on the Blender trays.
+    box([width, 0.03, 0.012], [0, 0.3, depth / 2 + 0.03], brass, t);
     return t;
   }
-  function makeCase(id, x, z, title, lining, rings = false) {
-    const width = 2.25,
-      depth = 1.85;
+  function makeCase(id, x, z, title, lining, layout) {
+    const { width, depth, height } = BODY;
     const c = new THREE.Group();
     c.position.set(x, -1.29, z);
     group.add(c);
@@ -113,120 +160,193 @@ export function makeBenchObjects(
       value: id,
       label: `${title} · open and examine`,
     };
-    const base = bevelBox(
-      [width + 0.1, 0.19, depth + 0.1],
-      [0, 0.04, 0],
-      wood,
-      c,
-    );
-    base.userData.action = action;
-    targets.push(base);
+    const touch = (o) => {
+      o.userData.action = action;
+      targets.push(o);
+      return o;
+    };
+    touch(bevelBox([width + 0.1, 0.19, depth + 0.1], [0, 0.04, 0], rosewood, c));
+    const wallY = 0.06 + height / 2;
     for (const sign of [-1, 1]) {
-      for (const [size, pos] of [
-        [
-          [width + 0.1, 0.86, 0.075],
-          [0, 0.49, (sign * (depth + 0.04)) / 2],
-        ],
-        [
-          [0.075, 0.86, depth + 0.1],
-          [(sign * (width + 0.04)) / 2, 0.49, 0],
-        ],
-      ]) {
-        const wall = bevelBox(size, pos, wood, c);
-        wall.userData.action = action;
-        targets.push(wall);
-      }
+      touch(
+        bevelBox(
+          [width + 0.1, height, 0.075],
+          [0, wallY, (sign * (depth + 0.04)) / 2],
+          rosewood,
+          c,
+        ),
+      );
+      touch(
+        bevelBox(
+          [0.075, height, depth + 0.1],
+          [(sign * (width + 0.04)) / 2, wallY, 0],
+          rosewood,
+          c,
+        ),
+      );
     }
+    for (const sx of [-1, 1])
+      for (const sz of [-1, 1])
+        box(
+          [0.09, height + 0.02, 0.09],
+          [(sx * (width + 0.1)) / 2, wallY, (sz * (depth + 0.1)) / 2],
+          brass,
+          c,
+        );
+    const rim = 0.06 + height;
+    // Lid stands open behind; its inner face is a bevelled mirror in brass.
     const hinge = new THREE.Group();
-    hinge.position.set(0, 0.94, -(depth + 0.1) / 2);
+    hinge.position.set(0, rim + 0.02, -(depth + 0.1) / 2);
     hinge.rotation.x = -2.5;
     c.add(hinge);
-    const lid = bevelBox(
-      [width + 0.1, 0.15, depth + 0.1],
-      [0, 0, (depth + 0.1) / 2],
-      wood,
-      hinge,
+    touch(
+      bevelBox(
+        [width + 0.1, 0.15, depth + 0.1],
+        [0, 0, (depth + 0.1) / 2],
+        rosewood,
+        hinge,
+      ),
     );
-    lid.userData.action = action;
-    targets.push(lid);
-    const inside = bevelBox(
-      [width - 0.04, 0.025, depth - 0.04],
-      [0, -0.089, (depth + 0.1) / 2],
-      lining,
-      hinge,
+    touch(
+      bevelBox(
+        [width - 0.24, 0.02, depth - 0.24],
+        [0, -0.084, (depth + 0.1) / 2],
+        mirror,
+        hinge,
+      ),
     );
-    inside.userData.action = action;
-    targets.push(inside);
+    for (const [size, pos] of [
+      [[width - 0.14, 0.03, 0.05], [0, -0.09, 0.12]],
+      [[width - 0.14, 0.03, 0.05], [0, -0.09, depth - 0.02]],
+      [[0.05, 0.03, depth - 0.14], [-(width - 0.19) / 2, -0.09, (depth + 0.1) / 2]],
+      [[0.05, 0.03, depth - 0.14], [(width - 0.19) / 2, -0.09, (depth + 0.1) / 2]],
+    ])
+      box(size, pos, brass, hinge);
     for (const hx of [-0.75, 0.75]) {
       const h = mesh(
         new THREE.CylinderGeometry(0.045, 0.045, 0.3, 20),
         brass,
-        [hx, 0.92, -depth / 2],
+        [hx, rim, -depth / 2 - 0.02],
         c,
       );
       h.rotation.z = Math.PI / 2;
     }
-    bevelBox([0.25, 0.11, 0.04], [0, 0.63, depth / 2 + 0.06], brass, c);
-    const pockets = [];
-    for (let row = 0; row < (rings ? 3 : 2); row++)
-      for (let col = 0; col < 3; col++)
-        pockets.push({
-          x: (col - 1) * 0.65,
-          z: (row - (rings ? 1 : 0.5)) * (rings ? 0.47 : 0.72),
-          rx: rings ? 0.18 : 0.25,
-          rz: rings ? 0.065 : 0.27,
-          depth: rings ? 0.18 : 0.15,
-        });
-    const lower = tray(c, width - 0.13, depth - 0.13, lining, pockets, rings);
-    lower.position.y = 0.06;
-    const upper = tray(c, width - 0.13, depth - 0.13, lining, pockets, rings);
-    upper.position.y = 0.63;
-    label(title, width * 0.8, [0, 0.97, depth * 0.49], c);
-    const links = [];
-    for (const zz of [-0.68, 0.68]) {
-      const bar = mesh(
-        new THREE.CylinderGeometry(0.018, 0.018, 1, 12),
-        brass,
-        [0, 0, 0],
-        c,
-      );
-      links.push({ bar, z: zz });
-    }
+    bevelBox([0.25, 0.11, 0.04], [0, rim - 0.3, depth / 2 + 0.06], brass, c);
+    label(title, width * 0.8, [0, rim + 0.015, depth * 0.49], c);
+    const well = tray(
+      c,
+      width - 0.13,
+      depth - 0.13,
+      lining,
+      layout.wellPockets,
+      layout.rings,
+    );
+    well.position.y = 0.06;
+    const trays = [];
+    const armGeometry = new THREE.CylinderGeometry(0.026, 0.026, 1, 12);
+    for (const tier of TIERS)
+      for (const side of [-1, 1]) {
+        const t = tray(
+          c,
+          TRAY.width,
+          TRAY.depth,
+          lining,
+          layout.trayPockets,
+          layout.rings,
+        );
+        const arms = [];
+        for (const end of [-1, 1])
+          for (const spread of [-ARM_SPREAD, ARM_SPREAD]) {
+            const z = end * tier.armZ;
+            // Lug from the tray end out to the arm, and the arm's pivot boss.
+            box(
+              [0.06, 0.06, tier.armZ - TRAY.depth / 2 + 0.03],
+              [side * spread, 0.1, (end * (tier.armZ + TRAY.depth / 2)) / 2],
+              brass,
+              t,
+            );
+            const boss = mesh(
+              new THREE.CylinderGeometry(0.04, 0.04, tier.armZ - depth / 2 + 0.02, 16),
+              brass,
+              [
+                side * (tier.pivot[0] + spread),
+                tier.pivot[1],
+                (end * (tier.armZ + depth / 2 + 0.02)) / 2,
+              ],
+              c,
+            );
+            boss.rotation.x = Math.PI / 2;
+            arms.push({ bar: mesh(armGeometry, brass, [0, 0, 0], c), spread, z });
+          }
+        trays.push({ tray: t, tier, side, arms });
+      }
     const result = {
       root: c,
-      lower,
-      upper,
+      well,
+      trays,
       width,
       depth,
-      hinge,
-      links,
       progress: 0,
       destination: 0,
-      sign: id === "gems" ? -1 : 1,
     };
+    poseCase(result, 0);
     cases[id] = result;
     return result;
   }
-  const gemCase = makeCase(
-    "gems",
-    -2.85,
-    1.45,
-    "THE STONE BOX",
-    surfaces.redVelvet,
-  );
-  const metalCase = makeCase(
-    "metals",
-    3.05,
-    1.4,
-    "THE RING COLLECTION",
-    felt,
-    true,
+  function poseCase(c, p) {
+    const from = new THREE.Vector3(),
+      to = new THREE.Vector3(),
+      up = new THREE.Vector3(0, 1, 0);
+    for (const { tray: t, tier, side, arms } of c.trays) {
+      const local = ease((p - tier.from) / (tier.to - tier.from));
+      const angle =
+        tier.closedAngle + (tier.openAngle - tier.closedAngle) * local;
+      const [px, py] = tier.pivot;
+      const tx = px + tier.radius * Math.cos(angle),
+        ty = py + tier.radius * Math.sin(angle);
+      t.position.set(side * tx, ty, 0);
+      for (const { bar, spread, z } of arms) {
+        from.set(side * (px + spread), py, z);
+        to.set(side * (tx + spread), ty + 0.1, z);
+        bar.position.copy(from).lerp(to, 0.5);
+        bar.scale.y = from.distanceTo(to);
+        bar.quaternion.setFromUnitVectors(up, to.sub(from).normalize());
+      }
+    }
+  }
+  // Contents: the top tier shows at rest; the lower tier and the well appear
+  // as the box opens. Gem trays hold two stones, ring trays one metal in
+  // three finishes; the well holds the rest (as in cases.py). Well rows sit
+  // toward the back so the front wall does not hide them from the
+  // inspection camera (about 50° above the desk).
+  const wellGemRows = [-0.5, 0.15],
+    wellRingRows = [-0.62, -0.17, 0.28];
+  const gemCase = makeCase("gems", -2.85, 1.45, "THE STONE BOX", surfaces.redVelvet, {
+    wellPockets: [-1, 1].flatMap((sx) =>
+      wellGemRows.map((z) => ({ x: sx * 0.28, z, rx: 0.25, rz: 0.27, depth: 0.15 })),
+    ),
+    trayPockets: [-1, 1].map((sz) => ({ x: 0, z: sz * 0.42, rx: 0.25, rz: 0.27, depth: 0.15 })),
+  });
+  const ringRows = [-0.47, 0, 0.47];
+  const metalCase = makeCase("metals", 3.05, 1.4, "THE RING COLLECTION", felt, {
+    rings: true,
+    wellPockets: [-1, 1].flatMap((sx) =>
+      wellRingRows.map((z) => ({ x: sx * 0.27, z, rx: 0.18, rz: 0.065, depth: 0.18 })),
+    ),
+    trayPockets: ringRows.map((z) => ({ x: 0, z, rx: 0.18, rz: 0.065, depth: 0.18 })),
+  });
+  // Slot order: top-tier trays, lower-tier trays, then the well.
+  const slots = (c, perTray, wellSlots) => [
+    ...c.trays.flatMap(({ tray: t }) => perTray.map(([x, z]) => ({ parent: t, x, z }))),
+    ...wellSlots.map(([x, z]) => ({ parent: c.well, x, z })),
+  ];
+  const gemSlots = slots(
+    gemCase,
+    [[0, -0.42], [0, 0.42]],
+    [-0.28, 0.28].flatMap((x) => wellGemRows.map((z) => [x, z])),
   );
   for (const [i, id] of Object.keys(GEMS).entries()) {
-    const parent = i < 6 ? gemCase.upper : gemCase.lower;
-    const cell = i % 6,
-      x = ((cell % 3) - 1) * 0.65,
-      z = (Math.floor(cell / 3) - 0.5) * 0.72;
+    const { parent, x, z } = gemSlots[i];
     const g = mesh(geometries[id], materials[id], [x, 0.21, z], parent);
     g.scale.setScalar(0.34);
     g.rotation.y = 0.2;
@@ -264,11 +384,13 @@ export function makeBenchObjects(
   const combos = Object.keys(METALS).flatMap((id) =>
     FINISHES.map((f) => ({ id, finish: f.value, name: f.name })),
   );
+  const ringSlots = slots(
+    metalCase,
+    ringRows.map((z) => [0, z]),
+    [-0.27, 0.27].flatMap((x) => wellRingRows.map((z) => [x, z])),
+  );
   for (const [i, { id, finish, name }] of combos.entries()) {
-    const parent = i < 9 ? metalCase.upper : metalCase.lower,
-      cell = i % 9;
-    const x = ((cell % 3) - 1) * 0.65,
-      z = (Math.floor(cell / 3) - 1) * 0.47;
+    const { parent, x, z } = ringSlots[i];
     const ring = mesh(
       geometries.shank,
       metalMaterial(id, finish),
@@ -280,8 +402,14 @@ export function makeBenchObjects(
     ring.rotation.x = -1.1;
     ring.rotation.y = 0.12;
     // Crown points toward the rear; the continuous plain shank faces the eye.
-    if (cell % 3 === 0)
-      label(METALS[id].name.toUpperCase(), 1.3, [0, 0.319, z + 0.225], parent);
+    if (i % 3 === 0)
+      label(
+        METALS[id].name.toUpperCase(),
+        parent === metalCase.well ? 0.55 : 0.9,
+        [x, 0.319, parent === metalCase.well ? -0.84 : 0.8],
+        parent,
+      );
+    label(name.toUpperCase(), 0.5, [x, 0.319, z + 0.19], parent, 52);
     const hit = box(
       [0.6, 0.43, 0.43],
       [x, 0.41, z],
@@ -311,17 +439,6 @@ export function makeBenchObjects(
       halo,
     });
   }
-
-  for (const tray of [metalCase.upper, metalCase.lower])
-    FINISHES.forEach((f, i) =>
-      label(
-        f.name.toUpperCase(),
-        0.56,
-        [(i - 1) * 0.65, 0.34, -0.77],
-        tray,
-        52,
-      ),
-    );
 
   // The same world-space loupe rests on the desk, travels, and becomes the eyepiece.
   const loupe = new THREE.Group();
@@ -418,16 +535,13 @@ export function makeBenchObjects(
     },
     boxView(id, aspect) {
       const c = cases[id];
-      return caseInspectionView(
-        c.root.position,
-        c.sign,
-        aspect,
-        c.root.scale.x,
-      );
+      return caseInspectionView(c.root.position, aspect, c.root.scale.x);
     },
-    reflectionMaterials: samples
-      .filter((s) => s.kind === "metal")
-      .map((s) => s.object.material),
+    // The lid mirrors reflect the live room capture, like the ring metals.
+    reflectionMaterials: [
+      mirror,
+      ...samples.filter((s) => s.kind === "metal").map((s) => s.object.material),
+    ],
     loupe,
     baffle,
     baffleDepth,
@@ -454,25 +568,7 @@ export function makeBenchObjects(
         if (Math.abs(c.progress - c.destination) < 0.001)
           c.progress = c.destination;
         moving ||= c.progress !== c.destination;
-        const p = ease(c.progress);
-        c.lower.position.y = 0.06 + 0.5 * p;
-        c.upper.position.x = c.sign * (c.width + 0.16) * p;
-        c.upper.position.y = 0.63 + 0.21 * Math.sin(p * Math.PI);
-        for (const { bar, z } of c.links) {
-          const a = new THREE.Vector3(c.sign * 0.83, 0.42, z),
-            b = new THREE.Vector3(
-              c.upper.position.x + c.sign * 0.83,
-              c.upper.position.y + 0.06,
-              z,
-            );
-          bar.position.copy(a).lerp(b, 0.5);
-          bar.scale.y = a.distanceTo(b);
-          bar.quaternion.setFromUnitVectors(
-            new THREE.Vector3(0, 1, 0),
-            b.sub(a).normalize(),
-          );
-          bar.visible = p > 0.005;
-        }
+        poseCase(c, c.progress);
       }
       for (const s of samples) {
         const active =

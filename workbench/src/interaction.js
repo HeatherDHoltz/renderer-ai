@@ -1,11 +1,10 @@
 import * as THREE from "../vendor/three.module.js";
 
-export function caseInspectionView(origin, sign, aspect, scale = 1) {
+export function caseInspectionView(origin, aspect, scale = 1) {
   if (!(aspect > 0) || !Number.isFinite(aspect))
     throw new Error("Invalid inspection aspect");
-  const center = origin
-    .clone()
-    .add(new THREE.Vector3(sign * 1.08 * scale, 0.56 * scale, 0));
+  // Cantilever trays fan out symmetrically, so frame the box's own centre.
+  const center = origin.clone().add(new THREE.Vector3(0, 0.9 * scale, 0));
   const distance = Math.max(
     5.4 * scale,
     (5.2 * scale) / (2 * Math.tan(THREE.MathUtils.degToRad(20)) * aspect) +

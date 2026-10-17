@@ -156,7 +156,7 @@ Next steps, in order:
 - **FPS** (M1 Max, Chrome headless on Metal, 3456×2234 native canvas, DPR 2; vsync 60 Hz):
   idle 30 (was 20, a timer + vsync bug, now fixed and gated to 30), orbit 37–40, case open 30,
   loupe idle 30, loupe drag 60. Rechecked after the case rebuild: unchanged.
-- **Cantilever cases (uncommitted, in the working tree).** `bench-objects.js` `makeCase` rebuilt to match
+- **Cantilever cases (reviewed by Heather Oct 17, committed).** `bench-objects.js` `makeCase` rebuilt to match
   `cases.py`: rosewood + brass body and corners, velvet well, two tiers of half-trays per side on brass
   parallel-arm linkages (top tier swings out/down, lower tier rises to the inner step), lid with an aged
   mirror (live room capture, direct specular suppressed so the jewellery lights don't flash in it).
@@ -179,7 +179,8 @@ Next steps, in order:
 - FPS not re-measured after the glass change (same draw calls).
 
 **Next**
-1. Heather to review the cases at http://127.0.0.1:4173/?fps, then commit + push them.
+1. Cases polish (optional, Heather approved them as is): the lid mirror reads flat pale white rather than
+   aged glass; a light haze over the bottom of the inspection view; outer tray clips at narrow aspects.
 2. Forest outside the windows is procedural wavy bands; it reads nothing like r12's photographic forest.
 3. Desk brass (inkstand gallery and lids, lamp) reads pale and near-white next to r13's dark brass. Likely
    the metals reflect the neutral studio probe (`surfaces.environment`, 0.55) instead of the car; a baked

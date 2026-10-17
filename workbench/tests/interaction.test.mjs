@@ -195,7 +195,7 @@ test("case inspection looks toward its contents and frames unfolded trays at wid
   for (const aspect of [0.5, 0.7, 1, 1.78, 2.4])
     for (const sign of [-1, 1]) {
       const origin = new THREE.Vector3(sign * 3, -1.29, 0.6),
-        v = caseInspectionView(origin, sign, aspect);
+        v = caseInspectionView(origin, aspect);
       const camera = new THREE.PerspectiveCamera(40, aspect, 0.025, 70);
       camera.position.copy(v.position);
       camera.quaternion.copy(v.quaternion);
