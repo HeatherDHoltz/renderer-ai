@@ -6,7 +6,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const dist = path.join(root, "dist");
 await rm(dist, { recursive: true, force: true });
 await mkdir(path.join(dist, "assets"), { recursive: true });
-for (const name of ["index.html", "src", "vendor"]) {
+for (const name of ["index.html", "gallery.html", "src", "vendor"]) {
   await cp(path.join(root, name), path.join(dist, name), { recursive: true });
 }
 // Ship only what the browser loads. Authoring caches (Poly Haven sources,
@@ -17,6 +17,9 @@ const authoringOnly = [
   "assets/railcar/textures",
   "assets/atelier",
   "assets/study-props",
+  // Personal-use audio is only copied for the local dev server (serve.mjs
+  // sets LJ_LOCAL_AUDIO=1); a normal build never ships it.
+  ...(process.env.LJ_LOCAL_AUDIO === "1" ? [] : ["assets/railcar/audio/local"]),
 ].map((p) => path.join(root, p));
 await cp(path.join(root, "assets"), path.join(dist, "assets"), {
   recursive: true,

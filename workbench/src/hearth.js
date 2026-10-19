@@ -27,6 +27,7 @@ export function createHearth(scene, options = {}) {
   noise.needsUpdate = true;
   const uniforms = {
     time: { value: 0 },
+    boost: { value: 0 },
     eye: { value: new THREE.Vector3() },
     noiseVolume: { value: noise },
   };
@@ -40,7 +41,7 @@ export function createHearth(scene, options = {}) {
       depthWrite: false,
       vertexShader:
         "varying vec3 localPoint;void main(){localPoint=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}",
-      fragmentShader: `precision highp float;precision highp sampler3D;uniform sampler3D noiseVolume;uniform float time;uniform vec3 eye;varying vec3 localPoint;
+      fragmentShader: `precision highp float;precision highp sampler3D;uniform sampler3D noiseVolume;uniform float time;uniform float boost;uniform vec3 eye;varying vec3 localPoint;
    float turbulence(vec3 p){return texture(noiseVolume,p*.095).r*.58+texture(noiseVolume,p*.197+vec3(.13,.47,.29)).r*.29+texture(noiseVolume,p*.411+vec3(.7,.1,.5)).r*.13;}
    void main(){vec3 d=normalize(localPoint-eye),inv=1./d;vec3 a=(vec3(-1.05,-.525,-.30)-eye)*inv,b=(vec3(1.05,.525,.30)-eye)*inv;vec3 lo=min(a,b),hi=max(a,b);float nearT=max(max(lo.x,lo.y),lo.z),farT=min(min(hi.x,hi.y),hi.z);float start=max(nearT,0.);if(farT<=start)discard;
     float stepSize=(farT-start)/56.;vec4 sum=vec4(0.);
@@ -64,7 +65,7 @@ export function createHearth(scene, options = {}) {
       sum.rgb+=(1.-sum.a)*hot*alpha;sum.a+=(1.-sum.a)*alpha;
       if(sum.a>.985)break;
     }
-    if(sum.a<.003)discard;gl_FragColor=sum;
+    if(sum.a<.003)discard;gl_FragColor=vec4(sum.rgb*(1.+boost*.65),sum.a);
    }`,
     }),
   );
@@ -121,6 +122,7 @@ export function createHearth(scene, options = {}) {
     bounds = new THREE.Box3();
   return {
     group,
+    setBoost(value) { uniforms.boost.value = value; light.intensity = (options.position ? 14 : 4) * (1 + value * .9); },
     needsAnimation(camera) {
       projection.multiplyMatrices(
         camera.projectionMatrix,

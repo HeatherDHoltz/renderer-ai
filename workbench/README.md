@@ -2,6 +2,15 @@
 
 A period-inspired jeweler’s study directed by Heather Holtz and built with Codex assistance. Pick a gemstone, select an alloy and finish from the velvet cases, and examine a normal-sized solitaire through a clear physical brass loupe. The room is a collector’s study: photographed antiques, a working fire effect, a balance, watch movement, mineral specimens and lapidary drawings. No hands or avatar are shown.
 
+[Open the public workbench](https://heathers-little-jeweler.zoeholtz2000.chatgpt.site). Anyone with the link can visit; the current railcar lighting is a work in progress.
+
+The page immediately displays a real scene image, then opens interactive graphics when supported.
+The [image gallery](https://heathers-little-jeweler.zoeholtz2000.chatgpt.site/gallery.html) uses ordinary
+HTML/JPEG images and works without WebGL or JavaScript. `?static` keeps the still; `?interactive`
+requests 3D on mobile. Failed downloads, interrupted graphics, and shader failures retain the image
+and have separate error details. Only a rejected WebGL context shows optional browser graphics advice.
+In particular, a Wi-Fi interruption must never be diagnosed as a missing WebGL capability.
+
 ## Run locally
 
 Requires Node.js 20+. No npm install, runtime CDN, account, API key or render server is needed.
@@ -18,15 +27,17 @@ npm run build --prefix workbench
 node workbench/scripts/verify-packed.mjs
 ```
 
+For public Sites delivery, `node workbench/scripts/prepare-public.mjs output/site-publication/incremental` (from the repository root, after a build and opening the existing bound Site checkout) copies the runtime into that isolated checkout. It gzip-compresses large room GLBs losslessly and splits large gzip lighting streams into <=8 MiB pieces. It verifies the complete original geometry and lighting bytes, and omits retired assets that the current scene never requests; source scene assets stay unchanged. `PUBLICATION.json` records the source hashes. The main repository remains uncommitted while Sites synchronizes its separate publication source.
+
 The static `dist/` can be hosted anywhere. `.openai/hosting.json` retains the existing Sites project identity. Source assets and vendored modules are checked in for offline builds. Authoring uses `pack-fidelity.mjs` to split room/prop GLBs into aligned glTF buffers below 8 MiB. The ring ships as gzip-compressed float32/uint32 binary; the browser decompresses it without losing geometry. Bulky original OBJ/GLB authoring exports stay under ignored `output/fidelity-research/`. Normal builds copy the canonical assets unchanged. No mesh decimation or texture reduction is performed by packaging.
 
 ## Controls
 
-- **Explore / 1, then drag:** damped orbit around the current focus point within seated limits. Pointer movement alone does not move the camera.
+- **Drag the room:** damped orbit around the current focus point within seated limits. Drag the ring or stone to rotate it independently. Pointer movement alone does not move the camera.
 - **Scroll / pinch / + / −:** dolly toward the surface under the pointer; pinch uses its midpoint. In the loupe these adjust magnification.
 - **Double-click a surface / F:** focus the clicked surface, or the view center with F. Architecture, cases and jewelry can become the orbit pivot. This is not a walkthrough.
-- **Turn jewelry / 2:** drag the specimen or use arrows to rotate it independently. In loupe mode dragging always turns the specimen.
-- **Click the loupe / Look closer / 3:** the actual brass object lifts and the camera approaches its eyepiece. Escape or Back reverses the transition. Its image has no translucent tint layer.
+- **Keyboard:** 1 then arrows moves the view; 2 then arrows rotates the specimen. Direct ring dragging works in either mode. In loupe mode dragging turns the specimen.
+- **Click the loupe / Lift the loupe in Bench controls / 3:** the actual brass object lifts and the camera approaches its eyepiece. Escape or Back reverses the transition. Its image has no translucent tint layer.
 - **Click a case’s wood or lid:** ease into inspection as its upper tray unfolds sideways and lower tray rises. Escape or Back restores the bench. Accessible collection buttons are in Bench controls.
 - **Click a stone or sample ring:** select it. The red case contains twelve gemstones. The green case contains six alloy rows with polished, satin and brushed columns; samples present their continuous plain shank toward the viewer.
 - **Bench controls:** all specimen/material choices, ring or loose-stone display, continuous finish, focused/broad fixed illumination, mat colors and optional refracted bench light. No movable lamp or light-drag tool remains.

@@ -158,7 +158,7 @@ export function createCaustics(renderer, receivers, host) {
         float onBench=step(-1.43,causticWorld.y)*step(causticWorld.y,-1.26);
         onBench*=step(.7,inverseTransformDirection(normal,viewMatrix).y);
         float inMap=step(0.,causticUV.x)*step(causticUV.x,1.)*step(0.,causticUV.y)*step(causticUV.y,1.);
-        reflectedLight.indirectDiffuse+=diffuseColor.rgb*texture2D(benchCausticMap,causticUV).rgb*(benchCausticEnabled*onBench*inMap/3.14159265);`,
+        totalEmissiveRadiance+=diffuseColor.rgb*texture2D(benchCausticMap,causticUV).rgb*(benchCausticEnabled*onBench*inMap/3.14159265);`,
       );
     };
     // Chain the receiver's own key: its onBeforeCompile may differ per material.

@@ -1,3 +1,5 @@
+import { layerDepthGLSL } from "./layer-depth.js";
+import { createGraphicsContext, graphicsOptions, WorkbenchStartupError } from "./startup.js";
 import * as THREE from "../vendor/three.module.js";
 import { RectAreaLightUniformsLib } from "../vendor/addons/lights/RectAreaLightUniformsLib.js";
 import {
@@ -122,6 +124,7 @@ import {
   examinationLights,
   bindExaminationLights,
 } from "./examination-light.js";
+import { cachePointShadows } from "./point-shadow-cache.js";
 import { createJewelryCache } from "./jewelry-cache.js";
 import { createBloom } from "./bloom.js";
 import { BenchOrbit } from "./orbit.js";
@@ -139,15 +142,31 @@ import {
   advanceProgress,
   benchFraming,
   benchIntersections,
+  LOUPE,
+  eyepieceScale,
 } from "./interaction.js";
 
 export async function createWorkbench(host, onFatalError) {
   RectAreaLightUniformsLib.init();
+  // Balanced rendering is now authorized: 25% fewer pixels along each axis.
+  // ?scale=1 restores native pixels without changing geometry or gem optics.
+  const scaleParam = Number(new URLSearchParams(location.search).get("scale"));
+  const renderScale = scaleParam > 0 ? THREE.MathUtils.clamp(scaleParam, 0.5, 1) : 0.75;
+  const aaParam = Number(new URLSearchParams(location.search).get("msaa"));
+  const aaSamples = [1, 2, 4].includes(aaParam) ? aaParam : 4;
+  const canvas = document.createElement("canvas");
   const renderer = new THREE.WebGLRenderer({
-    antialias: true,
-    alpha: false,
-    preserveDrawingBuffer: true,
-    powerPreference: "default",
+    // The screen pass is a full-screen quad; geometry AA lives in its targets.
+    ...graphicsOptions,
+    canvas,
+    context: createGraphicsContext(canvas),
+  });
+  renderer.debug.onShaderError = () => onFatalError(
+    new WorkbenchStartupError("shader-failed", "GPU material compilation failed"),
+  );
+  renderer.domElement.addEventListener("webglcontextlost", (event) => {
+    event.preventDefault();
+    onFatalError(new WorkbenchStartupError("graphics-interrupted", "Graphics context interrupted"));
   });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
   // The post pass applies Blender's own view transform (AgX, Medium High
@@ -162,10 +181,6 @@ export async function createWorkbench(host, onFatalError) {
   renderer.transmissionResolutionScale = 0.75;
   host.append(renderer.domElement);
   renderer.domElement.setAttribute("aria-hidden", "true");
-  renderer.domElement.addEventListener("webglcontextlost", (event) => {
-    event.preventDefault();
-    onFatalError(new Error("Graphics context interrupted"));
-  });
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#120d0a");
   scene.fog = new THREE.Fog("#120d0a", 70, 160);
@@ -184,10 +199,12 @@ export async function createWorkbench(host, onFatalError) {
   // ?hero frames the bench exactly like output/railcar/renders/r12-hero.png
   // (Blender camera at the same seat, pitched 10° down) for lighting calibration.
   const heroView = new URLSearchParams(location.search).has("hero");
+  // The regular orbit pivots on the centre of the live ring specimen.
   const benchTarget = heroView
     ? new THREE.Vector3(0, 2.6 - 6.6 * Math.tan(THREE.MathUtils.degToRad(10)), -0.2)
-    : new THREE.Vector3(0, -0.15, -0.2);
-  const camera = new THREE.PerspectiveCamera(46, 1, 0.025, 180);
+    : new THREE.Vector3(0, -1.08, 0.15);
+  // Far plane reaches the Alps outside the windows (2.4 km of terrain at 10 cm units).
+  const camera = new THREE.PerspectiveCamera(46, 1, 0.025, 3200);
   camera.position.set(0, 2.6, 6.4);
   camera.lookAt(benchTarget);
   camera.layers.enable(1);
@@ -204,13 +221,22 @@ export async function createWorkbench(host, onFatalError) {
     benchTarget,
   );
   let collectionReturn = null;
+  // Lens shift for the seated view: the orbit still pivots on the ring, but the
+  // frame is shifted up so the ring sits near the lower third and the window
+  // wall (sill, curtains, sconces) is in view instead of the desk's front rail.
+  // Eases to zero for case and loupe close-ups, whose framing is computed
+  // for a centred lens; ?hero keeps the calibrated Cycles camera exactly.
+  const shiftParam = Number(new URLSearchParams(location.search).get("shift"));
+  const LENS_SHIFT = heroView ? 0 : Number.isFinite(shiftParam) && new URLSearchParams(location.search).has("shift") ? shiftParam : 0.15;
+  let lensShift = LENS_SHIFT;
   let inspection = 0,
     inspectionDestination = 0,
     flight = null,
     hover = null,
     boxFlight = null,
     pendingLoupe = false,
-    pendingBox = null;
+    pendingBox = null,
+    surroundMix = 0;
   const metal = new THREE.MeshPhysicalMaterial({
     color: "#d5b374",
     metalness: 1,
@@ -231,11 +257,9 @@ export async function createWorkbench(host, onFatalError) {
       async (name) => {
         const r = await fetch(new URL(`../assets/${name}`, import.meta.url));
         if (!r.ok) throw new Error("Jewelry mesh could not load");
-        return name.endsWith(".gz")
-          ? new Response(
-              r.body.pipeThrough(new DecompressionStream("gzip")),
-            ).arrayBuffer()
-          : r.text();
+        const decoded = name.endsWith(".gz")
+          ? new Response(r.body.pipeThrough(new DecompressionStream("gzip"))) : r;
+        return name.endsWith(".mesh.gz") ? decoded.arrayBuffer() : decoded.text();
       },
     ),
   );
@@ -326,11 +350,15 @@ export async function createWorkbench(host, onFatalError) {
   );
   support.position.y = -1.35;
   support.receiveShadow = true;
+  support.layers.set(1);
+  support.layers.enable(2); // Also retain the support in specimen reflection captures.
   scene.add(support);
   const displayPost = new THREE.Mesh(
     new THREE.CylinderGeometry(0.07, 0.11, 1, 24),
     metal,
   );
+  displayPost.layers.set(1);
+  displayPost.layers.enable(2);
   scene.add(displayPost);
   function updatePivot() {
     root.position.set(0, 0, 0);
@@ -440,8 +468,15 @@ export async function createWorkbench(host, onFatalError) {
   const workshop = await buildWorkshop(scene, surfaces, renderer, host);
   const caustics = createCaustics(renderer, workshop.causticReceivers, host);
   objects = makeBenchObjects(scene, geometries, materials, surfaces, key);
+  workshop.configureBench(objects, { environment: reflectionTarget.texture, light: key, orbit });
+  const pointShadowCache = new URLSearchParams(location.search).get("shadowcache") !== "1"
+    ? null : cachePointShadows(renderer, scene, key, spin);
+  if (globalThis.__railcar) globalThis.__railcar.pointShadowCache = pointShadowCache;
   objects.select("gem", selectedGem);
   objects.select("metal", "gold");
+  // Explicit opt-in diagnostics for matching Cycles/runtime poses in captures.
+  if (globalThis.__railcar)
+    Object.assign(globalThis.__railcar, { bench: objects, camera, orbit });
   const updateSpecimenEnvironment = specimenEnvironment(
     [metal, tiger, ...objects.reflectionMaterials],
     1.15,
@@ -503,15 +538,19 @@ export async function createWorkbench(host, onFatalError) {
       ...objects.targets,
       stone,
       ...(setting.visible ? [bandPick] : []),
+      ...workshop.interactionTargets,
     ]);
+    if (hits[0]?.object.userData.action?.kind === 'room') {
+      const occluder = benchIntersections(raycaster, camera, x, y, [workshop.focusTargets])
+        .find(h => h.object.material?.visible !== false);
+      if (occluder && occluder.distance < hits[0].distance - .015 && occluder.object !== hits[0].object)
+        return occluder.object.userData.action || null;
+    }
     if (hits[0]?.object.userData.blockPointer) return null;
     return hits.length
       ? hits[0].object.userData.action || {
           kind: "jewelry",
-          label:
-            tool === "explore"
-              ? "Jewelry · double-click to focus"
-              : "Turn the jewelry · drag",
+          label: "Drag to turn · double-click to focus",
         }
       : null;
   }
@@ -578,7 +617,7 @@ export async function createWorkbench(host, onFatalError) {
     inspectionCamera.position.copy(position);
     inspectionCamera.lookAt(center);
     inspectionCamera.updateMatrixWorld(true);
-    const eye = new THREE.Vector3(0, 0, -0.198)
+    const eye = new THREE.Vector3(0, 0, -LOUPE.eyeDistance)
       .applyQuaternion(inspectionCamera.quaternion)
       .add(position);
     const bounds = new THREE.Box3().setFromObject(spin);
@@ -605,7 +644,7 @@ export async function createWorkbench(host, onFatalError) {
       inspectionCamera.lookAt(flight.center);
       flight.quaternion.copy(inspectionCamera.quaternion);
       flight.points[flight.points.length - 1]
-        .set(0, 0, -0.198)
+        .set(0, 0, -LOUPE.eyeDistance)
         .applyQuaternion(flight.quaternion)
         .add(flight.position);
     }
@@ -622,6 +661,7 @@ export async function createWorkbench(host, onFatalError) {
         .copy(boxFlight.fromQuaternion)
         .slerp(boxFlight.quaternion, t);
       camera.fov = THREE.MathUtils.lerp(boxFlight.fromFov, boxFlight.fov, t);
+      lensShift = boxFlight.id ? LENS_SHIFT * (1 - t) : LENS_SHIFT * t;
       host.dataset.box = boxFlight.id || "returning";
       if (boxFlight.progress === 1 && !boxFlight.id) {
         orbit.adopt(camera.position, boxFlight.center);
@@ -638,6 +678,7 @@ export async function createWorkbench(host, onFatalError) {
     } else if (inspection === 0 && inspectionDestination === 0) {
       orbit.update(camera, dt);
       camera.fov = orbitFov;
+      lensShift = LENS_SHIFT;
     } else if (flight) {
       // The tool visibly lifts first. The seated camera then leans toward it.
       const t = ease(THREE.MathUtils.clamp((inspection - 0.45) / 0.55, 0, 1));
@@ -650,7 +691,11 @@ export async function createWorkbench(host, onFatalError) {
         inspectionFieldOfView(zoom),
         t,
       );
+      lensShift = LENS_SHIFT * (1 - t);
     }
+    if (lensShift > 1e-4 && width > 0 && heightPx > 0)
+      camera.setViewOffset(width, heightPx, 0, -lensShift * heightPx, width, heightPx);
+    else camera.clearViewOffset();
     camera.updateProjectionMatrix();
     if (flight) {
       const lens = objects.loupe;
@@ -658,17 +703,22 @@ export async function createWorkbench(host, onFatalError) {
       lens.quaternion
         .copy(objects.restQuaternion)
         .slerp(flight.quaternion, ease(inspection));
-      const scale =
-        (0.78 *
-          Math.min(1, camera.aspect) *
-          Math.tan(THREE.MathUtils.degToRad(inspectionFieldOfView(zoom) / 2))) /
-        Math.tan(THREE.MathUtils.degToRad(19));
-      const size = 0.3 * THREE.MathUtils.lerp(1, scale, ease(inspection));
-      lens.scale.set(size, size, 0.3);
+      const raised = ease(inspection);
+      const size = THREE.MathUtils.lerp(
+        LOUPE.restScale,
+        eyepieceScale(inspectionFieldOfView(zoom), camera.aspect),
+        raised,
+      );
+      lens.scale.set(
+        size,
+        size,
+        THREE.MathUtils.lerp(LOUPE.restScale, LOUPE.depthScale, raised),
+      );
+      // Depth-only baffle: the magnified room behind the rim is never shaded.
       objects.baffleDepth.visible = inspection === 1;
-      objects.baffle.visible = inspection > 0.88;
-      objects.baffle.material.opacity = ease((inspection - 0.88) / 0.12);
-    }
+      // The unmagnified surround fades in as the loupe reaches the eye.
+      surroundMix = inspection > 0.88 ? ease((inspection - 0.88) / 0.12) : 0;
+    } else surroundMix = 0;
     host.dataset.inspection = inspection.toFixed(3);
     host.dataset.viewYaw = orbit.spherical.theta.toFixed(4);
     host.dataset.viewRadius = orbit.spherical.radius.toFixed(4);
@@ -680,10 +730,10 @@ export async function createWorkbench(host, onFatalError) {
   // Composite the native-resolution layers with depth occlusion before tone mapping.
   const target = new THREE.WebGLRenderTarget(1, 1, {
     type: THREE.HalfFloatType,
-    samples: Math.min(4, renderer.capabilities.maxSamples),
+    samples: Math.min(aaSamples, renderer.capabilities.maxSamples),
   });
   target.depthTexture = new THREE.DepthTexture(1, 1, THREE.UnsignedIntType);
-  const jewelryCache = createJewelryCache(renderer, scene, camera, target);
+  const jewelryCache = createJewelryCache(renderer, scene, camera, target, { samples: aaSamples });
   const bloom = createBloom(renderer, {
     image: { value: target.texture },
     depthImage: { value: target.depthTexture },
@@ -694,9 +744,178 @@ export async function createWorkbench(host, onFatalError) {
   const bloomParam = new URLSearchParams(location.search).get("bloom");
   const bloomStrength = bloomParam !== null && Number(bloomParam) >= 0 ? Number(bloomParam) : 0.05;
   let jewelryDirty = true;
+  const blurSurround = new URLSearchParams(location.search).get("surround") === "blur";
+  host.dataset.loupeSurround = blurSurround ? "blur" : "black";
+  // Loupe surround: past the brass rim the eye sees the room unmagnified and
+  // out of focus. A separate fixed-FOV render from the inspection eye is
+  // blurred and cached; the post pass shows it wherever the loupe's baffle
+  // mask is. Magnification changes only the main camera's FOV, so this
+  // projection and its blur stay put while the lens interior zooms.
+  const surroundCamera = new THREE.PerspectiveCamera(
+    inspectionFieldOfView(1),
+    1,
+    0.025,
+    3200,
+  );
+  // Include the unmagnified jewellery in the periphery; hide only the loupe
+  // during this pass. Reflection cards (layer 2) remain invisible.
+  surroundCamera.layers.set(0);
+  surroundCamera.layers.enable(1);
+  const surroundTarget = new THREE.WebGLRenderTarget(1, 1, {
+    type: THREE.HalfFloatType,
+  });
+  // Coverage of the baffle (1) versus rim, body and aperture (0), multisampled
+  // like the jewellery layer so the rim's silhouette blends cleanly.
+  const surroundMask = new THREE.WebGLRenderTarget(1, 1, {
+    samples: Math.min(aaSamples, renderer.capabilities.maxSamples),
+  });
+  const maskOpen = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }),
+    maskSolid = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      side: THREE.DoubleSide,
+    });
+  // Dual-filter blur; its depth follows the canvas height so the blur is a
+  // constant fraction of the view at any pixel density.
+  const BLUR_LEVELS = 7;
+  const blurTarget = () =>
+    new THREE.WebGLRenderTarget(1, 1, {
+      type: THREE.HalfFloatType,
+      depthBuffer: false,
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+    });
+  const blurDown = Array.from({ length: BLUR_LEVELS }, blurTarget),
+    blurUp = Array.from({ length: BLUR_LEVELS - 1 }, blurTarget);
+  let blurDepth = 2;
+  const blurQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2)),
+    blurScene = new THREE.Scene();
+  blurScene.add(blurQuad);
+  const blurMaterial = (fragmentShader) =>
+    new THREE.ShaderMaterial({
+      uniforms: { source: { value: null }, texel: { value: new THREE.Vector2() } },
+      vertexShader:
+        "varying vec2 vUV;void main(){vUV=uv;gl_Position=vec4(position.xy,0.,1.);}",
+      fragmentShader,
+      depthTest: false,
+      depthWrite: false,
+      toneMapped: false,
+    });
+  const blurDownMaterial = blurMaterial(`uniform sampler2D source;uniform vec2 texel;varying vec2 vUV;
+      void main(){vec3 c=texture2D(source,vUV).rgb*4.;
+      c+=texture2D(source,vUV+texel*vec2(-1.,-1.)).rgb+texture2D(source,vUV+texel*vec2(1.,-1.)).rgb;
+      c+=texture2D(source,vUV+texel*vec2(-1.,1.)).rgb+texture2D(source,vUV+texel*vec2(1.,1.)).rgb;
+      gl_FragColor=vec4(c/8.,1.);}`);
+  const blurUpMaterial = blurMaterial(`uniform sampler2D source;uniform vec2 texel;varying vec2 vUV;
+      void main(){vec2 o=texel;
+      vec3 c=texture2D(source,vUV+vec2(-2.*o.x,0.)).rgb+texture2D(source,vUV+vec2(2.*o.x,0.)).rgb;
+      c+=texture2D(source,vUV+vec2(0.,2.*o.y)).rgb+texture2D(source,vUV+vec2(0.,-2.*o.y)).rgb;
+      c+=(texture2D(source,vUV+o).rgb+texture2D(source,vUV-o).rgb+texture2D(source,vUV+vec2(o.x,-o.y)).rgb+texture2D(source,vUV+vec2(-o.x,o.y)).rgb)*2.;
+      gl_FragColor=vec4(c/12.,1.);}`);
+  function blurPass(material, source, target) {
+    material.uniforms.source.value = source.texture;
+    material.uniforms.texel.value.set(1 / source.width, 1 / source.height);
+    blurQuad.material = material;
+    renderer.setRenderTarget(target);
+    renderer.render(blurScene, postCamera);
+  }
+  function resizeSurround(w, h) {
+    surroundMask.setSize(w, h);
+    if (!blurSurround) {
+      surroundTarget.setSize(1, 1);
+      for (const t of [...blurDown, ...blurUp]) t.setSize(1, 1);
+      surroundPose.length = 0;
+      return;
+    }
+    surroundTarget.setSize(w, h);
+    blurDepth = THREE.MathUtils.clamp(Math.round(Math.log2(h / 90)), 2, BLUR_LEVELS);
+    let x = w,
+      y = h;
+    for (let i = 0; i < BLUR_LEVELS; i++) {
+      x = Math.max(1, Math.round(x / 2));
+      y = Math.max(1, Math.round(y / 2));
+      blurDown[i].setSize(x, y);
+      if (i < BLUR_LEVELS - 1) blurUp[i].setSize(x, y);
+    }
+    surroundPose.length = 0;
+  }
+  const surroundPose = [];
+  let surroundAt = -Infinity,
+    surroundRenders = 0;
+  // Re-render only when the eye moves, the canvas resizes, or (at most 30 Hz)
+  // when fire or forest are animating in view. Turning the stone and changing
+  // magnification reuse the cached, blurred image.
+  function renderSurround(now) {
+    surroundCamera.position.copy(camera.position);
+    surroundCamera.quaternion.copy(camera.quaternion);
+    if (surroundCamera.aspect !== camera.aspect) {
+      surroundCamera.aspect = camera.aspect;
+      surroundCamera.updateProjectionMatrix();
+    }
+    if (camera.view?.enabled) {
+      const v = camera.view;
+      surroundCamera.setViewOffset(v.fullWidth, v.fullHeight, v.offsetX, v.offsetY, v.width, v.height);
+    } else if (surroundCamera.view?.enabled) surroundCamera.clearViewOffset();
+    surroundCamera.updateMatrixWorld(true);
+    const pose = [
+      ...surroundCamera.matrixWorld.elements,
+      ...surroundCamera.projectionMatrix.elements,
+    ];
+    const posed =
+      pose.length !== surroundPose.length ||
+      pose.some((v, i) => Math.abs(v - surroundPose[i]) > 1e-5);
+    const ambient =
+      !reduced.matches &&
+      now - surroundAt >= 1000 / 30 - 4 &&
+      workshop.needsAnimation(surroundCamera);
+    if (!posed && !ambient) return;
+    surroundPose.splice(0, surroundPose.length, ...pose);
+    surroundAt = now;
+    renderer.setRenderTarget(surroundTarget);
+    const loupeShown = objects.loupe.visible;
+    objects.loupe.visible = false;
+    try {
+      renderer.render(scene, surroundCamera);
+    } finally {
+      objects.loupe.visible = loupeShown;
+    }
+    blurPass(blurDownMaterial, surroundTarget, blurDown[0]);
+    for (let i = 1; i < blurDepth; i++)
+      blurPass(blurDownMaterial, blurDown[i - 1], blurDown[i]);
+    for (let i = blurDepth - 2; i >= 0; i--)
+      blurPass(blurUpMaterial, i === blurDepth - 2 ? blurDown[blurDepth - 1] : blurUp[i + 1], blurUp[i]);
+    host.dataset.surroundRenders = String(++surroundRenders);
+  }
+  // The loupe alone, with the baffle open and every brass/wood part solid.
+  function renderSurroundMask() {
+    const saved = [];
+    objects.loupe.traverse((o) => {
+      if (!o.isMesh) return;
+      saved.push([o, o.material, o.visible]);
+      if (o === objects.baffleDepth || o.material.visible === false)
+        o.visible = false;
+      else {
+        o.material = o === objects.baffle ? maskOpen : maskSolid;
+        if (o === objects.baffle) o.visible = true;
+      }
+    });
+    const clear = renderer.getClearColor(new THREE.Color()),
+      alpha = renderer.getClearAlpha();
+    try {
+      renderer.setClearColor(0, 1);
+      renderer.setRenderTarget(surroundMask);
+      renderer.render(objects.loupe, camera);
+    } finally {
+      for (const [o, material, shown] of saved) {
+        o.material = material;
+        o.visible = shown;
+      }
+      renderer.setClearColor(clear, alpha);
+    }
+  }
   const postScene = new THREE.Scene(),
     postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 2);
   postCamera.position.z = 1;
+  const freezeGrain = new URLSearchParams(globalThis.location?.search || "").has("freezegrain");
   const postMaterial = new THREE.ShaderMaterial({
     uniforms: {
       image: { value: target.texture },
@@ -708,17 +927,23 @@ export async function createWorkbench(host, onFatalError) {
       bloom: { value: bloom.texture },
       bloomStrength: { value: bloomStrength },
       grainSeed: { value: 0 },
+      surround: { value: blurUp[0].texture },
+      surroundMask: { value: surroundMask.texture },
+      surroundMix: { value: 0 },
+      blackSurround: { value: blurSurround ? 0 : 1 },
     },
     toneMapped: false,
     depthTest: false,
     depthWrite: false,
     vertexShader:
       "varying vec2 vUV;void main(){vUV=uv;gl_Position=vec4(position.xy,0.,1.);}",
-    fragmentShader: `uniform sampler2D image,depthImage,jewelry,jewelryDepth,bloom;uniform highp sampler3D viewLut;uniform float exposure,bloomStrength,grainSeed;varying vec2 vUV;
+    fragmentShader: `uniform sampler2D image,depthImage,jewelry,jewelryDepth,bloom,surround,surroundMask;uniform highp sampler3D viewLut;uniform float exposure,bloomStrength,grainSeed,surroundMix,blackSurround;varying vec2 vUV;
+      ${layerDepthGLSL}
       const float LO=${VIEW_LUT.lo},HI=${VIEW_LUT.hi},N=${VIEW_LUT.size}.;
-      void main(){vec4 gem=texture2D(jewelry,vUV);float visible=step(texture2D(jewelryDepth,vUV).r,texture2D(depthImage,vUV).r+.000003);
+      void main(){vec4 gem=texture2D(jewelry,vUV);float visible=layerVisibility(texture2D(jewelryDepth,vUV).r,texture2D(depthImage,vUV).r);
       vec3 color=texture2D(image,vUV).rgb*(1.-gem.a*visible)+gem.rgb*visible;
-      color+=texture2D(bloom,vUV).rgb*bloomStrength;
+      if(surroundMix>0.)color=mix(color,blackSurround>.5?vec3(0.):texture2D(surround,vUV).rgb,texture2D(surroundMask,vUV).r*surroundMix);
+      color+=texture2D(bloom,vUV).rgb*bloomStrength*(1.-texture2D(surroundMask,vUV).r*surroundMix);
       float vignette=1.-.12*pow(length((vUV-.5)*vec2(1.1,.85)),1.5);
       vec3 t=clamp((log2(max(color*vignette*exposure,vec3(exp2(LO))))-LO)/(HI-LO),0.,1.);
       vec3 display=texture(viewLut,(t*(N-1.)+.5)/N).rgb;
@@ -729,6 +954,9 @@ export async function createWorkbench(host, onFatalError) {
       }`,
   });
   postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMaterial));
+  if (globalThis.__railcar) Object.assign(globalThis.__railcar, {
+    surroundCamera, surroundTarget, surroundMask, blurredSurroundTarget: blurUp[0],
+  });
   let width = 1,
     heightPx = 1,
     visible = true,
@@ -767,7 +995,7 @@ export async function createWorkbench(host, onFatalError) {
       collectionReturn.center.copy(benchTarget);
       collectionReturn.fov = benchFov;
     }
-    orbit.adopt(benchPosition, benchTarget);
+    orbit.home(benchPosition, benchTarget);
     camera.aspect = width / heightPx;
     camera.fov = benchFov;
     camera.updateProjectionMatrix();
@@ -788,16 +1016,27 @@ export async function createWorkbench(host, onFatalError) {
   });
   intersection.observe(host);
   function draw() {
+    const surrounded = surroundMix > 0,
+      maskDirty = jewelryDirty;
+    if (surrounded && blurSurround) renderSurround(performance.now());
+    // The room receives the specimen's live shadow and contains moving scenery.
+    // Redraw it during every interaction as well as ambient animation.
     host.dataset.jewelryDraws = String(jewelryCache.render(jewelryDirty));
+    host.dataset.roomRenders = String(jewelryCache.stats.roomRenders);
+    host.dataset.roomReuses = String(jewelryCache.stats.roomReuses);
     jewelryDirty = false;
+    // The mask follows the loupe exactly as the jewellery layer last drew it.
+    if (surrounded && maskDirty) renderSurroundMask();
+    postMaterial.uniforms.surroundMix.value = surroundMix;
+    host.dataset.surround = surroundMix.toFixed(3);
     if (bloomStrength > 0) bloom.render();
-    postMaterial.uniforms.grainSeed.value = (draws % 64) * 7.31;
+    postMaterial.uniforms.grainSeed.value = freezeGrain ? 0 : (draws % 64) * 7.31;
     renderer.setRenderTarget(null);
     renderer.render(postScene, postCamera);
     host.dataset.draws = String(++draws);
   }
   function setQuality(moving, force = false) {
-    const ratio = devicePixelRatio || 1;
+    const ratio = (devicePixelRatio || 1) * renderScale;
     if (!force && quality === ratio) return;
     quality = ratio;
     renderer.setPixelRatio(ratio);
@@ -808,8 +1047,9 @@ export async function createWorkbench(host, onFatalError) {
       Math.round(heightPx * ratio),
     );
     bloom.setSize(Math.round(width * ratio), Math.round(heightPx * ratio));
+    resizeSurround(Math.round(width * ratio), Math.round(heightPx * ratio));
     jewelryDirty = true;
-    host.dataset.renderQuality = "native";
+    host.dataset.renderQuality = renderScale === 1 ? "native" : "balanced";
     host.dataset.renderPixelRatio = String(ratio);
     needsFrame = true;
   }
@@ -837,6 +1077,7 @@ export async function createWorkbench(host, onFatalError) {
       ) > 0.001;
     const moving =
       reflectionDirty ||
+      workshop.interactions.moving ||
       aiming ||
       benchMoving ||
       auto ||
@@ -895,7 +1136,10 @@ export async function createWorkbench(host, onFatalError) {
         reflectionDirty = true;
         key.shadow.needsUpdate = true;
       }
-      workshop.animate(now / 1000, !reduced.matches);
+      workshop.animate(now / 1000, !reduced.matches, camera);
+      if (workshop.interactions.moving) {
+        key.shadow.needsUpdate = true; workshop.sun.shadow.needsUpdate = true;
+      }
       caustics.update(stone, key, source === "softbox", now);
       updateReflections(now);
       draw();
@@ -992,12 +1236,10 @@ export async function createWorkbench(host, onFatalError) {
     },
     setBackground(value) {
       reflectionDirty = true;
+      // Dove grey is the default: ivory was the brightest large surface in the
+      // frame, right behind the main stone. Ivory stays for grading colour.
       workshop.mat.material.color.set(
-        value === "cream"
-          ? "#d3c7ae"
-          : value === "charcoal"
-            ? "#242923"
-            : "#31423a",
+        { dove: "#8a857d", cream: "#d3c7ae", charcoal: "#242923" }[value] || "#31423a",
       );
       invalidate();
     },
@@ -1015,6 +1257,9 @@ export async function createWorkbench(host, onFatalError) {
       invalidate();
     },
     pick,
+    activateRoom(id) { const message = workshop.interactions.activate(id); reflectionDirty = true; invalidate(); return message; },
+    setSound(value) { workshop.interactions.audio.setEnabled(value); },
+    get roomState() { return workshop.interactions.state; },
     hover(action) {
       if (
         hover?.kind === action?.kind &&
@@ -1044,7 +1289,7 @@ export async function createWorkbench(host, onFatalError) {
     },
     reset() {
       spin.quaternion.copy(neutral);
-      orbit.adopt(benchPosition, benchTarget);
+      orbit.home(benchPosition, benchTarget);
       orbitFov = benchFov;
       collectionReturn = null;
       boxFlight = null;
@@ -1101,7 +1346,7 @@ export async function createWorkbench(host, onFatalError) {
       const point = focusPoint(x, y);
       if (!point) return;
       releaseCollectionCamera();
-      orbit.focus(point, 3.6);
+      orbit.focus(point);
       invalidate(false);
     },
     zoom(factor, x = 0.5, y = 0.5) {
@@ -1141,6 +1386,7 @@ export async function createWorkbench(host, onFatalError) {
       intersection.disconnect();
       document.removeEventListener("visibilitychange", wake);
       reduced.removeEventListener("change", wake);
+      pointShadowCache?.dispose();
       workshop.dispose();
       caustics.dispose();
       reflectionTarget.dispose();
@@ -1150,6 +1396,12 @@ export async function createWorkbench(host, onFatalError) {
       target.dispose();
       jewelryCache.dispose();
       postMaterial.dispose();
+      for (const t of [surroundTarget, surroundMask, ...blurDown, ...blurUp])
+        t.dispose();
+      for (const m of [maskOpen, maskSolid, blurDownMaterial, blurUpMaterial])
+        m.dispose();
+      blurQuad.geometry.dispose();
+      bloom.dispose();
       for (const material of Object.values(materials)) material.dispose();
       scene.traverse((o) => o.geometry?.dispose());
       settingSource.dispose();

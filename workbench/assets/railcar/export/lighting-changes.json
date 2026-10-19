@@ -1,0 +1,170 @@
+{
+  "source": "/Users/heatherholtz/Downloads/CS116A/Renderer/renderer-ai/output/railcar/moody-room/heather-moody-source.blend",
+  "changes": [
+    {
+      "material": "Chandelier_02_bulb",
+      "shadowTransmission": [
+        0.9,
+        0.86,
+        0.8
+      ],
+      "approximation": "thin glass shadow transmission; camera material retained"
+    },
+    {
+      "fixture": "Chandelier_02",
+      "oldPower": 121.5999984741211,
+      "newTotalPower": 270,
+      "bulbPositions": [
+        [
+          -14.160783767700195,
+          -10.857527732849121,
+          16.9827823638916
+        ],
+        [
+          -15.62952709197998,
+          -8.440375328063965,
+          16.982784271240234
+        ],
+        [
+          -14.51872730255127,
+          -6.354716777801514,
+          16.982784271240234
+        ],
+        [
+          -10.387320518493652,
+          -8.281596183776855,
+          16.9827823638916
+        ],
+        [
+          -11.699851989746094,
+          -6.220821380615234,
+          16.9827823638916
+        ],
+        [
+          -11.697945594787598,
+          -10.777994155883789,
+          16.982784271240234
+        ]
+      ]
+    },
+    {
+      "material": "Chandelier_02_bulb.001",
+      "shadowTransmission": [
+        0.9,
+        0.86,
+        0.8
+      ],
+      "approximation": "thin glass shadow transmission; camera material retained"
+    },
+    {
+      "fixture": "Chandelier_02.001",
+      "oldPower": 121.5999984741211,
+      "newTotalPower": 270,
+      "bulbPositions": [
+        [
+          -1.1607822179794312,
+          -10.857527732849121,
+          16.9827823638916
+        ],
+        [
+          -2.6295249462127686,
+          -8.440375328063965,
+          16.982784271240234
+        ],
+        [
+          -1.518729567527771,
+          -6.354716777801514,
+          16.982784271240234
+        ],
+        [
+          2.6126770973205566,
+          -8.281596183776855,
+          16.9827823638916
+        ],
+        [
+          1.300146460533142,
+          -6.220821380615234,
+          16.9827823638916
+        ],
+        [
+          1.3020539283752441,
+          -10.777994155883789,
+          16.982784271240234
+        ]
+      ]
+    },
+    {
+      "material": "Chandelier_02_bulb.002",
+      "shadowTransmission": [
+        0.9,
+        0.86,
+        0.8
+      ],
+      "approximation": "thin glass shadow transmission; camera material retained"
+    },
+    {
+      "fixture": "Chandelier_02.002",
+      "oldPower": 121.5999984741211,
+      "newTotalPower": 270,
+      "bulbPositions": [
+        [
+          11.839217185974121,
+          -10.857527732849121,
+          16.9827823638916
+        ],
+        [
+          10.370474815368652,
+          -8.440375328063965,
+          16.982784271240234
+        ],
+        [
+          11.481270790100098,
+          -6.354716777801514,
+          16.982784271240234
+        ],
+        [
+          15.612677574157715,
+          -8.281596183776855,
+          16.9827823638916
+        ],
+        [
+          14.300148010253906,
+          -6.220821380615234,
+          16.9827823638916
+        ],
+        [
+          14.302058219909668,
+          -10.777994155883789,
+          16.982784271240234
+        ]
+      ]
+    },
+    {
+      "material": "rc etched tulip glass",
+      "shadowTransmission": [
+        0.78,
+        0.74,
+        0.67
+      ],
+      "approximation": "thin glass shadow transmission; camera material retained"
+    },
+    {
+      "material": "student chimney \u2014 clear light transmission",
+      "shadowTransmission": [
+        0.94,
+        0.96,
+        0.98
+      ],
+      "approximation": "thin glass shadow transmission; camera material retained"
+    },
+    {
+      "light": "sconce back 2 flame 0",
+      "before": 180.0,
+      "after": 360
+    },
+    {
+      "worldBefore": 0.03500000014901161,
+      "worldAfter": 0.07
+    }
+  ]
+}

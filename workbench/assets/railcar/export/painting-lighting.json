@@ -1,0 +1,30 @@
+{
+  "Heart of the Andes \u2014 Church canvas": {
+    "file": "painting-0-light.webp",
+    "range": 16,
+    "size": 1024,
+    "sourceObject": "Heart of the Andes \u2014 Church",
+    "transport": "intact authored room; neutral diffuse lighting, native UV"
+  },
+  "The Rocky Mountains, Lander's Peak \u2014 Bierstadt canvas": {
+    "file": "painting-1-light.webp",
+    "range": 16,
+    "size": 1024,
+    "sourceObject": "The Rocky Mountains, Lander's Peak \u2014 Bierstadt",
+    "transport": "intact authored room; neutral diffuse lighting, native UV"
+  },
+  "Lady Maria Conyngham \u2014 Lawrence canvas": {
+    "file": "painting-2-light.webp",
+    "range": 16,
+    "size": 1024,
+    "sourceObject": "Lady Maria Conyngham \u2014 Lawrence",
+    "transport": "intact authored room; neutral diffuse lighting, native UV"
+  },
+  "Mrs Hugh Hammersley \u2014 Sargent canvas": {
+    "file": "painting-3-light.webp",
+    "range": 16,
+    "size": 1024,
+    "sourceObject": "Mrs Hugh Hammersley \u2014 Sargent",
+    "transport": "intact authored room; neutral diffuse lighting, native UV"
+  }
+}

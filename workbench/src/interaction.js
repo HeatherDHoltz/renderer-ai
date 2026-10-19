@@ -54,6 +54,30 @@ export function loupeCorridor(rest, eye, bounds, radius = 0.95) {
   ];
 }
 
+// The pick-up loupe, in its own model units (bench-objects.js). Its clear
+// aperture is the far end of the brass body: radius 0.25 at depth -0.07.
+export const LOUPE = {
+  restScale: 0.765,
+  apertureRadius: 0.25,
+  apertureDepth: 0.07,
+  // Lens distance in front of the inspection eye and its depth scale there.
+  eyeDistance: 0.27,
+  depthScale: 0.3,
+  // Clear aperture radius as a fraction of half the shorter screen side.
+  aperture: 0.92,
+};
+
+// World scale of the raised loupe so its clear aperture keeps one screen size
+// at every magnification: the lens interior zooms, the frame does not.
+export function eyepieceScale(fov, aspect, loupe = LOUPE) {
+  if (!(fov > 0 && fov < 180) || !(aspect > 0) || !Number.isFinite(aspect))
+    throw new RangeError("Invalid eyepiece view");
+  const halfView =
+    Math.min(1, aspect) * Math.tan(THREE.MathUtils.degToRad(fov / 2));
+  const far = loupe.eyeDistance + loupe.apertureDepth * loupe.depthScale;
+  return (loupe.aperture * halfView * far) / loupe.apertureRadius;
+}
+
 // Progress reverses in place; switching direction never changes the pose.
 export function advanceProgress(
   progress,
@@ -79,11 +103,12 @@ export function benchFraming(aspect) {
   if (!Number.isFinite(aspect) || aspect <= 0)
     throw new RangeError("Invalid viewport aspect");
   const fov = THREE.MathUtils.lerp(60, 52, clamp((aspect - 0.55) / 1.1));
+  // Fully open cantilever cases span ±5.02 units; retain a little side margin.
   const z = Math.max(
     6.4,
     Math.min(
       18,
-      1.4 + 4.15 / (Math.tan(THREE.MathUtils.degToRad(fov / 2)) * aspect),
+      1.4 + 5.15 / (Math.tan(THREE.MathUtils.degToRad(fov / 2)) * aspect),
     ),
   );
   return { fov, z, y: 2.6 + (z - 6.4) * 0.37 };

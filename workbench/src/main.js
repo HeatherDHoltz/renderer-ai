@@ -1,6 +1,7 @@
 import { GEMS } from "./gems.js";
 import { METALS } from "./metals.js";
 import { wheelScale } from "./orbit.js";
+import { startupFailure } from "./startup.js";
 const $ = (id) => document.getElementById(id);
 const state = {
   gem: "diamond",
@@ -11,7 +12,7 @@ const state = {
   angle: -20,
   height: 65,
   source: "penlight",
-  background: "cream",
+  background: "dove",
   tool: "explore",
   auto: false,
   caustics: true,
@@ -141,8 +142,6 @@ function updateLoupe() {
   app?.setLoupe(0, 0, state.zoom);
 }
 function updateLabels() {
-  $("scene-name").textContent =
-    `${names[state.gem].toUpperCase()}${state.setting === "ring" ? " & " + METALS[state.metal].name.toUpperCase() : " · LOOSE STONE"}`;
   $("finish").value = state.finish;
   $("finish-value").textContent =
     state.finish < 28 ? "Polished" : state.finish < 70 ? "Satin" : "Brushed";
@@ -150,17 +149,11 @@ function updateLabels() {
   viewer.dataset.tool = state.tool;
   viewer.dataset.background = state.background;
   $("exit-loupe").hidden = state.tool !== "loupe";
-  $("mode-label").textContent = state.box
-    ? "INSIDE THE COLLECTION"
-    : state.tool === "loupe"
-      ? "THROUGH THE LOUPE"
-      : "AT THE BENCH";
   boxExit.hidden = !state.box;
   $("loupe-controls").hidden = state.tool !== "loupe";
-  $("tray-tip").hidden = state.tool === "loupe";
   const hint = {
     explore:
-      "Drag to look around · scroll / pinch to zoom · double-click to focus",
+      "Drag the ring to turn it · drag the room to explore · scroll to zoom",
     turn: "Drag jewelry to turn it · drag the room to look around",
     loupe: "Drag to turn the stone · scroll to magnify",
   }[state.tool];
@@ -243,6 +236,11 @@ $("toggle-caustics").addEventListener("click", () => {
 });
 for (const button of document.querySelectorAll("[data-tool]"))
   button.addEventListener("click", () => setTool(button.dataset.tool));
+$("inspect-loupe").addEventListener("click", () => {
+  setDrawer(false);
+  setTool("loupe");
+  host.focus({ preventScroll: true });
+});
 $("finish").addEventListener("input", (event) => {
   state.finish = Number(event.target.value);
   app?.setFinish(state.finish);
@@ -343,10 +341,7 @@ host.addEventListener("pointerdown", (event) => {
     action = app.pick(p.x, p.y);
 
   pressed = action;
-  grab =
-    action?.kind === "jewelry" && state.tool !== "explore"
-      ? "jewelry"
-      : "camera";
+  grab = action?.kind === "jewelry" ? "jewelry" : "camera";
   travel = 0;
   dragging = true;
   pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -419,6 +414,7 @@ function release(event) {
   }
   if (activate?.kind === "box") openBox(activate.value);
   if (activate?.kind === "loupe") setTool("loupe");
+  if (activate?.kind === "room") activateRoom(activate.value);
   hoverAt(event);
 }
 host.addEventListener("pointerup", release);
@@ -516,8 +512,10 @@ function openNotes() {
   }
   notes.showModal();
 }
-for (const id of ["open-notes", "error-gallery"])
-  $(id).addEventListener("click", openNotes);
+$("open-notes").addEventListener("click", (event) => {
+  event.preventDefault();
+  openNotes();
+});
 $("close-notes").addEventListener("click", () => notes.close());
 notes.addEventListener("click", (event) => {
   if (event.target !== notes) return;
@@ -534,48 +532,67 @@ $("retry-render").addEventListener("click", () => location.reload());
 function fatal(error) {
   if (failed) return;
   failed = true;
-  $("loading").hidden = true;
+  const failure = startupFailure(error);
+  document.body.classList.add("static-mode");
+  viewer.dataset.mode = "fallback";
+  viewer.dataset.ready = "false";
+  viewer.dataset.error = failure.code;
+  $("loading").hidden = false;
+  $("loading").classList.remove("fading");
+  $("loading").classList.add("static");
+  $("static-note").hidden = true;
   $("render-error").hidden = false;
-  $("render-error-text").textContent =
-    "This workbench needs WebGL 2 graphics. Try reloading in a browser with hardware acceleration enabled. The offline render gallery is still available.";
+  $("render-error-text").textContent = failure.message;
+  $("graphics-help").hidden = !failure.graphicsHelp;
+  $("render-error-detail").textContent = failure.detail;
   console.error("Workbench initialization:", error);
   app?.dispose();
   $("auto-turn").disabled = true;
   $("save-photo").disabled = true;
   announce("The 3D workbench could not open. The render gallery is available.");
 }
-let ambience = null;
-$("toggle-sound").addEventListener("click", async () => {
-  if (!ambience) ambience = (await import("./ambience.js")).createAmbience();
-  const on = ambience.toggle();
-  $("toggle-sound").textContent = on ? "Sound on" : "Sound off";
-  $("toggle-sound").setAttribute("aria-pressed", String(on));
+function activateRoom(id) {
+  if (!app) return;
+  announce(app.activateRoom(id));
+  const r = app.roomState;
+  for (const b of document.querySelectorAll('[data-room]')) {
+    const id = b.dataset.room;
+    const value = id === 'lamp' ? r.lampOn : id === 'gramophone' ? r.gramophone : id === 'safe' ? !!r.safeGoal : id.startsWith('weight-') ? r.weights[Number(id.slice(-1))] : null;
+    if (value !== null) b.setAttribute('aria-pressed', String(value));
+  }
+}
+for (const b of document.querySelectorAll('[data-room]')) b.addEventListener('click', () => activateRoom(b.dataset.room));
+let railAmbience = null, railWanted = false;
+$('toggle-rail-ambience').addEventListener('click', async () => {
+  if (!railAmbience) railAmbience = (await import('./ambience.js')).createAmbience();
+  railWanted = !railWanted;
+  if (railAmbience.on !== (railWanted && soundEnabled)) railAmbience.toggle();
+  $('toggle-rail-ambience').setAttribute('aria-pressed', String(railWanted));
+});
+let soundEnabled = true;
+$("toggle-sound").textContent = "Sound on";
+$("toggle-sound").setAttribute("aria-pressed", "true");
+$("toggle-sound").addEventListener("click", () => {
+  soundEnabled = !soundEnabled;
+  app?.setSound(soundEnabled);
+  if (railAmbience && railAmbience.on !== (railWanted && soundEnabled)) railAmbience.toggle();
+  $("toggle-sound").textContent = soundEnabled ? "Sound on" : "Sound off";
+  $("toggle-sound").setAttribute("aria-pressed", String(soundEnabled));
 });
 function prefersStatic() {
   const params = new URLSearchParams(location.search);
   if (params.has("interactive")) return false;
   if (params.has("static")) return true;
-  const gl2 = (() => {
-    try {
-      return !!document.createElement("canvas").getContext("webgl2");
-    } catch {
-      return false;
-    }
-  })();
   const phone =
     matchMedia("(pointer: coarse)").matches &&
     Math.min(screen.width, screen.height) < 820;
-  return !gl2 || phone;
+  return phone;
 }
 function showStatic() {
   document.body.classList.add("static-mode");
+  viewer.dataset.mode = "static";
   $("loading").classList.add("static");
   $("static-note").hidden = false;
-  $("open-interactive").addEventListener("click", () => {
-    const u = new URL(location.href);
-    u.searchParams.set("interactive", "");
-    location.href = u.href;
-  });
 }
 host.addEventListener("loadprogress", (e) => {
   const { loaded, total } = e.detail;
@@ -587,15 +604,19 @@ async function boot() {
     showStatic();
     return;
   }
+  document.body.classList.remove("static-mode");
+  viewer.dataset.mode = "loading";
+  $("static-note").hidden = true;
+  $("loading").classList.remove("static");
   try {
     const { createWorkbench } = await import("./scene.js");
     app = await createWorkbench(host, fatal);
+    app.setSound(soundEnabled);
+    if (globalThis.__railcar) globalThis.__railcar.app = app;
     if (failed) {
       app.dispose();
       return;
     }
-    app.renderer.debug.onShaderError = () =>
-      fatal(new Error("GPU material compilation failed"));
     app.setGem(state.gem);
     app.setMetal(state.metal);
     app.setSetting(state.setting);
@@ -610,8 +631,9 @@ async function boot() {
     updateLabels();
     const loading = $("loading");
     loading.classList.add("fading");
-    setTimeout(() => (loading.hidden = true), 950);
+    setTimeout(() => { if (!failed) loading.hidden = true; }, 950);
     viewer.dataset.ready = "true";
+    viewer.dataset.mode = "interactive";
   } catch (error) {
     fatal(error);
   }

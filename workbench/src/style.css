@@ -855,6 +855,9 @@ input[type="range"]::-moz-range-thumb {
 .card-swatch.green {
   background: #344d3b;
 }
+.card-swatch.dove {
+  background: #8a857d;
+}
 .card-swatch.cream {
   background: #e2ddce;
 }
@@ -2149,8 +2152,8 @@ dialog h2 {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: blur(14px) brightness(0.55) saturate(1.1);
-  transform: scale(1.06);
+  filter: none;
+  transform: none;
   z-index: -1;
 }
 .loading > *:not(.loading-poster) {
@@ -2173,6 +2176,7 @@ dialog h2 {
 /* The still has no live bench: hide its controls. */
 body.static-mode .viewer-bottom,
 body.static-mode .tool-tray,
+body.static-mode #loupe-controls,
 body.static-mode #toggle-cabinet {
   display: none;
 }
@@ -2206,3 +2210,113 @@ body.static-mode #toggle-cabinet {
   opacity: 0;
   pointer-events: none;
 }
+
+/* A real scene image is the baseline; interactive graphics enhance it. */
+.opening-note {
+  position: absolute;
+  bottom: 24px;
+  left: 16px;
+  right: 16px;
+  width: fit-content;
+  margin: auto;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: #14201be8;
+  font: 14px/1.7 var(--sans, system-ui);
+  text-align: center;
+}
+.opening-note a { color: #f3e6c8; display: block; }
+.loading-progress { position: absolute; bottom: 105px; }
+.static-note a,
+.render-error a {
+  display: inline-block;
+  color: #f3e6c8;
+  padding: 8px 12px;
+  text-underline-offset: 3px;
+}
+body.static-mode .viewer-tools,
+body.static-mode #toggle-sound,
+body.static-mode .discovery { display: none; }
+.workshop-game .render-error {
+  inset: auto 16px 16px;
+  max-width: 600px;
+  margin: auto;
+  max-height: 65%;
+  overflow-y: auto;
+  border-radius: 12px;
+  background: #14201bf2;
+  padding: 16px;
+  font: 13px/1.5 var(--sans, system-ui);
+}
+.workshop-game .render-error h2 { font-size: 21px; margin: 0 0 6px; }
+.render-error p { margin: 4px 0 10px; max-width: 560px; }
+.render-error details { width: min(100%, 560px); text-align: left; margin-bottom: 8px; flex-shrink: 0; }
+.render-error summary { cursor: pointer; }
+.render-error pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; }
+.render-error button, .render-error > a { flex-shrink: 0; }
+.error-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 4px; margin-bottom: 8px; }
+.error-actions a { font-weight: 600; }
+.portfolio-link { margin: 16px 24px; text-align: center; font-size: 13px; }
+.workshop-game .noscript { position: static; margin: 16px 24px; text-align: center; }
+
+/* Direct object interaction leaves the bottom of the room clear. */
+.workshop-game #loupe-controls {
+  position: absolute;
+  z-index: 10;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 7px;
+  border: 1px solid #c2aa7455;
+  border-radius: 8px;
+  background: #15211aeb;
+  color: #ede2c8;
+}
+.workshop-game #loupe-controls[hidden] {
+  display: none;
+}
+.workshop-game .viewer-bottom {
+  bottom: 24px;
+}
+.workshop-game .viewer[data-tool="loupe"] .viewer-bottom {
+  bottom: 87px;
+}
+.workshop-game .object-hint {
+  bottom: 75px;
+}
+.workshop-game .viewer[data-tool="loupe"] .object-hint {
+  bottom: 125px;
+}
+.workshop-game .keyboard-help {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.workshop-game #inspect-loupe {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
+  border: 1px solid #aaa98f;
+  border-radius: 5px;
+}
+@media (max-width: 600px) {
+  .workshop-game .viewer-bottom #interaction-hint {
+    max-width: calc(100vw - 130px);
+    text-align: left;
+    line-height: 1.6;
+    margin-right: auto;
+  }
+  .workshop-game .object-hint {
+    max-width: calc(100vw - 32px);
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+.room-controls { padding: 1rem 0; border-top: 1px solid #8f79583d; }
+.room-controls summary { cursor: pointer; font-family: inherit; }
+.room-controls p { font-size: .8rem; opacity: .7; }
+.room-actions { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .7rem; }
+.room-actions button { font: inherit; font-size: .78rem; border: 1px solid #8f795866; border-radius: .3rem; padding: .5rem .65rem; background: transparent; color: inherit; cursor: pointer; }
+.room-actions button[aria-pressed="true"] { background: #8f795826; }
+.room-actions button:focus-visible { outline: 2px solid #b5945c; outline-offset: 2px; }

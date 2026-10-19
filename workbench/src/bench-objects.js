@@ -1,6 +1,6 @@
 import * as THREE from "../vendor/three.module.js";
 import { GEMS } from "./gems.js";
-import { ease, caseInspectionView } from "./interaction.js";
+import { ease, caseInspectionView, LOUPE } from "./interaction.js";
 import { velvetInsert } from "./velvet-insert.js";
 import { METALS, FINISHES, metalMaterial } from "./metals.js";
 
@@ -89,25 +89,52 @@ export function makeBenchObjects(
   // rosewood with brass, a velvet well, and on each side two tiers of trays on
   // brass parallel arms. Opening swings the top tier out and down to the outer
   // step while the tier below rises to the inner, higher step; a parallelogram
-  // linkage keeps every tray level. The lid stands open with a silvered mirror.
-  const rosewood = wood.clone();
+  // linkage keeps every tray level. The open lid is lined with a padded panel
+  // of the case's own velvet, as period jewellery boxes were (a mirror there
+  // read as a black screen against the dark room).
+  // The cases take less of the live jewellery fill than the stones do: at full
+  // strength their rosewood and velvet read 2-3x brighter than the approved
+  // Cycles reference (r16), whose cases are lit only by the room and the
+  // examination lamps. Measured: velvet 203 vs 137 sRGB, case front 66 vs 24.
+  const caseLightParam = Number(new URLSearchParams(globalThis.location?.search || "").get("caselight"));
+  const CASE_LIGHT = Number.isFinite(caseLightParam) && caseLightParam > 0 ? caseLightParam : 0.285;
+  const sheenParam = new URLSearchParams(globalThis.location?.search || "").get("casesheen");
+  // Three's cloth lobe is broader and brighter than the source Cycles velvet.
+  // Calibrate its response independently so the dyed diffuse colour survives.
+  const CASE_SHEEN = sheenParam !== null && Number.isFinite(Number(sheenParam))
+    ? Math.max(0, Number(sheenParam)) : 0.2;
+  const caseLit = new Map();
+  function caseMaterial(source) {
+    if (caseLit.has(source)) return caseLit.get(source);
+    const m = source.clone();
+    const previous = source.onBeforeCompile;
+    // Match the warm room illumination on the cloth without recolouring its
+    // photographed pile or the neutral examination light used by gemstones.
+    const clothTint = source.sheen > 0 ? "vec3(1.0, 0.56, 0.56)" : "vec3(1.0)";
+    m.onBeforeCompile = (shader, renderer) => {
+      previous?.call(m, shader, renderer);
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <aomap_fragment>",
+        `#include <aomap_fragment>
+  reflectedLight.directDiffuse *= ${CASE_LIGHT.toFixed(3)} * ${clothTint};
+  reflectedLight.indirectDiffuse *= ${CASE_LIGHT.toFixed(3)} * ${clothTint};
+  reflectedLight.directSpecular *= ${CASE_LIGHT.toFixed(3)};
+  // ...and the studio probe set up for the stones, which turned velvet pastel.
+  reflectedLight.indirectSpecular *= ${CASE_LIGHT.toFixed(3)} * ${clothTint};
+  #ifdef USE_SHEEN
+    sheenSpecularDirect *= ${(CASE_LIGHT * CASE_SHEEN).toFixed(3)} * ${clothTint};
+    sheenSpecularIndirect *= ${(CASE_LIGHT * CASE_SHEEN).toFixed(3)} * ${clothTint};
+  #endif`,
+      );
+    };
+    const key = source.customProgramCacheKey.bind(source);
+    m.customProgramCacheKey = () => `${key()}|case-light-${CASE_LIGHT}|sheen-${CASE_SHEEN}`;
+    caseLit.set(source, m);
+    return m;
+  }
+  const caseBrass = caseMaterial(brass);
+  const rosewood = caseMaterial(wood.clone());
   rosewood.color.set("#6a3326");
-  // Old silvered glass, darker than a modern mirror. It shows only the live
-  // room capture: the jewellery fill lights are invisible studio lights, and a
-  // lit mirror would flash them back as a white panel.
-  const mirror = new THREE.MeshStandardMaterial({
-    color: "#8c9091",
-    metalness: 1,
-    roughness: 0.035,
-    envMapIntensity: 0.5,
-  });
-  mirror.onBeforeCompile = (shader) => {
-    shader.fragmentShader = shader.fragmentShader.replace(
-      "#include <lights_fragment_end>",
-      "#include <lights_fragment_end>\n  reflectedLight.directSpecular = vec3(0.0);",
-    );
-  };
-  mirror.customProgramCacheKey = () => "case-mirror-v1";
   const BODY = { width: 2.25, depth: 1.85, height: 1.28 },
     TRAY = { width: 1.02, depth: 1.72 },
     ARM_SPREAD = 0.08;
@@ -134,23 +161,26 @@ export function makeBenchObjects(
   function tray(parent, width, depth, lining, pockets, rings = false) {
     const t = new THREE.Group();
     parent.add(t);
-    bevelBox([width, 0.16, depth], [0, 0.07, 0], rosewood, t);
-    mesh(
-      velvetInsert(width - 0.12, depth - 0.12, pockets, rings),
-      lining,
-      [0, 0, 0],
-      t,
-    );
+    const insert = velvetInsert(width - 0.12, depth - 0.12, pockets, rings);
+    insert.computeBoundingBox();
+    // Keep the substrate (including its bevel) below the deepest velvet slit.
+    // The old fixed top at 0.15 poked through the depressed ring pockets.
+    const bottom = -0.01, top = Math.min(0.15, insert.boundingBox.min.y - 0.02);
+    const floor = bevelBox([width, top - bottom, depth], [0, (top + bottom) / 2, 0], rosewood, t);
+    floor.userData.previewPart = "substrate";
+    const upholstery = mesh(insert, lining, [0, 0, 0], t);
+    upholstery.userData.previewPart = "lining";
     for (const sign of [-1, 1]) {
       bevelBox([width, 0.15, 0.055], [0, 0.24, (sign * depth) / 2], rosewood, t);
       bevelBox([0.055, 0.15, depth], [(sign * width) / 2, 0.24, 0], rosewood, t);
     }
     // Brass edge on the front lip, as on the Blender trays.
-    box([width, 0.03, 0.012], [0, 0.3, depth / 2 + 0.03], brass, t);
+    box([width, 0.03, 0.012], [0, 0.3, depth / 2 + 0.03], caseBrass, t);
     return t;
   }
-  function makeCase(id, x, z, title, lining, layout) {
+  function makeCase(id, x, z, title, velvet, layout) {
     const { width, depth, height } = BODY;
+    const lining = caseMaterial(velvet);
     const c = new THREE.Group();
     c.position.set(x, -1.29, z);
     group.add(c);
@@ -165,7 +195,12 @@ export function makeBenchObjects(
       targets.push(o);
       return o;
     };
-    touch(bevelBox([width + 0.1, 0.19, depth + 0.1], [0, 0.04, 0], rosewood, c));
+    const base = touch(bevelBox([width + 0.1, 0.19, depth + 0.1], [0, 0.04, 0], rosewood, c));
+    base.name = `${id} case base`;
+    // Include the bevel's extension: the case rests on the leather, rather
+    // than hovering above it. This same geometry feeds the Cycles preview.
+    base.geometry.computeBoundingBox();
+    c.position.y = -1.399 - c.scale.y * (base.position.y + base.geometry.boundingBox.min.y);
     const wallY = 0.06 + height / 2;
     for (const sign of [-1, 1]) {
       touch(
@@ -190,11 +225,11 @@ export function makeBenchObjects(
         box(
           [0.09, height + 0.02, 0.09],
           [(sx * (width + 0.1)) / 2, wallY, (sz * (depth + 0.1)) / 2],
-          brass,
+          caseBrass,
           c,
         );
     const rim = 0.06 + height;
-    // Lid stands open behind; its inner face is a bevelled mirror in brass.
+    // Lid stands open behind; its inner face is a padded velvet lining.
     const hinge = new THREE.Group();
     hinge.position.set(0, rim + 0.02, -(depth + 0.1) / 2);
     hinge.rotation.x = -2.5;
@@ -207,31 +242,32 @@ export function makeBenchObjects(
         hinge,
       ),
     );
-    touch(
+    const lidLining = touch(
       bevelBox(
-        [width - 0.24, 0.02, depth - 0.24],
-        [0, -0.084, (depth + 0.1) / 2],
-        mirror,
+        [width - 0.24, 0.06, depth - 0.24],
+        [0, -0.1, (depth + 0.1) / 2],
+        lining,
         hinge,
       ),
     );
+    lidLining.userData.previewPart = "lid-lining";
     for (const [size, pos] of [
       [[width - 0.14, 0.03, 0.05], [0, -0.09, 0.12]],
       [[width - 0.14, 0.03, 0.05], [0, -0.09, depth - 0.02]],
       [[0.05, 0.03, depth - 0.14], [-(width - 0.19) / 2, -0.09, (depth + 0.1) / 2]],
       [[0.05, 0.03, depth - 0.14], [(width - 0.19) / 2, -0.09, (depth + 0.1) / 2]],
     ])
-      box(size, pos, brass, hinge);
+      box(size, pos, caseBrass, hinge);
     for (const hx of [-0.75, 0.75]) {
       const h = mesh(
         new THREE.CylinderGeometry(0.045, 0.045, 0.3, 20),
-        brass,
+        caseBrass,
         [hx, rim, -depth / 2 - 0.02],
         c,
       );
       h.rotation.z = Math.PI / 2;
     }
-    bevelBox([0.25, 0.11, 0.04], [0, rim - 0.3, depth / 2 + 0.06], brass, c);
+    bevelBox([0.25, 0.11, 0.04], [0, rim - 0.3, depth / 2 + 0.06], caseBrass, c);
     label(title, width * 0.8, [0, rim + 0.015, depth * 0.49], c);
     const well = tray(
       c,
@@ -262,12 +298,12 @@ export function makeBenchObjects(
             box(
               [0.06, 0.06, tier.armZ - TRAY.depth / 2 + 0.03],
               [side * spread, 0.1, (end * (tier.armZ + TRAY.depth / 2)) / 2],
-              brass,
+              caseBrass,
               t,
             );
             const boss = mesh(
               new THREE.CylinderGeometry(0.04, 0.04, tier.armZ - depth / 2 + 0.02, 16),
-              brass,
+              caseBrass,
               [
                 side * (tier.pivot[0] + spread),
                 tier.pivot[1],
@@ -276,7 +312,7 @@ export function makeBenchObjects(
               c,
             );
             boss.rotation.x = Math.PI / 2;
-            arms.push({ bar: mesh(armGeometry, brass, [0, 0, 0], c), spread, z });
+            arms.push({ bar: mesh(armGeometry, caseBrass, [0, 0, 0], c), spread, z });
           }
         trays.push({ tray: t, tier, side, arms });
       }
@@ -393,7 +429,7 @@ export function makeBenchObjects(
     const { parent, x, z } = ringSlots[i];
     const ring = mesh(
       geometries.shank,
-      metalMaterial(id, finish),
+      caseMaterial(metalMaterial(id, finish)),
       [x, 0.39, z],
       parent,
     );
@@ -469,20 +505,17 @@ export function makeBenchObjects(
   mesh(
     new THREE.CylinderGeometry(0.065, 0.065, 0.14, 20),
     brass,
-    [0, -0.3, 0],
+    [0, -0.35, 0],
     loupe,
   );
   // Ideal clear achromatic eyepiece: no translucent tinted overlay over the
   // inspected image. The physical brass body and aperture remain in 3D.
+  // The baffle around the rim is never drawn in colour: scene.js renders it
+  // only into the surround mask, where the post pass shows the blurred,
+  // unmagnified room instead of the magnified one.
   const baffle = mesh(
     new THREE.RingGeometry(0.278, 5, 96),
-    new THREE.MeshBasicMaterial({
-      color: "#10120f",
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-    }),
+    new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }),
     [0, 0, 0.065],
     loupe,
   );
@@ -500,9 +533,10 @@ export function makeBenchObjects(
   loupe.add(baffleDepth);
   baffle.visible = false;
   baffle.castShadow = false;
-  loupe.position.set(1.6, -1.37, 1.0);
+  // Rests on its rims: 0.097 model units below the centre touch the leather.
+  loupe.position.set(1.6, -1.4 + 0.097 * LOUPE.restScale, 1.0);
   loupe.rotation.set(-Math.PI / 2, 0, -0.65);
-  loupe.scale.setScalar(0.3);
+  loupe.scale.setScalar(LOUPE.restScale);
   // Near-eye metal stays clean at the modest cube-shadow resolution.
   loupe.traverse((o) => {
     if (o.isMesh) {
@@ -537,11 +571,8 @@ export function makeBenchObjects(
       const c = cases[id];
       return caseInspectionView(c.root.position, aspect, c.root.scale.x);
     },
-    // The lid mirrors reflect the live room capture, like the ring metals.
-    reflectionMaterials: [
-      mirror,
-      ...samples.filter((s) => s.kind === "metal").map((s) => s.object.material),
-    ],
+    // The collection metals reflect the live room capture.
+    reflectionMaterials: samples.filter((s) => s.kind === "metal").map((s) => s.object.material),
     loupe,
     baffle,
     baffleDepth,

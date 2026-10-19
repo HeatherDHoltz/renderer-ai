@@ -91,7 +91,10 @@ def build(M):
     box("dial frame bottom", (CX - dw / 2 - 0.15, y0 - 0.32, dz0 - 0.15), (CX + dw / 2 + 0.15, y0 - 0.05, dz0), M["gilt"], c, 0.03)
     for nm, xa in (("L", CX - dw / 2 - 0.15), ("R", CX + dw / 2)):
         box(f"dial frame {nm}", (xa, y0 - 0.32, dz0), (xa + 0.15, y0 - 0.05, dz0 + dw), M["gilt"], c, 0.03)
-    ring = cyl("dial arch ring", (CX, y0 - 0.18, dz0 + dw), dw / 2 + 0.15, dw / 2 + 0.15, 0.25, M["gilt"], c, 64, rot=(math.pi / 2, 0, 0), caps=False)
+    # Gilt bezel around the printed chapter ring: centred on the hands' arbor
+    # (the ring's centre is 1.70 above the dial bottom in longcase-dial.jpg,
+    # outer radius 1.556). It used to sit 1.7 higher, around the moon dial.
+    ring = cyl("dial arch ring", (CX, y0 - 0.18, dz0 + dw / 2), 1.561, 1.561, 0.25, M["gilt"], c, 64, rot=(math.pi / 2, 0, 0), caps=False)
     # hands (blued steel), ten past ten
     blued = M.get("blued") or M["iron"]
     hc = (CX, y0 - 0.1, dz0 + dw / 2)

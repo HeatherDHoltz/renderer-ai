@@ -1,0 +1,53 @@
+{
+ "views": 4,
+ "cell": [
+  640,
+  1280
+ ],
+ "trees": [
+  {
+   "name": "fir_tree_01_a_LOD0",
+   "heightM": 18.925,
+   "frameW": 9.841,
+   "frameH": 19.682,
+   "baseV": 0.0192
+  },
+  {
+   "name": "fir_tree_01_b_LOD0",
+   "heightM": 14.055,
+   "frameW": 7.309,
+   "frameH": 14.617,
+   "baseV": 0.0192
+  },
+  {
+   "name": "fir_tree_01_c_LOD0",
+   "heightM": 14.521,
+   "frameW": 7.551,
+   "frameH": 15.101,
+   "baseV": 0.0192
+  },
+  {
+   "name": "pine_tree_01_a_LOD0",
+   "heightM": 20.375,
+   "frameW": 10.595,
+   "frameH": 21.19,
+   "baseV": 0.0192
+  },
+  {
+   "name": "pine_tree_01_b_LOD0",
+   "heightM": 14.881,
+   "frameW": 7.901,
+   "frameH": 15.802,
+   "baseV": 0.0188
+  },
+  {
+   "name": "pine_tree_01_c_LOD0",
+   "heightM": 17.544,
+   "frameW": 9.123,
+   "frameH": 18.246,
+   "baseV": 0.0192
+  }
+ ],
+ "cols": 6,
+ "rows": 4
+}

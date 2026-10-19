@@ -1,0 +1,22 @@
+[
+  {
+    "group": "architecture",
+    "material": "rc oxblood velvet",
+    "size": 4096,
+    "samples": 256,
+    "clippedTexels": 0,
+    "surfaceTextures": "unchanged full resolution",
+    "camera": "cycles-home.json",
+    "encoding": "linear RGBA16F, gzip"
+  },
+  {
+    "group": "furnishings",
+    "material": "rc oxblood velvet",
+    "size": 4096,
+    "samples": 256,
+    "clippedTexels": 0,
+    "surfaceTextures": "unchanged full resolution",
+    "camera": "cycles-home.json",
+    "encoding": "linear RGBA16F, gzip"
+  }
+]

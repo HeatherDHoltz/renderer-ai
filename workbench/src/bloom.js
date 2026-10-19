@@ -1,3 +1,4 @@
+import { layerDepthGLSL } from "./layer-depth.js";
 import * as THREE from "../vendor/three.module.js";
 
 // Soft glow around the lamps, sconce bulbs, fire and the brightest glints
@@ -12,9 +13,10 @@ uniform sampler2D image, depthImage, jewelry, jewelryDepth;
 uniform vec2 texel;
 uniform float threshold, knee;
 varying vec2 vUV;
+${layerDepthGLSL}
 vec3 scene(vec2 uv) {
   vec4 gem = texture2D(jewelry, uv);
-  float visible = step(texture2D(jewelryDepth, uv).r, texture2D(depthImage, uv).r + .000003);
+  float visible = layerVisibility(texture2D(jewelryDepth, uv).r, texture2D(depthImage, uv).r);
   return texture2D(image, uv).rgb * (1. - gem.a * visible) + gem.rgb * visible;
 }
 void main() {

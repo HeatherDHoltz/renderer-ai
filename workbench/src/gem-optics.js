@@ -146,6 +146,7 @@ export function makeFacetMaterial(
     u.objectRotation.value.setFromMatrix4(object.matrixWorld);
     u.objectWorld.value.copy(object.matrixWorld);
   };
+  material.userData.renderRoute = "custom_gem";
   return material;
 }
 

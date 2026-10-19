@@ -130,6 +130,5 @@ def build(M, ph):
             for yy in (-3.1, 5.4):
                 sphere(f"bun foot {side} {xx} {yy}", (xx, yy, CARPET_TOP + 0.14), 0.24, M["mahogany_dark"], c, scale=(1, 1, 0.6))
     box("kneehole back", (-4.0, 5.2, pz0 + 0.5), (4.0, 5.5, pz1), M["mahogany"], c, 0.04)
-    # jeweller's bench pin: a removable boxwood peg in a brass clamp at the front edge
-    box("bench pin", (-0.32, -4.2, top_z - 0.38), (0.32, -3.2, top_z - 0.08), M["satinwood"], c, 0.04)
-    box("bench pin clamp", (-0.45, -3.45, top_z - 0.48), (0.45, -3.15, top_z + 0.0), M["brass"], c, 0.04)
+    # The removable bench pin and its clamp are put away for this viewing set.
+    # They intruded at both yaw extremes and drew attention from the jewellery.

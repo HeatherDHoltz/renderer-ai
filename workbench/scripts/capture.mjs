@@ -21,6 +21,7 @@ const chrome = spawn(CHROME, [
   `--force-device-scale-factor=${scale}`,
   "about:blank",
 ]);
+process.on("exit", () => chrome.kill());
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let ws;
 for (let i = 0; i < 50 && !ws; i++) {
@@ -53,12 +54,19 @@ const evaluate = async (expression) =>
   (await send("Runtime.evaluate", { expression, returnByValue: true })).result?.result?.value;
 await send("Runtime.enable");
 await send("Page.enable");
+// --window-size includes Chrome's window frame. Set the content viewport
+// explicitly so a requested 1280×720 capture really matches the Cycles frame.
+await send("Emulation.setDeviceMetricsOverride", {
+  width: Number(w), height: Number(h), deviceScaleFactor: Number(scale), mobile: false,
+});
 await send("Page.navigate", { url });
 const t0 = Date.now();
-while (!(await evaluate(`document.getElementById("viewer")?.dataset.ready === "true" || document.body.classList.contains("static-mode")`))) {
-  if (Date.now() - t0 > 180000) break;
+while (!(await evaluate(`document.getElementById("viewer")?.dataset.ready === "true" || ["static", "fallback"].includes(document.getElementById("viewer")?.dataset.mode)`))) {
+  if (Date.now() - t0 > 180000) throw new Error("Page did not become ready within 180 seconds");
   await sleep(500);
 }
+if (!(await evaluate('document.getElementById("viewer")?.dataset.ready === "true"')) && process.env.ALLOW_STATIC !== '1')
+  throw new Error('WebGL initialization failed; refusing to capture a fallback poster as room evidence. ' + logs.slice(-2).join(' '));
 await sleep(Number(process.env.SETTLE || 4000));
 if (process.env.EVAL) await evaluate(process.env.EVAL), await sleep(3000);
 // WHEEL=n scrolls out n ticks (zoom out); DRAG=dx,dy orbits by a mouse drag.
@@ -77,9 +85,48 @@ if (process.env.DRAG) {
   await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x0 + dx, y: y0 + dy, button: "left", buttons: 0, clickCount: 1 });
 }
 if (process.env.WHEEL || process.env.DRAG) await sleep(Number(process.env.SETTLE2 || 4000));
+// EVAL_AFTER: an expression evaluated after the camera moves; its value is printed.
+if (process.env.EVAL_AFTER) console.log("EVAL_AFTER", JSON.stringify((await send("Runtime.evaluate", { expression: process.env.EVAL_AFTER, awaitPromise: true, returnByValue: true })).result?.result?.value));
+// Hide overlays without changing layout/camera when comparing rendered pixels.
+// In particular the reset control can contaminate a clock colour sample.
+const clean = process.env.CLEAN === "1";
+if (clean) await evaluate(`(() => {
+  const style = document.createElement("style");
+  style.textContent = ".site-header,.scene-label,.viewer-tools,.viewer-bottom,.tool-tray,#object-hint{visibility:hidden!important} .viewer::after{opacity:0!important}";
+  document.head.append(style);
+})()`);
+const fatal = logs.filter(s=>/Shader Error|GPU material compilation failed|Workbench initialization:|INVALID_OPERATION/.test(s));
+if (fatal.length && process.env.ALLOW_STATIC !== '1') throw new Error('GPU capture rejected: ' + fatal.slice(-2).join(' '));
 const shot = await send("Page.captureScreenshot", { format: "png" });
-await writeFile(out, Buffer.from(shot.result.data, "base64"));
-console.log(JSON.stringify({ out, seconds: (Date.now() - t0) / 1000, logs: logs.slice(0, 20) }));
+const png = Buffer.from(shot.result.data, "base64");
+const dimensions = { width: png.readUInt32BE(16), height: png.readUInt32BE(20) };
+if (dimensions.width !== Math.round(Number(w) * Number(scale)) || dimensions.height !== Math.round(Number(h) * Number(scale)))
+  throw new Error(`Unexpected screenshot dimensions: ${JSON.stringify(dimensions)}`);
+const viewport = await evaluate(`({width:innerWidth,height:innerHeight,dpr:devicePixelRatio,
+  ready:document.getElementById("viewer")?.dataset.ready,
+  canvases:[...document.querySelectorAll("canvas")].map(c=>({width:c.width,height:c.height,cssWidth:c.clientWidth,cssHeight:c.clientHeight}))})`);
+const sceneState = await evaluate(`(() => {
+  const r = globalThis.__railcar;
+  if (!r?.camera) return null;
+  return {
+    coordinates: "app: x, y-up, z",
+    manifestHash:r.manifestHash || null,
+    sourceHash:r.manifest?.source?.sha256 || null,
+    bakeModes:Object.fromEntries(Object.entries(r.manifest?.groups || {}).map(([name,g])=>
+      [name,[...new Set(Object.values(g.materials).map(m=>m.bakedResponseMode || 'RGBM irradiance/live specular'))]])),
+    camera: { position:r.camera.position.toArray(), quaternion:r.camera.quaternion.toArray(),
+      fov:r.camera.fov, aspect:r.camera.aspect, view:r.camera.view,
+      projection:r.camera.projectionMatrix.toArray() },
+    orbit: r.orbit ? { target:r.orbit.target.toArray(), radius:r.orbit.spherical.radius,
+      theta:r.orbit.spherical.theta, phi:r.orbit.spherical.phi } : null,
+    cases:Object.fromEntries(Object.entries(r.bench?.cases || {}).map(([id,c])=>
+      [id,{progress:c.progress,destination:c.destination}]))
+  };
+})()`);
+const evidence = { out, url, clean, seconds: (Date.now() - t0) / 1000, dimensions, viewport, sceneState, logs: logs.slice(0, 20) };
+await writeFile(out, png);
+await writeFile(out + ".json", JSON.stringify(evidence, null, 2) + "\n");
+console.log(JSON.stringify(evidence));
 ws.close();
 chrome.kill();
 process.exit(0);

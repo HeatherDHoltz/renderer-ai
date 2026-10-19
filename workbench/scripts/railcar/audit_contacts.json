@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "description": "Source-reviewed exact contacts only. No collection-wide or name-prefix exemptions. New defects stay unresolved. Limits are physical millimetres of AABB overlap, not penetration depths.",
+  "pairs": [
+    {"objects": ["student lamp base", "student lamp rod"], "max_overlap_mm": [12, 12, 12], "reason": "trinkets.student_lamp: vertical rod is socketed into the lamp base."},
+    {"objects": ["student lamp rod", "student lamp arm"], "max_overlap_mm": [6, 8, 8], "reason": "trinkets.student_lamp: arm joins the lamp's supporting rod."},
+    {"objects": ["balance beam", "balance pillar"], "max_overlap_mm": [44, 5, 8], "reason": "trinkets.carat_balance: beam is mounted at the top of the central pillar."}
+  ]
+}

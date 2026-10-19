@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Heather Holtz’s railcar, gemstone rendering experiments, and interactive jeweler’s workbench. View the project without interactive graphics." />
+    <title>The Little Jeweler · Image gallery</title>
+    <link rel="stylesheet" href="./src/gallery.css" />
+  </head>
+  <body>
+    <header>
+      <a href="./">The Little Jeweler</a>
+      <nav aria-label="Gallery menu"><a href="./?interactive">Explore in 3D ↗</a><a href="https://github.com/HeatherDHoltz/renderer-ai">Source on GitHub ↗</a></nav>
+    </header>
+    <main>
+      <p class="eyebrow">HEATHER HOLTZ · RENDERING STUDIES</p>
+      <h1>A little world for looking closer.</h1>
+      <p class="intro">An ornate private railcar, a jeweler’s bench, and experiments in how light travels through gemstones. These are real captures and offline renders from the project. This gallery needs no interactive graphics or JavaScript.</p>
+      <section aria-labelledby="room-title">
+        <h2 id="room-title">Inside the railcar</h2>
+        <figure class="wide">
+          <a href="./assets/railcar/poster.jpg"><img src="./assets/railcar/poster.jpg" width="1920" height="1080" fetchpriority="high" alt="The jeweler’s desk, green leather work surface, open gemstone cases, and night forest beyond the windows" /></a>
+          <figcaption>The bench. The room was modeled in Blender and lit in Cycles; gemstones, jewelry, and moving objects are rendered live in the browser.</figcaption>
+        </figure>
+        <div class="pair">
+          <figure><a href="./assets/railcar/gallery-room.jpg"><img src="./assets/railcar/gallery-room.jpg" width="1920" height="1080" loading="lazy" alt="The fireplace end of the railcar, with its armchair, painting, gramophone, and bookshelves" /></a><figcaption>Around the room. Wood, velvet, brass, paintings, and pools of lamplight.</figcaption></figure>
+          <figure><a href="./assets/railcar/gallery-loupe.jpg"><img src="./assets/railcar/gallery-loupe.jpg" width="1920" height="1080" loading="lazy" alt="A faceted diamond and gold ring enlarged through the brass jeweler’s loupe" /></a><figcaption>Through the loupe. The gemstone shader follows refraction, absorption, and internal reflections through the cut.</figcaption></figure>
+        </div>
+      </section>
+      <section aria-labelledby="studies-title">
+        <h2 id="studies-title">How it started</h2>
+        <div class="studies">
+          <figure><img src="./assets/rust-gems.png" loading="lazy" alt="Six colored faceted gemstones rendered by the Rust CPU ray tracer" /><figcaption><h3>Faceted gemstones · Rust</h3><p>Offline reflection and refraction studies.</p><a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/GEMS.md">Code and render settings ↗</a></figcaption></figure>
+          <figure><img src="./assets/rust-tigers-eye.gif" loading="lazy" alt="A moving golden highlight on a tiger’s-eye-inspired stone rendered in Rust" /><figcaption><h3>Tiger’s eye · Rust</h3><p>A surface model with a directional highlight.</p></figcaption></figure>
+          <figure><img src="./assets/mitsuba-tigers-eye.png" loading="lazy" alt="A tiger’s-eye material with fibers beneath a clear shell, rendered in Mitsuba" /><figcaption><h3>Fiber depth · Mitsuba</h3><p>A separate layered scattering study, with some remaining sampling noise.</p><a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/MITSUBA.md">Material setup ↗</a></figcaption></figure>
+        </div>
+      </section>
+      <section class="about" aria-labelledby="about-title">
+        <h2 id="about-title">About the project</h2>
+        <p>Heather directed the project and edited the Blender room. Codex and Claude helped with code, scene design, and testing. This AI-assisted portfolio project is separate from Heather’s manually authored class renderer.</p>
+        <p>The browser uses Three.js, baked room lighting, and room captures for reflections. The gemstone optics and refracted light use bounded approximations; this is an ongoing rendering study.</p>
+        <details><summary>Asset credits</summary>
+          <p>Photographed materials, furnishings, and trees: <a href="https://polyhaven.com/">Poly Haven, CC0</a>. Paintings: the Met’s public-domain Open Access collection. Globe imagery: NASA Blue Marble. The carpet, clock dial, ledger, labels, and damask were created for the project.</p>
+          <p>The offline gemstones adapt <a href="https://poly.pizza/u/Zsky">Jewel by Zsky</a> under <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>, with changes to materials, scale, and topology. <a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/assets/gems/ATTRIBUTION.md">Full adaptation credits</a> · <a href="./assets/materials/CREDITS.html">Texture credits</a> · <a href="./vendor/THREE-LICENSE.txt">Three.js MIT license</a>.</p>
+        </details>
+        <p><a class="action" href="./?interactive">Try the interactive workbench ↗</a></p>
+      </section>
+    </main>
+    <footer>The Little Jeweler · Heather Holtz</footer>
+  </body>
+</html>

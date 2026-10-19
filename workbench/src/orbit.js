@@ -1,6 +1,17 @@
 import * as THREE from "../vendor/three.module.js";
 
 const clamp = THREE.MathUtils.clamp;
+const MAX_YAW = THREE.MathUtils.degToRad(90);
+// Three's spherical phi is measured down from +Y: elevation 0..75° maps to
+// phi 90..15°.
+const MIN_PHI = THREE.MathUtils.degToRad(15);
+const MAX_PHI = THREE.MathUtils.degToRad(90);
+// Close enough to read a single ring or a book spine; the far limit stays a
+// short step back from the seat.
+const MIN_ZOOM = 0.18;
+const MAX_ZOOM = 1.25;
+// Double-click focus lands roughly 25 cm from the picked point.
+const FOCUS_ZOOM = 0.3;
 // A seated orbit: the focal point can move around the room, but the viewer
 // cannot pass through the desk, roll over, or turn around behind the chair.
 export class BenchOrbit {
@@ -11,21 +22,36 @@ export class BenchOrbit {
       position.clone().sub(target),
     );
     this.goal = this.spherical.clone();
+    this.homeRadius = this.spherical.radius;
+    this.obstacles = [];
   }
+  // Take over the current camera pose. The zoom limits stay relative to the
+  // seated framing, so adopting a zoomed or case-inspection pose never
+  // ratchets them.
   adopt(position, target) {
     this.target.copy(target);
     this.destination.copy(target);
     this.spherical.setFromVector3(position.clone().sub(target));
     this.goal.copy(this.spherical);
   }
+  // The seated framing (resize, reset) defines the zoom range.
+  home(position, target) {
+    this.adopt(position, target);
+    this.homeRadius = this.spherical.radius;
+  }
   drag(dx, dy) {
-    // Seated, but free to turn toward the fireplace, library and whisky corner.
-    this.goal.theta = clamp(this.goal.theta - dx, -2.3, 2.3);
-    this.goal.phi = clamp(this.goal.phi - dy, 0.24, 1.66);
+    // Keep the visitor within the desk-facing 180° horizontal view cone and
+    // above the desk plane, with at most a 75° downward view.
+    this.goal.theta = clamp(this.goal.theta - dx, -MAX_YAW, MAX_YAW);
+    this.goal.phi = clamp(this.goal.phi - dy, MIN_PHI, MAX_PHI);
   }
   zoom(factor, focus) {
     if (!(factor > 0) || !Number.isFinite(factor)) return;
-    const next = clamp(this.goal.radius * factor, 1.35, 40);
+    const next = clamp(
+      this.goal.radius * factor,
+      this.homeRadius * MIN_ZOOM,
+      this.homeRadius * MAX_ZOOM,
+    );
     // Moving the pivot toward the pointer keeps the subject under the fingers.
     // Pulling back retains the selected pivot instead of chasing a far wall.
     if (focus && next < this.goal.radius)
@@ -33,9 +59,13 @@ export class BenchOrbit {
     this.goal.radius = next;
     this.boundTarget();
   }
-  focus(point, distance = 4) {
+  focus(point, distance = this.homeRadius * FOCUS_ZOOM) {
     this.destination.copy(point);
-    this.goal.radius = clamp(distance, 1.35, 40);
+    this.goal.radius = clamp(
+      distance,
+      this.homeRadius * MIN_ZOOM,
+      this.homeRadius * MAX_ZOOM,
+    );
     this.boundTarget();
   }
   boundTarget() {
@@ -62,6 +92,18 @@ export class BenchOrbit {
     // Never dip into the desk: over its footprint stay above the leather.
     if (Math.abs(camera.position.x) < 8.4 && camera.position.z > -6 && camera.position.z < 3.6)
       camera.position.y = Math.max(camera.position.y, -0.75);
+    // Broad cabinet/seat bounds from the edited Blender room keep a close
+    // quarter-turn from placing the eye inside solid furniture.
+    for (let pass = 0; pass < 3; pass++) for (const box of this.obstacles) {
+      const p = camera.position, pad = 0.15;
+      if (!(["x", "y", "z"].every((k, i) => p[k] > box.min[i] - pad && p[k] < box.max[i] + pad))) continue;
+      const faces = ["x", "y", "z"].flatMap((k, i) => [
+        { k, value: box.min[i] - pad, distance: p[k] - box.min[i] + pad },
+        { k, value: box.max[i] + pad, distance: box.max[i] + pad - p[k] },
+      ]);
+      const nearest = faces.reduce((a, b) => a.distance < b.distance ? a : b);
+      p[nearest.k] = nearest.value;
+    }
     camera.lookAt(this.target);
     return this.moving;
   }

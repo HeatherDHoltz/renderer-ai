@@ -7,3 +7,6 @@ __pycache__/
 # Poly Haven sources re-download via workbench/scripts/railcar/ph.py; keep only the credits.
 /workbench/assets/railcar/polyhaven/*
 !/workbench/assets/railcar/polyhaven/credits.json
+
+# Personal-use audio (not licensed for publication): never commit or ship
+/workbench/assets/railcar/audio/local/

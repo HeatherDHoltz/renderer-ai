@@ -1,4 +1,4 @@
-"""The two cantilever jewellery boxes, shown open, at the runtime case positions.
+"""Jewellery material helpers and runtime-derived Cycles case previews.
 
 Inspired by Victorian spring-loaded / cantilever boxes (coromandel and
 rosewood with brass): opening the lid lifts two tiers of trays that step up
@@ -127,79 +127,10 @@ def ring(name, loc, mat, c, stone=None):
             cyl(f"{name} prong {k}", (loc[0] + 0.04 * math.cos(a), loc[1] + 0.04 * math.sin(a), loc[2] + 0.14), 0.008, 0.006, 0.07, mat, c, 6)
 
 
-def tray(name, cx, cy, z, w, d, M, c, lining):
-    box(f"{name} tray", (cx - w / 2, cy - d / 2, z + 0.08), (cx + w / 2, cy + d / 2, z + 0.2), M["rosewood"], c, 0.015, 2)
-    box(f"{name} tray lining", (cx - w / 2 + 0.05, cy - d / 2 + 0.05, z + 0.16), (cx + w / 2 - 0.05, cy + d / 2 - 0.05, z + 0.185), lining, c)
-    box(f"{name} tray brass edge", (cx - w / 2, cy - d / 2 - 0.006, z + 0.17), (cx + w / 2, cy - d / 2 + 0.006, z + 0.2), M["brass"], c)
-
-
-def cantilever_box(prefix, cx, cy, M, c, lining, well=((-0.42, -0.32), (-0.42, 0.32), (0.42, -0.32), (0.42, 0.32)), per_tray=((0.0, -0.3), (0.0, 0.3))):
-    """Returns the list of (x, y, z_top_of_lining) slots for contents."""
-    z0 = DESK_TOP
-    W, D, H = 1.8, 1.45, 0.5
-    box(f"{prefix} body", (cx - W / 2, cy - D / 2, z0), (cx + W / 2, cy + D / 2, z0 + H), M["rosewood"], c, 0.03, 2)
-    box(f"{prefix} well lining", (cx - W / 2 + 0.07, cy - D / 2 + 0.07, z0 + H - 0.08), (cx + W / 2 - 0.07, cy + D / 2 - 0.07, z0 + H - 0.05), lining, c)
-    for sx in (-1, 1):
-        for sy in (-1, 1):
-            box(f"{prefix} brass corner {sx}{sy}", (cx + sx * W / 2 - 0.08 * (sx > 0), cy + sy * D / 2 - 0.08 * (sy > 0), z0),
-                (cx + sx * W / 2 + 0.08 * (sx < 0), cy + sy * D / 2 + 0.08 * (sy < 0), z0 + H), M["brass"], c)
-    box(f"{prefix} escutcheon", (cx - 0.08, cy - D / 2 - 0.012, z0 + H - 0.22), (cx + 0.08, cy - D / 2, z0 + H - 0.08), M["brass"], c)
-    box(f"{prefix} cartouche", (cx - 0.35, cy - D / 2 - 0.012, z0 + 0.1), (cx + 0.35, cy - D / 2, z0 + 0.22), M["brass"], c)
-    slots = []
-    # base well: 2 x 2 (or 2 x 3) positions
-    for ix, iy in well:
-        slots.append((cx + ix, cy + iy, z0 + H - 0.05, "well"))
-    # tier 1 (lower, further out) and tier 2 (higher, inner) trays on brass arms
-    tw, td = 0.82, 1.25
-    for tier, (dx, dz) in enumerate(((1.12, 0.35), (0.52, 0.72))):
-        for s in (-1, 1):
-            tx = cx + s * dx
-            tz = z0 + H + dz - 0.2
-            tray(f"{prefix} t{tier}{'LR'[s > 0]}", tx, cy, tz, tw, td, M, c, lining)
-            for ay in (-td / 2 + 0.06, td / 2 - 0.06):
-                a = (cx + s * (W / 2 - 0.1) * (0.3 if tier else 0.7), cy + ay, z0 + H - 0.05)
-                b = (tx - s * tw * 0.25, cy + ay, tz + 0.05)
-                L = math.dist(a, b)
-                mid = [(a[i] + b[i]) / 2 for i in range(3)]
-                ang = math.atan2(b[2] - a[2], (b[0] - a[0]))
-                arm = box(f"{prefix} arm t{tier}{s}{ay:.1f}", (-L / 2, -0.012, -0.018), (L / 2, 0.012, 0.018), M["brass"], c)
-                arm.location = mid
-                arm.rotation_euler = (0, -ang, 0)
-                sphere(f"{prefix} rivet t{tier}{s}{ay:.1f}", b, 0.025, M["brass"], c)
-            for ix, iy in per_tray:
-                slots.append((tx + ix, cy + iy, tz + 0.185, f"t{tier}"))
-    # lid standing open behind, with a bevelled mirror inside
-    import mathutils
-    lid = box(f"{prefix} lid", (-W / 2, -0.04, 0), (W / 2, 0.04, D), M["rosewood"], c, 0.02)
-    lid.data.transform(mathutils.Matrix.Translation((0, 0, D / 2)))
-    lid.location = (cx, cy + D / 2 + 0.02, z0 + H)
-    lid.rotation_euler = (math.radians(-12), 0, 0)
-    mir = bpy.data.materials.get("rc mirror")
-    if mir:
-        m = box(f"{prefix} lid mirror", (-W / 2 + 0.12, -0.05, 0.12), (W / 2 - 0.12, -0.04, D - 0.12), mir, c)
-        m.data.transform(mathutils.Matrix.Translation((0, 0, D / 2 - 0.06)))
-        m.parent = lid
-        m.matrix_parent_inverse.identity()
-        m.location = (0, 0, 0)
-    return slots
-
-
 def build(M):
-    c = coll("jewellery cases")
-    red = _pbr("rc case red velvet", __import__("ph").texture("velour_velvet"), 0.6, tint=(0.55, 0.04, 0.06, 1), sheen=1.0,
-               sheen_tint=(1, 0.6, 0.6, 1), rough_add=0.25, space="object")
-    green = _pbr("rc case green velvet", __import__("ph").texture("velour_velvet"), 0.6, tint=(0.04, 0.2, 0.11, 1), sheen=1.0,
-                 sheen_tint=(0.7, 1, 0.8, 1), rough_add=0.25, space="object")
-    gem_slots = cantilever_box("gem box", -2.85, -1.45, M, c, red)
-    for (x, y, z, where), (name, col, ior, dens, cut) in zip(gem_slots, GEMS):
-        r = 0.15 if where == "well" else 0.12
-        o = faceted(f"gem {name}", cut, r, gem_material(name, col, ior, dens), c, (x, y, z + (0.0 if cut == "cabochon" else r * 0.45)))
-        if cut != "cabochon":
-            o.rotation_euler = (math.radians(-25), 0, 0)  # table tilted toward the viewer, as in a display slot
-    ring_slots = cantilever_box("ring box", 3.05, -1.4, M, c, green,
-                                well=tuple((ix, iy) for iy in (-0.32, 0.32) for ix in (-0.5, 0.0, 0.5)),
-                                per_tray=((0.0, -0.4), (0.0, 0.0), (0.0, 0.4)))
-    rings = [(m, col, f) for m, col in METALS for f in FINISHES]
-    dia = gem_material("diamond", (1, 1, 1), 2.417, 0)
-    for k, ((x, y, z, where), (metal, col, (fin, rough, aniso))) in enumerate(zip(ring_slots, rings)):
-        ring(f"ring {metal} {fin}", (x, y, z + 0.09), ring_material(metal, col, rough, aniso), c, dia if fin == "polished" and k % 2 == 0 else None)
+    # The actual browser factory supplies geometry and open pose. Keep faceted()
+    # and gem_material() above: trinkets.py uses them for loose desk stones.
+    import importlib
+    import case_preview
+    importlib.reload(case_preview)
+    return case_preview.build()

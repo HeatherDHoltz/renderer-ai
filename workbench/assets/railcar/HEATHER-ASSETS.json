@@ -1,0 +1,14 @@
+{
+  "wooden_bench_pin": {
+    "author": "Innerscene",
+    "source": "https://www.innerscene.com/tools/library/3d-parts/jeweler-bench-jeweler-workbench-b2d214bc",
+    "license": "CC0-1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "adaptation": "Extracted the replaceable bench pin, converted scale and placed it in Heather's edited room.",
+    "source_glb_sha256": "cfcb279a97c160a6ec67ea0807957c7b1bd5b43129e76fdc0e58a1c7f2ef2a40"
+  },
+  "victorian_safe": {
+    "source": "Project-authored geometry with Codex assistance; arranged by Heather.",
+    "note": "No Sketchfab or paid safe model was downloaded or imported. The repository has no assigned license."
+  }
+}

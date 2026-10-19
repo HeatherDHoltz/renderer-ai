@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#f6f4ed" />
     <meta
       name="description"
-      content="An after-hours jeweler’s desk aboard a private railcar, 1890, by Heather Holtz. Turn the jewelry, move the light, and examine gemstones through a 3D loupe while the forest slips past."
+      content="An interactive jeweler’s workbench by Heather Holtz. Drag the ring to turn it, choose gemstones and metals, and take a closer look through the loupe."
     />
     <title>The Little Jeweler · Heather Holtz</title>
     <link
@@ -24,7 +24,7 @@
     </script>
     <script type="module" src="./src/main.js"></script>
   </head>
-  <body class="workshop-game">
+  <body class="workshop-game static-mode">
     <a href="#bench" class="skip-link">Skip to the workbench</a>
     <header class="site-header">
       <a class="brand" href="./" aria-label="The Little Jeweler home"
@@ -44,8 +44,8 @@
           ◇ &nbsp; Bench controls</button
         ><button type="button" id="toggle-sound" aria-pressed="false">
           Sound off</button
-        ><button type="button" id="open-notes">
-          Render journal <span aria-hidden="true">↗</span></button
+        ><a href="./gallery.html" id="open-notes">
+          Render journal <span aria-hidden="true">↗</span></a
         ><a
           href="https://github.com/HeatherDHoltz/renderer-ai"
           target="_blank"
@@ -54,11 +54,10 @@
           >GitHub ↗</a
         >
       </nav>
-      <span class="header-note">After hours, 1890.</span>
     </header>
     <main>
       <h1 class="sr-only" id="page-title">
-        The Little Jeweler — a jeweler’s private railcar, 1890
+        The Little Jeweler — an interactive jeweler’s workbench
       </h1>
       <section
         class="workspace"
@@ -67,12 +66,6 @@
       >
         <div class="bench-column">
           <div class="viewer" id="viewer">
-            <div class="scene-label">
-              <span class="live-dot"></span>
-              <span id="mode-label">AT THE BENCH</span>
-              <span class="scene-label-divider">/</span>
-              <span id="scene-name">DIAMOND & GOLD</span>
-            </div>
             <div class="viewer-tools">
               <button
                 type="button"
@@ -99,107 +92,58 @@
               id="render-host"
               tabindex="0"
               role="region"
-              aria-label="A seated jeweler’s view. Drag to orbit, scroll or pinch to zoom toward the pointer, and double-click a surface to focus. Click stones and metals in their felt boxes. Choose Turn jewelry to rotate the ring independently. Keys 1 explore, 2 turn jewelry, 3 lift the loupe. Arrow keys adjust the selected tool. F focuses the center, Home resets, Escape returns to the bench."
+              aria-label="Drag the ring or stone to turn it. Drag the room to look around, scroll or pinch to zoom, and double-click a surface to focus. Click the cases to choose gemstones and metals. Click the loupe to look closer. Keys 1 and arrows move the view; 2 and arrows turn the jewelry; 3 lifts the loupe. F focuses the center, Home resets, Escape returns to the bench."
             ></div>
             <div id="object-hint" class="object-hint" hidden></div>
-            <div class="loading" id="loading">
-              <img class="loading-poster" src="./assets/railcar/poster.jpg" alt="" />
-              <span class="loading-gem">◇</span><span>Setting the stone…</span>
+            <div class="loading static" id="loading">
+              <img class="loading-poster" src="./assets/railcar/poster.jpg"
+                alt="A jeweler’s desk and gemstone cases in an ornate Victorian railcar" fetchpriority="high" />
+              <span class="opening-note">Opening the interactive car… <a href="./gallery.html">View images while it loads ↗</a></span>
               <span class="loading-progress" id="loading-progress" aria-live="polite"></span>
-              <div class="static-note" id="static-note" hidden>
+              <div class="static-note" id="static-note">
                 <p>
-                  This is a still from the Cycles render. The interactive car is
-                  large and made for a laptop or desktop graphics card.
+                  The Little Jeweler · a view of the railcar.
+                  Explore the gallery on any device, or try the interactive room.
                 </p>
-                <button type="button" id="open-interactive">Open the interactive car anyway</button>
+                <a href="./gallery.html">View the gallery</a>
+                <a href="?interactive" id="open-interactive">Explore in 3D</a>
               </div>
             </div>
             <div class="render-error" id="render-error" hidden>
-              <h2>The bench couldn’t open.</h2>
+              <h2>You’re viewing a still of the railcar.</h2>
               <p id="render-error-text"></p>
-              <button type="button" id="retry-render">Try again</button
-              ><button type="button" id="error-gallery">
-                View the render gallery
-              </button>
+              <div class="error-actions">
+                <a href="./gallery.html" id="error-gallery">View the full gallery ↗</a>
+                <button type="button" id="retry-render">Try 3D again</button>
+              </div>
+              <details id="graphics-help" hidden>
+                <summary>Help opening 3D in Chrome</summary>
+                <p>In Chrome, open Settings → System, turn on “Use graphics acceleration when available,” then relaunch Chrome. If it is already on, try updating Chrome or opening this link in Safari. The gallery works without changing settings.</p>
+              </details>
+              <details>
+                <summary>Error details</summary>
+                <pre id="render-error-detail"></pre>
+              </details>
             </div>
             <button type="button" id="exit-loupe" class="exit-loupe" hidden>
               ← Back to the bench <kbd>Esc</kbd>
             </button>
+            <div class="loupe-controls" id="loupe-controls" role="group" aria-label="Loupe magnification" hidden>
+              <button type="button" id="loupe-less" aria-label="Decrease loupe magnification">−</button>
+              <output id="loupe-zoom" aria-live="polite">2×</output>
+              <button type="button" id="loupe-more" aria-label="Increase loupe magnification">+</button>
+            </div>
             <div class="viewer-bottom">
               <span id="interaction-hint"
                 ><svg viewBox="0 0 20 20" aria-hidden="true">
                   <path
                     d="m3 10 3-3m-3 3 3 3m-3-3h14m-3-3 3 3-3 3M10 3v14"
                   /></svg
-                >Look around with your cursor · touch the objects on the
-                bench</span
+                >Drag the ring to turn it · drag the room to explore · scroll to zoom</span
               ><button type="button" id="auto-turn" aria-pressed="false">
                 <span class="turn-icon" aria-hidden="true">↻</span> Slow turn
               </button>
             </div>
-          </div>
-          <div class="tool-tray" aria-label="Inspection tools">
-            <span class="tray-label">YOUR TOOLS</span>
-            <div
-              class="tool-buttons"
-              role="group"
-              aria-label="Choose an inspection tool"
-            >
-              <button
-                type="button"
-                class="tool active"
-                data-tool="explore"
-                aria-label="Explore the workshop"
-                aria-pressed="true"
-              >
-                <svg viewBox="0 0 28 28" aria-hidden="true">
-                  <path d="M3 14s4-7 11-7 11 7 11 7-4 7-11 7S3 14 3 14Z" />
-                  <circle cx="14" cy="14" r="3" /></svg
-                ><span>Explore</span><kbd>1</kbd>
-              </button>
-              <button
-                type="button"
-                class="tool"
-                data-tool="turn"
-                aria-label="Turn jewelry"
-                aria-pressed="false"
-              >
-                <svg viewBox="0 0 28 28" aria-hidden="true">
-                  <path d="m7 4 5 20 2-1-3-16m10-3-5 20-2-1 3-16M9 7h10" /></svg
-                ><span>Turn jewelry</span><kbd>2</kbd>
-              </button>
-              <button
-                type="button"
-                class="tool"
-                data-tool="loupe"
-                aria-label="Pick up the loupe"
-                aria-pressed="false"
-              >
-                <svg viewBox="0 0 28 28" aria-hidden="true">
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="m17 17 8 8M7 11h8m-4-4v8" /></svg
-                ><span>Look closer</span><kbd>3</kbd>
-              </button>
-            </div>
-            <div class="loupe-controls" id="loupe-controls" hidden>
-              <button
-                type="button"
-                id="loupe-less"
-                aria-label="Decrease loupe magnification"
-              >
-                −</button
-              ><output id="loupe-zoom">3×</output
-              ><button
-                type="button"
-                id="loupe-more"
-                aria-label="Increase loupe magnification"
-              >
-                +
-              </button>
-            </div>
-            <span class="tray-tip" id="tray-tip"
-              >A small world.<br />A closer look.</span
-            >
           </div>
           <div class="discovery">
             <span aria-hidden="true">✧</span>
@@ -225,10 +169,23 @@
               ✕
             </button>
           </div>
+          <section class="cabinet-section">
+            <h2>Take a closer look</h2>
+            <button type="button" id="inspect-loupe" aria-keyshortcuts="3">Lift the loupe</button>
+            <p class="keyboard-help">
+              Drag the ring to turn it and the room to look around. Scroll or pinch
+              to zoom; double-click a surface to focus on it.
+            </p>
+            <p class="keyboard-help">
+              Keyboard: 1 then arrow keys to look around, 2 then arrow keys to turn
+              the jewelry, 3 for the loupe. + and − zoom, Home resets the view,
+              and Escape returns to the bench.
+            </p>
+          </section>
           <section class="cabinet-section stone-section">
             <div class="section-label">
               <span>01</span>
-              <h2>Choose a little treasure</h2>
+              <h2>Choose a gemstone</h2>
             </div>
             <div class="stone-options" role="group" aria-label="Gemstone">
               <button
@@ -331,7 +288,7 @@
           <section class="cabinet-section light-section">
             <div class="section-label">
               <span>03</span>
-              <h2>Chase the light</h2>
+              <h2>Lighting</h2>
             </div>
             <div class="segmented" role="group" aria-label="Light source">
               <button
@@ -369,10 +326,17 @@
                 ></button
                 ><button
                   type="button"
-                  class="card-swatch cream selected"
+                  class="card-swatch dove selected"
+                  data-background="dove"
+                  aria-label="Dove-grey bench mat"
+                  aria-pressed="true"
+                ></button
+                ><button
+                  type="button"
+                  class="card-swatch cream"
                   data-background="cream"
                   aria-label="Ivory bench mat"
-                  aria-pressed="true"
+                  aria-pressed="false"
                 ></button
                 ><button
                   type="button"
@@ -384,164 +348,147 @@
               </div>
             </div>
           </section>
+          <details class="room-controls">
+            <summary>Around the room</summary>
+            <p>Click the objects in the room, or use these controls.</p>
+            <div class="room-actions">
+              <button type="button" data-room="gramophone" aria-pressed="false">Gramophone</button>
+              <button type="button" data-room="safe" aria-pressed="false">Safe door</button>
+              <button type="button" data-room="globe">Spin globe</button>
+              <button type="button" data-room="lamp" aria-pressed="true">Student lamp</button>
+              <button type="button" data-room="cigar">Cigar</button>
+              <button type="button" data-room="poker">Fire poker</button>
+              <button type="button" id="toggle-rail-ambience" aria-pressed="false">Train ambience</button>
+            </div>
+            <div class="room-actions" role="group" aria-label="Balance weights">
+              <button type="button" data-room="weight-0" aria-pressed="false">Weight 1</button>
+              <button type="button" data-room="weight-1" aria-pressed="false">Weight 2</button>
+              <button type="button" data-room="weight-2" aria-pressed="false">Weight 3</button>
+              <button type="button" data-room="weight-3" aria-pressed="false">Weight 4</button>
+              <button type="button" data-room="weight-4" aria-pressed="false">Weight 5</button>
+            </div>
+          </details>
         </aside>
       </section>
+      <p class="portfolio-link"><a href="./gallery.html">See the railcar and gemstone gallery ↗</a></p>
     </main>
     <p id="announcement" class="sr-only" role="status" aria-live="polite"></p>
     <dialog id="notes-dialog" aria-labelledby="notes-title">
       <div class="dialog-heading">
-        <p class="eyebrow">BEHIND THE SPARKLE</p>
-        <button type="button" id="close-notes" aria-label="Close render notes">
-          ✕
-        </button>
+        <p class="eyebrow">PROCESS &amp; REFERENCES</p>
+        <button type="button" id="close-notes" aria-label="Close render journal">✕</button>
       </div>
-      <h2 id="notes-title">One curiosity. Three ways to render it.</h2>
+      <h2 id="notes-title">Render journal</h2>
       <p class="notes-intro">
-        This bench grew out of Heather’s Rust ray tracer. The live viewer is a
-        separate Three.js GPU material study; the images below are actual
-        offline renders.
+        This project started with a Rust ray tracer and a question: how do you
+        make a gemstone look convincing? The workbench grew from those material
+        experiments. Here are a few of the renders along the way.
       </p>
+      <p><a href="./gallery.html">View the railcar and gemstone gallery ↗</a> · Scene images work without interactive graphics.</p>
       <div class="render-studies">
         <figure>
-          <img
-            src="./assets/rust-gems.png"
-            alt="Six colored, faceted gems rendered by the Rust CPU renderer"
-            loading="lazy"
-          />
+          <img src="./assets/rust-gems.png"
+            alt="Six colored, faceted gems rendered by the Rust CPU renderer" loading="lazy" />
           <figcaption>
-            <span class="eyebrow">HEATHER’S RUST RENDERER</span>
-            <h3>Light, bent through a stone.</h3>
+            <span class="eyebrow">RUST RENDERER</span>
+            <h3>Faceted gemstones</h3>
             <p>
-              Recursive refraction, Fresnel reflection, and RGB absorption in
-              closed gemstone meshes.
+              These stones were rendered offline. Light reflects off their
+              surfaces, bends as it enters, and loses color as it travels through
+              the material. Changing the cut changes the paths it can take.
             </p>
-            <a
-              href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/GEMS.md"
-              target="_blank"
-              rel="noopener"
-              >The code & reproduction commands ↗</a
-            >
+            <a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/GEMS.md"
+              target="_blank" rel="noopener">Code and render settings ↗</a>
           </figcaption>
         </figure>
         <figure>
-          <img
-            src="./assets/rust-tigers-eye.gif"
-            alt="Moving-light tiger’s-eye-inspired surface sheen rendered by the Rust renderer"
-            loading="lazy"
-          />
+          <img src="./assets/rust-tigers-eye.gif"
+            alt="A moving highlight on a tiger’s-eye-inspired material rendered in Rust" loading="lazy" />
           <figcaption>
-            <span class="eyebrow">RUST · DIRECTIONAL SURFACE SHEEN</span>
-            <h3>A first ribbon of light.</h3>
+            <span class="eyebrow">RUST RENDERER</span>
+            <h3>Tiger’s eye, first pass</h3>
             <p>
-              An anisotropic surface approximation, without volumetric fiber
-              scattering.
+              The highlight follows the direction of the fibers as the light
+              moves. This version puts that effect on the surface; it doesn’t
+              model light scattering inside the stone.
             </p>
           </figcaption>
         </figure>
         <figure>
-          <img
-            src="./assets/mitsuba-tigers-eye.png"
-            alt="Layered tiger’s-eye material study rendered with Mitsuba"
-            loading="lazy"
-          />
+          <img src="./assets/mitsuba-tigers-eye.png"
+            alt="A layered tiger’s-eye material study rendered with Mitsuba" loading="lazy" />
           <figcaption>
-            <span class="eyebrow">MITSUBA · EXTERNAL REFERENCE</span>
-            <h3>A closer look beneath the surface.</h3>
+            <span class="eyebrow">MITSUBA REFERENCE STUDY</span>
+            <h3>Adding depth to the fibers</h3>
             <p>
-              A refractive shell, directional volume scattering, and an
-              artist-tuned fiber bed. A visual approximation, with remaining
-              sampling noise.
+              This separate study uses Mitsuba to put a layer of scattering
+              material beneath a clear shell. The fibers have more depth here,
+              though the image still has some sampling noise.
             </p>
-            <a
-              href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/MITSUBA.md"
-              target="_blank"
-              rel="noopener"
-              >Material model & measured render times ↗</a
-            >
+            <a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/MITSUBA.md"
+              target="_blank" rel="noopener">Material setup and render times ↗</a>
           </figcaption>
         </figure>
       </div>
       <div class="notes-details">
-        <h3>About the live bench</h3>
+        <h3>The browser version</h3>
         <p>
-          The tiger’s-eye shader combines procedural fine fibers, a view- and
-          light-dependent directional highlight, and a single polished
-          dielectric surface. The faceted gems trace refraction and internal
-          reflection through their actual facets, with RGB dispersion and
-          absorption. A live reflection probe captures the room; finite
-          examination lights are also traced directly for the jewelry. Room
-          reflections remain an environment-based approximation. A light-side
-          photon pass traces the selected faceted gem onto the flat bench,
-          including RGB dispersion, absorption and internal reflection. It
-          retains its full sample count during movement and can be disabled in
-          Bench controls. Ring/prop occlusion along these bent paths and full
-          scene path tracing are not simulated. The seated view orbits a movable
-          pivot when dragged; scrolling or pinching zooms toward the pointer and
-          double-clicking focuses a surface. Jewelry turns independently with
-          the Turn jewelry tool. The renderer keeps native pixel density during
-          movement. A depth-aware cache retains the precious-material image
-          while only the visible hearth animates; movement refreshes that image
-          at full detail. The room’s baked light supplies its fixed ambiance.
-          The loupe lifts from the bench along a clear path before the camera
-          leans into its 3D brass eyepiece. Its magnification comes from the
-          camera projection, rather than a full optical lens simulation. These
-          are real-time approximations. Ruby and sapphire use three-channel fits
-          to published absorption measurements; the other color presets are
-          appearance studies.
+          The workbench uses Three.js. The faceted stones trace light through
+          their cuts, including internal reflections, absorption, and a small
+          separation of red, green, and blue. Tiger’s eye uses a faster surface
+          material. Ruby and sapphire colors are fitted to published absorption
+          measurements; the other colors are visual studies.
         </p>
         <p>
-          The 1890 private railcar is project-modeled in Blender. Its lighting
-          is baked in Cycles; every surface is shaded live from its
-          full-resolution source textures. Jewelry, cantilever cases,
-          examination light and loupe remain live. Wood veneers, velvet,
-          leather, jacquard, marble, the armchairs, settee, gasoliers, desk
-          chair, microscope and pocket watch, and the Sunset Forest panorama
-          outside the windows are CC0 assets from Poly Haven. The paintings are
-          public-domain works from the Met’s Open Access collection (Church,
-          Bierstadt, Lawrence, Sargent); the globe uses NASA’s Blue Marble.
-          The carpet, clock dial, ledger, labels and damask are project-made.
-          <a
-            href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/GEM-COLOR.md"
-            target="_blank"
-            rel="noopener"
-            >Color research, ring source and room workflow</a
-          >
-          ·
-          <a
-            href="./assets/materials/CREDITS.html"
-            target="_blank"
-            rel="noopener"
-            >Texture, environment, and historical mesh credits</a
-          >. Heather directed the project; Codex assisted with code, scene
-          design, and testing. The manually authored class renderer is separate.
+          Some shortcuts keep the scene interactive. Reflections use captures of
+          the room. Refracted light on the desk is calculated for a flat surface
+          and doesn’t account for every object in its path. The loupe enlarges the
+          camera view rather than simulating a complete optical lens.
+        </p>
+        <h3>The room</h3>
+        <p>
+          The railcar was modeled in Blender, with its fixed lighting baked in
+          Cycles. The source textures keep their full resolution. The ring,
+          gemstone cases, and loupe remain interactive: drag the ring to turn it,
+          open a case to change materials, or click the loupe to inspect the stone.
+        </p>
+        <h3>Gramophone music</h3>
+        <p>The gramophone track is supplied by Heather and published with her permission.
+          Horn filtering and surface hiss are added in the browser.
+          <a href="./assets/railcar/audio/gramophone.mp3" download>Download recording</a>.
+        </p>
+        <h3>Credits</h3>
+        <p>
+          Heather directed the project and edited the Blender room. Codex and
+          Claude helped with code, scene design, and testing. This AI-assisted
+          project is separate from Heather’s manually authored class renderer.
+        </p>
+        <p>
+          Many of the photographed materials, furnishings, and trees come from
+          <a href="https://polyhaven.com/" target="_blank" rel="noopener">Poly Haven’s CC0 library</a>.
+          The paintings are public-domain works from the Met’s Open Access
+          collection; the globe uses NASA’s Blue Marble. The carpet, clock dial,
+          ledger, labels, and damask were made for this project.
+          <a href="./assets/materials/CREDITS.html" target="_blank" rel="noopener">Texture and environment credits</a>
+          · <a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/workbench/assets/railcar/polyhaven/credits.json" target="_blank" rel="noopener">Railcar asset credits</a>
+          · <a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/GEM-COLOR.md"
+            target="_blank" rel="noopener">Gemstone color research</a>.
+        </p>
+        <p>
           Three.js 0.180.0 is distributed under its
-          <a href="./vendor/THREE-LICENSE.txt" target="_blank" rel="noopener"
-            >MIT license</a
-          >. The faceted meshes in the offline Rust gem gallery are adapted from
-          <a href="https://poly.pizza/u/Zsky" target="_blank" rel="noopener"
-            >Jewel by Zsky</a
-          >,
-          <a
-            href="https://creativecommons.org/licenses/by/3.0/"
-            target="_blank"
-            rel="noopener"
-            >CC BY 3.0</a
-          >; materials, normalization, and topology were adapted.
-          <a
-            href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/assets/gems/ATTRIBUTION.md"
-            target="_blank"
-            rel="noopener"
-            >Full source and adaptation credits</a
-          >.
+          <a href="./vendor/THREE-LICENSE.txt" target="_blank" rel="noopener">MIT license</a>.
+          The offline Rust gallery adapts
+          <a href="https://poly.pizza/u/Zsky" target="_blank" rel="noopener">Jewel by Zsky</a>
+          under <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>,
+          with changes to materials, scale, and topology.
+          <a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/assets/gems/ATTRIBUTION.md"
+            target="_blank" rel="noopener">Full source and adaptation credits</a>.
         </p>
       </div>
     </dialog>
     <noscript
       ><p class="noscript">
-        This interactive workbench needs JavaScript. You can still explore the
-        <a href="https://github.com/HeatherDHoltz/renderer-ai"
-          >Rust renderer and render gallery on GitHub</a
-        >.
+        You’re viewing a still of the railcar. <a href="./gallery.html">Explore the full image gallery</a> without JavaScript or interactive graphics.
       </p></noscript
     >
   </body>

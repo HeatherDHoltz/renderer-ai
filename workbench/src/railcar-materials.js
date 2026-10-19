@@ -195,9 +195,26 @@ export function railcarMaterial(name, spec, ctx) {
   const physical = (spec.sheen || 0) > 0 || (spec.coat || 0) > 0;
   const Material = physical ? THREE.MeshPhysicalMaterial : THREE.MeshStandardMaterial;
   const m = new Material({ name });
-  const uniforms = { ljRgbm: { value: ctx.rgbm } };
+  if (physical) {
+    m.sheenColor = rgb(spec.sheenTint);
+    m.sheenRoughness = spec.sheenRough ?? 0.5;
+    m.clearcoatRoughness = spec.coatRough ?? 0.15;
+  }
+  const uniforms = { ljProbeDielectric: { value: ctx.probeDielectric ?? 1 }, ljRgbm: { value: ctx.rgbm }, ljLightRgbm: { value: ctx.lightRange ?? ctx.rgbm } };
   const defines = {};
+  const fixtures = ctx.live ? (ctx.fixtureSources || []) : [];
+  if (fixtures.length) Object.assign(uniforms, {
+    ljFixturePosition: {value: fixtures.map(f => new THREE.Vector3(...f.position))},
+    ljFixturePower: {value: fixtures.map(f => new THREE.Color(...f.color).multiplyScalar(f.power / (4 * Math.PI * Math.PI)))},
+    ljFixtureLampMask: {value: fixtures.map(f => f.name === 'student lamp flame' ? 1 : 0)},
+    ljFixtureLampOn: ctx.interactive.lampOn,
+  });
+  if (ctx.interactive) Object.assign(uniforms, {
+    ljStudentLampOn: ctx.interactive.lampOn, ljInteractiveFireBoost: ctx.interactive.fireBoost,
+    ljStudentLampMap: { value: ctx.interactive.lampMap }, ljStudentLampRange: { value: ctx.interactive.lampRange }, ljInteractiveFirePosition: { value: ctx.interactive.firePosition },
+  });
   const tex = (path, srgb, flip = true) => texture(ctx.loader, ctx.cache, ctx.base + path, srgb, ctx.aniso, flip);
+  if (spec.bakedResponse) uniforms.ljClothResponse = { value: ctx.responses.get(spec.bakedResponse) };
   let albedo = "", rough = "", metal = "", normal = "", emissive = "";
 
   if (kind === "box") {
@@ -223,7 +240,7 @@ export function railcarMaterial(name, spec, ctx) {
       m.clearcoatRoughness = spec.coatRough ?? 0.1;
       m.sheen = spec.sheen || 0;
       m.sheenColor = rgb(spec.sheenTint);
-      m.sheenRoughness = 0.5;
+      m.sheenRoughness = spec.sheenRough ?? 0.5;
     }
     albedo = /* glsl */ `
       #ifdef LJ_OBJECT
@@ -353,9 +370,9 @@ export function railcarMaterial(name, spec, ctx) {
     }
     if (physical) {
       m.sheen = spec.sheen || 0;
-      m.sheenRoughness = 0.5;
+      m.sheenRoughness = spec.sheenRough ?? 0.5;
       m.clearcoat = spec.coat || 0;
-      m.clearcoatRoughness = 0.15;
+      m.clearcoatRoughness = spec.coatRough ?? 0.15;
     }
   } else {
     m.color = rgb(spec.color, [0.5, 0.5, 0.5]);
@@ -370,18 +387,25 @@ export function railcarMaterial(name, spec, ctx) {
   // Shared: baked light (RGBM), probe reflections, live glints only.
   // The group's light/emission textures are shared; the UV channel lives on
   // the texture, so each channel gets its own clone (same GPU upload).
-  m.lightMap = channelOf(ctx, "light", spec.uv ?? 0);
-  m.lightMapIntensity = ctx.lightIntensity;
-  if (kind !== "artglass") {
+  if (!ctx.live) {
+    m.lightMap = channelOf(ctx, "light", spec.uv ?? 0);
+    m.lightMapIntensity = ctx.lightIntensity;
+  }
+  if (kind !== "artglass" && !ctx.live) {
     m.emissive.set("#ffffff");
     m.emissiveMap = channelOf(ctx, "emit", spec.uv ?? 0);
-  } else {
+  } else if (kind === "artglass") {
     m.emissive.set("#ffffff");
   }
   m.userData.metallic = kind === "gilt" || kind === "damask" || kind === "metal" || (spec.metallic ?? 0) > 0.5;
   m.envMap = ctx.envMap;
   m.envMapIntensity = m.metalness > 0.5 || kind === "gilt" || kind === "damask" ? ctx.metalEnv : ctx.roomEnv;
-  const specular = ctx.specular;
+  const metallicKind = kind === "gilt" || kind === "metal" || (spec.metallic ?? 0) > 0.5;
+  // The viewer's studio lights belong to live jewellery/cases. Room
+  // specular comes from the authored-room probe, not those extra sources.
+  const specular = ctx.live ? (ctx.specularFor?.(name, kind, metallicKind) ?? ctx.specular) : 0;
+  m.userData.roomDirectSpecular = specular;
+  m.userData.bakedResponseMode = spec.bakedResponse ? (spec.bakedResponseMode || "combined") : (ctx.live ? "live" : "irradiance");
   m.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
     shader.defines = { ...(shader.defines || {}), ...defines };
@@ -404,6 +428,11 @@ export function railcarMaterial(name, spec, ctx) {
         #endif`,
       );
     let pars = COMMON_PARS;
+    if (fixtures.length) pars += `uniform vec3 ljFixturePosition[${fixtures.length}], ljFixturePower[${fixtures.length}];
+      uniform float ljFixtureLampMask[${fixtures.length}], ljFixtureLampOn;\n`;
+    if (ctx.interactive && !ctx.live) pars += `uniform sampler2D ljStudentLampMap;
+      uniform float ljStudentLampOn, ljInteractiveFireBoost, ljStudentLampRange; uniform vec3 ljInteractiveFirePosition;
+`;
     if (defines.LJ_BOX !== undefined) pars += BOX_PARS;
     if (defines.LJ_DAMASK !== undefined) pars += DAMASK_PARS;
     if (defines.LJ_GILT !== undefined) pars += "uniform vec3 ljDark; uniform vec3 ljLight; uniform vec2 ljRough; uniform float ljFreq;\n";
@@ -412,7 +441,14 @@ export function railcarMaterial(name, spec, ctx) {
       pars += "uniform float ljFreq; uniform float ljLead; uniform vec3 ljPaneA; uniform vec3 ljPaneB; uniform float ljGlow;\n";
     if (defines.LJ_BINDINGS !== undefined)
       pars += "uniform vec3 ljPalette[10]; uniform vec3 ljLabel; uniform vec3 ljPaper; uniform vec3 ljGiltC;\n";
-    fs = pars + fs;
+    fs = "uniform float ljLightRgbm, ljProbeDielectric;\n" + pars + fs;
+    if (spec.bakedResponse) {
+      fs = "uniform sampler2D ljClothResponse;\n" + fs;
+      if (!["diffuse", "irradiance"].includes(spec.bakedResponseMode)) fs = fs.replace("#include <opaque_fragment>", `
+        vec4 ljResponse = texture2D(ljClothResponse, vLightMapUv);
+        outgoingLight = diffuseColor.rgb * ljResponse.rgb + totalEmissiveRadiance;
+        #include <opaque_fragment>`);
+    }
     if (albedo) fs = fs.replace("#include <map_fragment>", `#include <map_fragment>\n${albedo}`);
     if (rough) fs = fs.replace("#include <roughnessmap_fragment>", rough);
     if (metal) fs = fs.replace("#include <metalnessmap_fragment>", metal);
@@ -427,17 +463,33 @@ export function railcarMaterial(name, spec, ctx) {
         #endif`,
     );
     // RGBM irradiance; the probe's diffuse is already in the bake.
-    fs = fs.replace(
+    if (!ctx.live) fs = fs.replace(
       "#include <lights_fragment_maps>",
       /* glsl */ `
+      // Ambient, hemisphere and light probes were accumulated by
+      // lights_fragment_begin. Static surfaces already contain that transport:
+      // clear it before adding the bake, otherwise shadows receive a flat fill.
+      irradiance = vec3(0.0);
+      iblIrradiance = vec3(0.0);
       #ifdef USE_LIGHTMAP
         vec4 ljL = texture2D(lightMap, vLightMapUv);
-        irradiance += ljL.rgb * ljL.a * ljRgbm * lightMapIntensity;
+        vec3 ljIllumination = ${["diffuse", "irradiance"].includes(spec.bakedResponseMode)
+          ? "texture2D(ljClothResponse, vLightMapUv).rgb"
+          : "ljL.rgb * ljL.a * ljLightRgbm"};
+        ${ctx.interactive ? `vec4 ljLampSample = texture2D(ljStudentLampMap, vLightMapUv);
+        ljIllumination = max(vec3(0.), ljIllumination - (1. - ljStudentLampOn) * ljLampSample.rgb * ljLampSample.a * ljStudentLampRange);
+        vec3 ljFireDelta = ljInteractiveFirePosition - ljPos;
+        float ljFireDistance = length(ljFireDelta);
+        ljIllumination += vec3(5.7,1.14,.165) * ljInteractiveFireBoost * max(0.,dot(normalize(ljNrm),normalize(ljFireDelta))) * (1.-smoothstep(0.,13.,ljFireDistance)) / (1.+.22*ljFireDistance*ljFireDistance);` : ""}
+        float ljIlluminance = dot(ljIllumination, vec3(.2126, .7152, .0722));
+        float ljShadowGain = mix(${Number(ctx.shadowFloor ?? 1).toFixed(3)}, 1.0,
+          smoothstep(.035, .45, ljIlluminance));
+        irradiance += ljIllumination * ljShadowGain * lightMapIntensity;
       #endif
       #if defined(USE_ENVMAP) && defined(RE_IndirectSpecular)
-        radiance += getIBLRadiance(geometryViewDir, geometryNormal, material.roughness);
+        radiance += getIBLRadiance(geometryViewDir, geometryNormal, material.roughness) * mix(ljProbeDielectric, 1.0, metalnessFactor);
         #ifdef USE_CLEARCOAT
-          clearcoatRadiance += getIBLRadiance(geometryViewDir, geometryClearcoatNormal, material.clearcoatRoughness);
+          clearcoatRadiance += getIBLRadiance(geometryViewDir, geometryClearcoatNormal, material.clearcoatRoughness) * ljProbeDielectric;
         #endif
       #endif`,
     );
@@ -445,7 +497,25 @@ export function railcarMaterial(name, spec, ctx) {
       "#include <lights_fragment_end>",
       // ...including the varnish (clearcoat) and velvet (sheen) lobes.
       `#include <lights_fragment_end>
-  reflectedLight.directDiffuse = vec3(0.0);
+  reflectedLight.directDiffuse ${ctx.live ? `*= ${Number(ctx.liveLight ?? 0.42).toFixed(3)}` : "= vec3(0.0)"};
+  ${ctx.live ? `reflectedLight.indirectDiffuse *= ${Number(ctx.liveLight ?? 0.42).toFixed(3)};` : ""}
+  ${!ctx.live ? `#ifdef USE_SHEEN
+    // The room probe's diffuse is suppressed to avoid double lighting, but
+    // that also removes three's indirect velvet lobe. Restore sheen from the
+    // room probe only, without adding diffuse a second time.
+    #if defined(USE_ENVMAP)
+      // Total baked diffuse irradiance includes work lights that the authored
+      // scene hides from glossy rays. Use incoming room radiance for sheen.
+      sheenSpecularIndirect += getIBLIrradiance(geometryNormal) * material.sheenColor * IBLSheenBRDF(geometryNormal, geometryViewDir, material.sheenRoughness);
+    #endif
+  #endif` : ""}
+  ${fixtures.length ? `vec3 ljFixtureIrradiance = vec3(0.);
+    for(int f=0;f<${fixtures.length};f++) {
+      vec3 d=ljFixturePosition[f]-ljPos; float r2=max(dot(d,d),.04);
+      float visibleHemisphere=max(dot(normalize(ljNrm),d*inversesqrt(r2)),0.);
+      ljFixtureIrradiance+=ljFixturePower[f]*visibleHemisphere/r2*mix(1.,ljFixtureLampOn,ljFixtureLampMask[f]);
+    }
+    reflectedLight.indirectDiffuse += material.diffuseColor * ljFixtureIrradiance;` : ""}
   reflectedLight.directSpecular *= ${specular.toFixed(3)};
   #ifdef USE_CLEARCOAT
     clearcoatSpecularDirect *= ${specular.toFixed(3)};
@@ -454,11 +524,14 @@ export function railcarMaterial(name, spec, ctx) {
     sheenSpecularDirect *= ${specular.toFixed(3)};
   #endif`,
     );
+    if (ctx.interactive && !ctx.live && /green cased glass/.test(name)) fs = fs.replace('#include <map_fragment>', '#include <map_fragment>\n diffuseColor.rgb *= mix(.45,1.,ljStudentLampOn);');
+    if (ctx.interactive && !ctx.live && /green cased glass|opal glass lining/.test(name)) fs = fs.replace('#include <lights_fragment_begin>', 'totalEmissiveRadiance *= ljStudentLampOn;\n#include <lights_fragment_begin>');
+    if (ctx.interactive && !ctx.live && name === 'rc embers') fs = fs.replace('#include <opaque_fragment>', 'outgoingLight *= 1. + .65 * ljInteractiveFireBoost;\n#include <opaque_fragment>');
     shader.vertexShader = vs;
     shader.fragmentShader = fs;
     ctx.box?.patch(shader);
   };
-  const key = `railcar-v5|${kind}|${Object.keys(defines).sort().join(",")}|${specular}|${ctx.box ? "box" : ""}`;
+  const key = `railcar-v11-fixtures-${fixtures.length}-interactive-${!!ctx.interactive}|${kind}|${Object.keys(defines).sort().join(",")}|${specular}|${ctx.box ? "box" : ""}|${ctx.live ? `live-${ctx.liveLight ?? 0.42}` : "baked"}|${!!spec.bakedResponse}-${spec.bakedResponseMode || "combined"}|${ctx.shadowFloor ?? 1}`;
   m.customProgramCacheKey = () => key;
   return m;
 }

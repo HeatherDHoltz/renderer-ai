@@ -19,9 +19,6 @@ if HERE not in sys.path:
 
 import ph, mats, geo, shell, clock, desk, lights, trinkets, furnish, cases, library, fireplace, bar, decor  # noqa: E402
 
-for m in (ph, mats, geo, shell, clock, desk, lights, cases, trinkets, library, fireplace, bar, furnish, decor):
-    importlib.reload(m)
-
 OUT = os.path.join(ROOT, "output/railcar/railcar.blend")
 
 
@@ -66,6 +63,10 @@ def camera(tilt_deg=9.0):
 
 
 def main(save=True):
+    # MCP keeps Python modules alive across builds. Reload here, not only when
+    # importing build.py, so repeated main() calls actually use edited sources.
+    for module in (ph, mats, geo, shell, clock, desk, lights, cases, trinkets, library, fireplace, bar, furnish, decor):
+        importlib.reload(module)
     reset()
     render_settings()
     M = mats.build_library(ph)
@@ -82,6 +83,9 @@ def main(save=True):
     furnish.place(ph, "vintage_microscope", "brass microscope", (-6.4, 7.6, stand_top), math.radians(200), c=fc)
     decor.exam_lights(geo.coll("lighting"))
     camera()
+    import render_routes
+    importlib.reload(render_routes)
+    render_routes.annotate()
     for o in bpy.data.objects:
         if o.type == "LIGHT":
             o.visible_camera = False

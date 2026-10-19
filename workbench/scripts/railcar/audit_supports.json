@@ -1,0 +1,9 @@
+{
+  "description": "Source-reviewed planar support relationships in local +Z frames. These enforce geometry rather than exempting errors. Footprint tests are bounding rectangles, suitable only for these flat ledger parts.",
+  "contracts": [
+    {"subject": "ledger block -1", "support": "ledger boards", "frame": "gem ledger", "min_gap_mm": -0.05, "max_gap_mm": 0.2, "min_footprint_coverage": 0.99, "reason": "Left paper block rests on the open ledger cover and fits within it."},
+    {"subject": "ledger block 1", "support": "ledger boards", "frame": "gem ledger", "min_gap_mm": -0.05, "max_gap_mm": 0.2, "min_footprint_coverage": 0.99, "reason": "Right paper block rests on the open ledger cover and fits within it."},
+    {"subject": "ledger page -1", "support": "ledger block -1", "frame": "gem ledger", "min_gap_mm": -0.05, "max_gap_mm": 0.2, "min_footprint_coverage": 0.99, "reason": "Left printed surface stays on and aligned to its supporting paper block."},
+    {"subject": "ledger page 1", "support": "ledger block 1", "frame": "gem ledger", "min_gap_mm": -0.05, "max_gap_mm": 0.2, "min_footprint_coverage": 0.99, "reason": "Right printed surface stays on and aligned to its supporting paper block."}
+  ]
+}

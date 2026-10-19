@@ -1,5 +1,22 @@
 # Current status
 
+## Portfolio availability — October 18, 2026
+
+Published with combined railcar version20 (source79270dd9df30f4ab36e04cc14cf3eea830557fb9;
+deployment appgdep_6ad597e195f8819192d83003d0141592 succeeded). The initial page shows a real
+scene image immediately; gallery.html uses ordinary HTML/JPEG and needs neither WebGL nor
+JavaScript. Download failures retain that image and no longer claim missing graphics support.
+Only actual WebGL-context rejection offers optional browser graphics help. Context loss and
+shader failures have distinct details; the retry path successfully recovered after a blocked
+download was restored. No scene quality changes or new FPS claim in this portfolio pass.
+
+69 web tests,98 locked Rust tests, formatting/strict Clippy/build and scoped diff checks pass.
+Inspected actual native desktop scene images, portrait gallery, and failure screens. Anonymous
+public no-JavaScript gallery, disabled-WebGL fallback, blocked-download classification and eight
+public-file comparisons pass. Evidence:output/portfolio-fallback/ (including public-hashes.json;
+HTML comparison accounts for the observed hosting-injected Cloudflare script). Main repository
+remains uncommitted. Request complete; future room updates must retain this fallback and gallery.
+
 Updated October 16, 2026 (America/Los_Angeles). The full renderer scope in the handoff and the requested browser workshop are **complete and verified**.
 
 ## Git and authorization
@@ -201,3 +218,29 @@ Fidelity pass published successfully to the same owner-private Site: source `90e
 ## Claude environment-quality handoff — documentation only
 
 Heather requested Markdown files directly in the project folder for researching a better Blender/agent setup. Added `CLAUDE_PROJECT_BRIEF.md`, `SCENE_REALISM_AUDIT.md`, and `BLENDER_TOOLING_REQUIREMENTS.md`: current architecture and visual requirements, a source-derived spatial audit, tool-evaluation questions, and a proposed grounding/export pilot. The audit identifies nominal bookcase and hearth bases substantially above the floor, desk/clock contact inconsistencies, and a likely hovering pencil. These are unresolved findings from source inspection; no evaluated Blender scene audit, new render, installation, or geometry repair occurred in this documentation pass. Prior passing implementation tests do not validate physical grounding. Next environment work should calibrate units and repair/validate complete support assemblies before further surface dressing.
+
+
+## Public workbench and quieter UI — October 18, 2026
+
+The existing Site now permits anyone with its URL. Removed the date line, live-dot/material
+status label and three bottom tool buttons. Ring/stone dragging rotates directly in normal
+explore mode; dragging the room still orbits. Loupe pickup remains on the object and in Bench
+controls, with keyboard alternatives. Rewrote the render journal in plainer language while
+retaining real images, technical limits, credits and AI collaboration disclosure.
+
+Full-quality public delivery uses exact-original-GLB gzip and <=8 MiB lighting stream pieces.
+Omitted unused retired assets only; no geometry, texture, lighting or pixel-density reduction.
+61 web tests, Rust formatting, all 98 locked Rust tests and strict Clippy pass. Actual native
+browser checks cover drag/camera separation, keyboard rotation, loupe, journal and portrait.
+The same checks pass anonymously on the published site, with zero console warnings/errors;
+real images and results are under `output/website-polish/published/`.
+Main repository changes remain uncommitted. Separate Sites source is synchronized at
+`fda72c64b0c0778720e88eb29296c01aeb457f58`; version 15 deployment
+`appgdep_6ad54dc38e6081919d88ba9f71d5e9fb` succeeded.
+
+https://heathers-little-jeweler.zoeholtz2000.chatgpt.site
+
+This shares the prior installed railcar lighting preview. The separate new lighting work
+is not published or approved by this pass. Next: finish that agent’s visual lighting review,
+then publish a verified merged snapshot using the retained lossless pack/load helpers.
+See RAILCAR_HANDOFF.md for the current source checkout, transfer limits and evidence.

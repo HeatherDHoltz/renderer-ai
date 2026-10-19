@@ -7,6 +7,7 @@ art-glass deck lights, window sills just above desk height.
 import math
 from geo import FLOOR, box, panel, sweep_x, curtain, cyl, sphere, coll
 
+WALL_DEPTH = 0.6  # solid backing; reveal liners start beyond this to avoid duplicate faces
 Y_BACK = 11.0     # inner face of the window wall behind the desk
 Y_FRONT = -28.0   # inner face of the opposite wall (behind the camera)
 X0, X1 = -26.0, 26.0
@@ -34,7 +35,7 @@ def wall(M, side):
         y, f = Y_BACK, -1
     else:
         y, f = Y_FRONT, 1
-    ys = sorted((y, y - f * 0.6))
+    ys = sorted((y, y - f * WALL_DEPTH))
     wins = window_bays(side)
     # backing (out of sight, catches light leaks)
     box(f"{side} backing low", (X0, ys[0], FLOOR), (X1, ys[1], SILL), M["mahogany_dark"], c)
@@ -85,9 +86,12 @@ def window(M, c, name, x, y, f):
     for nm, a, b in (("L", x0 - cw, x0), ("R", x1, x1 + cw)):
         box(f"{name} casing {nm}", (a, *ys(0, 0.32)[0:1], SILL), (b, ys(0, 0.32)[1], WIN_TOP), M["mahogany"], c, 0.06, 3)
         box(f"{name} casing bead {nm}", (a + 0.15, *ys(0.3, 0.36)[0:1], SILL), (a + 0.25, ys(0.3, 0.36)[1], WIN_TOP), M["gilt"], c)
-    # reveal (window is set into a thick wall)
+    # The solid pier already provides the first WALL_DEPTH of each jamb.
+    # Add only its exterior extension: overlapping the pier duplicates the
+    # exposed jamb plane and makes the authoring scene depend on export repair.
+    # Top/sill liners are separate and retain their existing construction.
     for nm, a, b in (("L", x0 - 0.05, x0), ("R", x1, x1 + 0.05)):
-        box(f"{name} reveal {nm}", (a, *ys(0, -0.9)[0:1], SILL), (b, ys(0, -0.9)[1], WIN_TOP), M["mahogany_dark"], c)
+        box(f"{name} reveal {nm}", (a, *ys(-WALL_DEPTH, -0.9)[0:1], SILL), (b, ys(-WALL_DEPTH, -0.9)[1], WIN_TOP), M["mahogany_dark"], c)
     box(f"{name} reveal top", (x0, *ys(0, -0.9)[0:1], WIN_TOP - 0.05), (x1, ys(0, -0.9)[1], WIN_TOP), M["mahogany_dark"], c)
     box(f"{name} reveal sill", (x0, *ys(0, -0.9)[0:1], SILL - 0.05), (x1, ys(0, -0.9)[1], SILL), M["mahogany"], c)
     # sash: lower clear pane, meeting rail, art-glass transom
@@ -101,6 +105,17 @@ def window(M, c, name, x, y, f):
     box(f"{name} sash top", (x0, sr[0], WIN_TOP - 0.18), (x1, sr[1], WIN_TOP), M["mahogany"], c, 0.03)
     for nm, a in (("L", x0), ("R", x1 - 0.16)):
         box(f"{name} sash stile {nm}", (a, sr[0], SILL), (a + 0.16, sr[1], WIN_TOP), M["mahogany"], c, 0.03)
+    # Glazing bars: a two-over-two lower sash, as in 1890s private cars, instead
+    # of one large sheet (which, with the forest racing past, read as a screen).
+    # Every crossing piece sits at its own depth so no two faces share a plane.
+    low, high = SILL + 0.18, 6.4
+    mid = (low + high) / 2
+    vb, hb = ys(-0.44, -0.70), ys(-0.445, -0.69)
+    box(f"{name} muntin vertical", (x - 0.05, vb[0], low), (x + 0.05, vb[1], high), M["mahogany"], c, 0.02)
+    box(f"{name} muntin horizontal", (x0 + 0.16, hb[0], mid - 0.05), (x1 - 0.16, hb[1], mid + 0.05), M["mahogany"], c, 0.02)
+    vbead, hbead = ys(-0.425, -0.44), ys(-0.43, -0.445)
+    box(f"{name} muntin bead vertical", (x - 0.015, vbead[0], low), (x + 0.015, vbead[1], high), M["gilt"], c)
+    box(f"{name} muntin bead horizontal", (x0 + 0.16, hbead[0], mid - 0.015), (x1 - 0.16, hbead[1], mid + 0.015), M["gilt"], c)
     # brass sash lifts
     for dx in (-1.2, 1.2):
         cyl(f"{name} lift {dx}", (x + dx, sr[0] if f < 0 else sr[1], SILL + 0.35), 0.06, 0.06, 0.12, M["brass"], c,
@@ -111,11 +126,10 @@ def window(M, c, name, x, y, f):
     curtain(f"{name} drape R", x1 + 0.5, 1.6, WIN_TOP + 0.3, FLOOR + 3.5, yv, M["velvet_red"], c, side=-1, tie_z=1.6, facing=f)
     for dx in (x0 - 0.2, x1 + 0.2):
         sphere(f"{name} tassel {dx}", (dx, y + f * 0.9, 1.6), 0.16, M["gilt"], c, scale=(1, 1, 1.8))
-    # valance: three swags
-    for k in range(3):
-        sx = x0 - 0.4 + (k + 0.5) * (x1 - x0 + 0.8) / 3
-        cyl(f"{name} swag {k}", (sx, y + f * 0.75, WIN_TOP + 0.05), 0.55, 0.55, (x1 - x0 + 0.8) / 3 + 0.2,
-            M["velvet_red"], c, 24, rot=(0, math.pi / 2, 0))
+    # One continuous velvet valance, without overlapping rolls/internal caps.
+    cyl(f"{name} valance", ((x0+x1)/2, y+f*0.75, WIN_TOP+0.05),
+        0.55, 0.55, x1-x0+1.0, M["velvet_red"], c, 24,
+        rot=(0, math.pi/2, 0))
     box(f"{name} pelmet", (x0 - 0.7, *ys(0.1, 0.55)[0:1], WIN_TOP + 0.35), (x1 + 0.7, ys(0.1, 0.55)[1], WIN_TOP + 1.05), M["mahogany"], c, 0.05, 3)
     box(f"{name} pelmet gilt", (x0 - 0.7, *ys(0.55, 0.6)[0:1], WIN_TOP + 0.5), (x1 + 0.7, ys(0.55, 0.6)[1], WIN_TOP + 0.62), M["gilt"], c)
 

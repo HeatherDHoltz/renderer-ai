@@ -10,7 +10,10 @@ import {
   lampControls,
   benchFraming,
   benchIntersections,
+  LOUPE,
+  eyepieceScale,
 } from "../src/interaction.js";
+import { inspectionFieldOfView } from "../src/geometry.js";
 
 test("pickup advances by elapsed time and reverses without a pose jump", () => {
   const points = [
@@ -217,4 +220,79 @@ test("case inspection looks toward its contents and frames unfolded trays at wid
           );
         }
     }
+});
+
+// Screen radius (fraction of half the shorter side) of a loupe model radius at
+// a model depth, for the raised loupe in front of the inspection eye.
+function screenRadius(radius, depth, fov, aspect) {
+  const size = eyepieceScale(fov, aspect);
+  const distance = LOUPE.eyeDistance - depth * LOUPE.depthScale;
+  return (
+    (radius * size) /
+    distance /
+    (Math.min(1, aspect) * Math.tan(THREE.MathUtils.degToRad(fov / 2)))
+  );
+}
+
+test("the eyepiece aperture keeps one larger screen size at every magnification", () => {
+  for (const aspect of [0.5, 1, 1.78, 2.4])
+    for (const zoom of [2, 2.6, 4, 6]) {
+      const fov = inspectionFieldOfView(zoom);
+      const clear = screenRadius(
+        LOUPE.apertureRadius,
+        -LOUPE.apertureDepth,
+        fov,
+        aspect,
+      );
+      assert.ok(Math.abs(clear - LOUPE.aperture) < 1e-12, `${aspect} ${zoom}`);
+      // The previous eyepiece showed a clear radius of 0.774.
+      assert.ok(clear > 0.774 * 1.15);
+      // The near brass rim (torus 0.275 + 0.022 at depth 0.075) stays outside
+      // the aperture and, at landscape aspects, inside the screen width.
+      const rim = screenRadius(0.297, 0.097, fov, aspect);
+      assert.ok(rim > clear * 1.25);
+      if (aspect >= 1.6) assert.ok(rim < aspect * 0.8);
+    }
+  for (const [fov, aspect] of [[0, 1], [180, 1], [30, 0], [30, NaN]])
+    assert.throws(() => eyepieceScale(fov, aspect));
+});
+
+test("the resting loupe is 50% larger than the previous model and the raised lens clears a turning specimen", async () => {
+  assert.ok(Math.abs(LOUPE.restScale / 0.51 - 1.5) < 1e-12);
+  const { readFile } = await import("node:fs/promises");
+  const { readGemOBJ, normalizeGem, solitaireGeometry } = await import(
+    "../src/geometry.js"
+  );
+  const { cutGeometry } = await import("../src/cuts.js");
+  const shank = solitaireGeometry(
+    await readFile(new URL("../assets/solitaire-shank.obj", import.meta.url), "utf8"),
+  );
+  const stones = {
+    tiger: normalizeGem(
+      readGemOBJ(await readFile(new URL("../assets/cabochon.obj", import.meta.url), "utf8"), true),
+      1.38,
+    ),
+    ...Object.fromEntries(["brilliant", "step", "oval", "cushion"].map((k) => [k, cutGeometry(k)])),
+  };
+  // scene.js: specimen scale 0.24; the eye sits (0, 0.285, 0.84) from the
+  // stone centre and turning keeps that centre fixed.
+  const eyeToStone = Math.hypot(0.285, 0.84);
+  const lensBack = LOUPE.eyeDistance + 0.097 * LOUPE.depthScale;
+  for (const [name, geometry] of Object.entries(stones)) {
+    const center = geometry.boundingBox
+      .getCenter(new THREE.Vector3())
+      .add(new THREE.Vector3(0, name === "tiger" ? 0.98 : 0.7, 0));
+    let sweep = 0;
+    const p = new THREE.Vector3();
+    for (const g of [shank, geometry]) {
+      const position = g.attributes.position;
+      const offset = g === shank ? 0 : name === "tiger" ? 0.98 : 0.7;
+      for (let i = 0; i < position.count; i++)
+        sweep = Math.max(
+          sweep,
+          p.fromBufferAttribute(position, i).setY(position.getY(i) + offset).distanceTo(center),
+        );
+    }
+    assert.ok(eyeToStone - lensBack > sweep * 0.24 + 0.05, `${name} clearance`);
+  }
 });

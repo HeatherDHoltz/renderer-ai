@@ -1,0 +1,38 @@
+{
+  "sourceBlend": "/Users/heatherholtz/Downloads/CS116A/Renderer/renderer-ai/output/railcar/final-room/heather-final-source.blend",
+  "sourceSha256": "a7e94dcfd2962b93d9e2f921caa3a58eb373903378c672d368472f8e8ffcba9d",
+  "scriptSha256": "847237621cdee81256b8e9395c30ea2099f22a7e27639986cc4d8fd3a045a96d",
+  "receiverBiasMm": 0.1,
+  "groups": {
+    "desk": {
+      "size": 2048,
+      "samples": 384,
+      "seconds": 229.09508514404297,
+      "receivers": 26,
+      "geometrySha256": "f696072056cc2478f1549de4ab92869b396b1bbb7ef8fe7f1fcebc96232df308",
+      "lightSha256": "523dfb709679c79a1cde972af688f4f6402387b9460853dcc9ae0431af3cfd75",
+      "clippedTexels": 0,
+      "lightRange": 64
+    },
+    "furnishings": {
+      "size": 4096,
+      "samples": 256,
+      "seconds": 737.8096687793732,
+      "receivers": 48,
+      "geometrySha256": "d794edafe511897d68b581eb294447a0f26ac6b97bd64b2fb1241f71ffc38f2a",
+      "lightSha256": "b6ab3aa84a078cce8efc5164e27e51f28d354ec707c480d80bbffee6f56cb6ed",
+      "clippedTexels": 0,
+      "lightRange": 128
+    },
+    "architecture": {
+      "size": 4096,
+      "samples": 256,
+      "seconds": 280.6251132488251,
+      "receivers": 11,
+      "geometrySha256": "b59d3f4fbdfac04a95e93cfcdab0ec3f09b7f293a97d14347512d820c79ebcd5",
+      "lightSha256": "6dbf241c8564e3c09563fac10d4d4184b135adb02bc4011e19c9343836269ff2",
+      "clippedTexels": 0,
+      "lightRange": 64
+    }
+  }
+}

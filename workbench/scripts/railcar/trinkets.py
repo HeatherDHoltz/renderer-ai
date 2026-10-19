@@ -287,7 +287,18 @@ def books(loc, M, c, sizes=((1.9, 1.35, 0.32), (1.7, 1.2, 0.28), (1.55, 1.1, 0.2
         p = box(f"gem book {k} pages", (-w / 2 + 0.06, -d / 2 + 0.04, 0.02), (w / 2 - 0.02, d / 2 - 0.04, t - 0.02), M["paper"], c)
         p.parent = b
         p.matrix_parent_inverse.identity()
-        p.location = (0.04, 0, -t / 2)
+        p.location = (0.02, 0, 0)
+        # Covers and spine enclose the pages; a solid leather block hid the
+        # page edges and the old half-thickness offset pushed them below it.
+        bm = bmesh.new()
+        for low, high in [((-w/2,-d/2,-t/2),(w/2,d/2,-t/2+.02)),
+                          ((-w/2,-d/2,t/2-.02),(w/2,d/2,t/2)),
+                          ((-w/2,-d/2,-t/2+.02),(-w/2+.06,d/2,t/2-.02))]:
+            lo,hi=Vector(low),Vector(high)
+            bmesh.ops.create_cube(bm,size=2,matrix=Matrix.Translation((lo+hi)*.5) @ Matrix.Diagonal((*((hi-lo)*.5),1)))
+        bm.to_mesh(b.data);bm.free();b.data.update()
+        for modifier in b.modifiers:
+            if modifier.type=='BEVEL':modifier.width=.006
         zz += t
 
 
@@ -430,12 +441,24 @@ def gem_ledger(loc, M, c, rz=-0.12):
     cov.parent = par
     pages = tex_mat("rc ledger pages", "ledger-pages.jpg", 0.9)
     for s in (-1, 1):
-        blk = box(f"ledger block {s}", (0, -0.98, 0), (1.45, 0.98, 0.16), M["paper"], c, 0.02)
+        # Both parts use book-local bounds. box() already centres its mesh;
+        # overwriting that origin sank the block 3 mm into the desk and left
+        # its printed page floating 8.1 mm above it, shifted sideways 72.5 mm.
+        left = 0.02 if s > 0 else -1.47
+        right = left + 1.45
+        blk = box(f"ledger block {s}", (left, -0.98, 0.05), (right, 0.98, 0.21), M["paper"], c, 0.002)
         blk.parent = par
-        blk.location = (0.02 if s > 0 else -1.47, 0, 0.05)
-        q = uv_quad(f"ledger page {s}", [(0, -0.98, 0.161), (1.45, -0.98, 0.161), (1.45, 0.98, 0.161), (0, 0.98, 0.161)], pages, c,
+        # The printed page is the block's top cap, not a second face hovering
+        # above it. Keep the body sides/bottom and share the cap's edge exactly.
+        bm = bmesh.new()
+        bm.from_mesh(blk.data)
+        bm.normal_update()
+        bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.normal.z > 0.9], context="FACES_ONLY")
+        bm.to_mesh(blk.data)
+        bm.free()
+        q = uv_quad(f"ledger page {s}", [(left, -0.98, 0.21), (right, -0.98, 0.21), (right, 0.98, 0.21), (left, 0.98, 0.21)], pages, c,
                     uvs=((0.5, 0), (1, 0), (1, 1), (0.5, 1)) if s > 0 else ((0, 0), (0.5, 0), (0.5, 1), (0, 1)))
-        q.parent = blk
+        q.parent = par
         q.modifiers.clear()
     pen = cyl("ledger pen", (0, 0, 0), 0.03, 0.025, 1.5, M["ivory"], c, 12, rot=(0, math.pi / 2, 0))
     pen.parent = par

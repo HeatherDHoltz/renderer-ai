@@ -2,11 +2,37 @@
  "version": 2,
  "units": "1 unit = 10 cm; app coords (x, y-up, z)",
  "rgbmRange": 16.0,
- "fire": [
-  -25.0,
-  -7.0,
-  8.5
- ],
+ "bake": {
+  "receiver": "neutral diffuse for camera visibility; authored BSDF for other rays",
+  "authoredLighting": true,
+  "authoredGeometryPreserved": true,
+  "requiredCollectionOverrides": [],
+  "exporterSha256": "6b232ccc25f16ce3af2971cdfad52c532227100c5c87c9b77fd2643b500eb6c1",
+  "groups": {
+   "desk": {
+    "lightSize": 2048,
+    "emitSize": 1024,
+    "samples": 384,
+    "surfaceDensity": 200,
+    "maxSurfaceSize": 4096
+   },
+   "furnishings": {
+    "lightSize": 4096,
+    "emitSize": 2048,
+    "samples": 256,
+    "surfaceDensity": 100,
+    "maxSurfaceSize": 2048
+   },
+   "architecture": {
+    "lightSize": 4096,
+    "emitSize": 2048,
+    "samples": 256,
+    "surfaceDensity": 100,
+    "maxSurfaceSize": 2048
+   }
+  }
+ },
+ "fire": null,
  "room": {
   "x": [
    -26.0,
@@ -19,10 +45,11 @@
  },
  "groups": {
   "desk": {
-   "faces": 47765,
-   "meshes": 23,
+   "faces": 48230,
+   "meshes": 27,
    "file": "railcar-desk.glb",
    "light": "railcar-desk-light.webp",
+   "lightRange": 64.0,
    "emit": "railcar-desk-emit.webp",
    "materials": {
     "vintage_pocket_watch_hands": {
@@ -37,6 +64,16 @@
      "sheen": 0.0,
      "coat": 1.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc mahogany": {
@@ -57,8 +94,8 @@
      "tintMode": "MULTIPLY",
      "roughMul": 0.8,
      "roughAdd": 0.0,
-     "coat": 0.55,
-     "coatRough": 0.14,
+     "coat": 0.550000011920929,
+     "coatRough": 0.14000000059604645,
      "normalStrength": 0.4,
      "sheen": 0.0,
      "sheenTint": [
@@ -67,6 +104,10 @@
       1.0
      ],
      "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc water gilt": {
@@ -86,16 +127,35 @@
       0.42,
       0.16
      ],
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
      "uv": 0
     },
     "rc tooled green leather": {
      "kind": "uvbake",
+     "sheen": 0.25,
+     "sheenRough": 0.5,
+     "coat": 0.2,
+     "coatRough": 0.4000000059604645,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "size": 4096,
      "color": "tex/desk-rc-tooled-green-leather-color.jpg",
      "orm": "tex/desk-rc-tooled-green-leather-orm.jpg",
      "normal": "tex/desk-rc-tooled-green-leather-normal.jpg",
-     "sheen": 0.25,
-     "coat": 0.2,
      "uv": 1
     },
     "rc mahogany dark": {
@@ -117,7 +177,7 @@
      "roughMul": 0.8,
      "roughAdd": 0.0,
      "coat": 0.5,
-     "coatRough": 0.16,
+     "coatRough": 0.1599999964237213,
      "normalStrength": 0.4,
      "sheen": 0.0,
      "sheenTint": [
@@ -126,6 +186,10 @@
       1.0
      ],
      "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc rosewood panel": {
@@ -146,8 +210,8 @@
      "tintMode": "MULTIPLY",
      "roughMul": 0.7,
      "roughAdd": 0.0,
-     "coat": 0.6,
-     "coatRough": 0.1,
+     "coat": 0.6000000238418579,
+     "coatRough": 0.10000000149011612,
      "normalStrength": 0.3,
      "sheen": 0.0,
      "sheenTint": [
@@ -156,6 +220,10 @@
       1.0
      ],
      "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc polished brass": {
@@ -168,36 +236,15 @@
      "rough": 0.1,
      "noise": 40,
      "noiseAmount": 0.12,
-     "uv": 0
-    },
-    "rc satinwood stringing": {
-     "kind": "box",
-     "space": "world",
-     "scale": 0.2,
-     "maps": {
-      "color": "tex/white_maple_veneer_diff_2k.jpg",
-      "rough": "tex/white_maple_veneer_rough_2k.jpg",
-      "roughChannel": 0,
-      "normal": "tex/white_maple_veneer_nor_gl_2k.jpg"
-     },
-     "tint": [
-      1.0,
-      0.72,
-      0.38
-     ],
-     "tintMode": "MULTIPLY",
-     "roughMul": 1.0,
-     "roughAdd": 0.0,
-     "coat": 0.6,
-     "coatRough": 0.1,
-     "normalStrength": 1.0,
      "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
      "sheenTint": [
       1.0,
       1.0,
       1.0
      ],
-     "metallic": 0.0,
      "uv": 0
     },
     "rc green cased glass": {
@@ -212,6 +259,16 @@
      "sheen": 0.0,
      "coat": 1.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc opal glass lining": {
@@ -230,6 +287,50 @@
       2.55,
       1.8
      ],
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
+     "uv": 0
+    },
+    "Heather \u2014 balance warm rosewood": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.18000000715255737,
+     "maps": {
+      "color": "tex/rosewood_veneer1_diff_2k.jpg",
+      "rough": "tex/rosewood_veneer1_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/rosewood_veneer1_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.5600000023841858,
+      0.4300000071525574,
+      0.3100000023841858
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 0.7,
+     "roughAdd": 0.0,
+     "coat": 0.2800000011920929,
+     "coatRough": 0.23999999463558197,
+     "normalStrength": 0.18000000715255737,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc blackened iron": {
@@ -242,6 +343,49 @@
      "rough": 0.45,
      "noise": 40,
      "noiseAmount": 0.12,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "uv": 0
+    },
+    "Heather \u2014 weight box honey maple": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.2800000011920929,
+     "maps": {
+      "color": "tex/white_maple_veneer_diff_2k.jpg",
+      "rough": "tex/white_maple_veneer_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/white_maple_veneer_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.8199999928474426,
+      0.6399999856948853,
+      0.36000001430511475
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 1.0,
+     "roughAdd": 0.0,
+     "coat": 0.18000000715255737,
+     "coatRough": 0.3199999928474426,
+     "normalStrength": 0.18000000715255737,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc emerald velvet": {
@@ -263,15 +407,53 @@
      "roughMul": 1.0,
      "roughAdd": 0.2,
      "coat": 0.0,
-     "coatRough": 0.1,
+     "coatRough": 0.10000000149011612,
      "normalStrength": 1.0,
      "sheen": 1.0,
      "sheenTint": [
-      0.6,
+      0.6000000238418579,
       1.0,
       0.75
      ],
      "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
+     "uv": 0
+    },
+    "Heather \u2014 inkstand ebonized wood": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.20000000298023224,
+     "maps": {
+      "color": "tex/rosewood_veneer1_diff_2k.jpg",
+      "rough": "tex/rosewood_veneer1_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/rosewood_veneer1_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.054999999701976776,
+      0.052000001072883606,
+      0.04699999839067459
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 0.7,
+     "roughAdd": 0.0,
+     "coat": 0.4000000059604645,
+     "coatRough": 0.20000000298023224,
+     "normalStrength": 0.18000000715255737,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc japanned black": {
@@ -286,6 +468,16 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc ivory": {
@@ -300,6 +492,16 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc 18k gold": {
@@ -312,6 +514,49 @@
      "rough": 0.07,
      "noise": 40,
      "noiseAmount": 0.12,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "uv": 0
+    },
+    "Heather \u2014 blotter golden maple": {
+     "kind": "box",
+     "space": "world",
+     "scale": 0.23999999463558197,
+     "maps": {
+      "color": "tex/white_maple_veneer_diff_2k.jpg",
+      "rough": "tex/white_maple_veneer_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/white_maple_veneer_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.6600000262260437,
+      0.41999998688697815,
+      0.20000000298023224
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 1.0,
+     "roughAdd": 0.0,
+     "coat": 0.25999999046325684,
+     "coatRough": 0.27000001072883606,
+     "normalStrength": 0.18000000715255737,
+     "sheen": 0.0,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc paper white": {
@@ -326,6 +571,16 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc paper blue": {
@@ -340,6 +595,16 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc nickel plate": {
@@ -352,7 +617,36 @@
      "rough": 0.08,
      "noise": 40,
      "noiseAmount": 0.12,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
      "uv": 0
+    },
+    "rc parcel label": {
+     "kind": "uvbake",
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
+     "size": 512,
+     "color": "tex/desk-rc-parcel-label-color.jpg",
+     "orm": "tex/desk-rc-parcel-label-orm.jpg",
+     "normal": "tex/desk-rc-parcel-label-normal.jpg",
+     "uv": 1
     },
     "rc oxblood leather": {
      "kind": "box",
@@ -373,7 +667,7 @@
      "roughMul": 1.0,
      "roughAdd": 0.0,
      "coat": 0.25,
-     "coatRough": 0.35,
+     "coatRough": 0.3499999940395355,
      "normalStrength": 1.4,
      "sheen": 0.0,
      "sheenTint": [
@@ -382,6 +676,10 @@
       1.0
      ],
      "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc laid paper": {
@@ -396,16 +694,36 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc ledger pages": {
      "kind": "uvbake",
-     "size": 512,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
+     "size": 2048,
      "color": "tex/desk-rc-ledger-pages-color.jpg",
      "orm": "tex/desk-rc-ledger-pages-orm.jpg",
      "normal": "tex/desk-rc-ledger-pages-normal.jpg",
-     "sheen": 0.0,
-     "coat": 0.0,
      "uv": 1
     },
     "vintage_pocket_watch_glass": {
@@ -420,40 +738,71 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "vintage_pocket_watch": {
      "kind": "uvbake",
-     "size": 256,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-desk-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
+     "size": 2048,
      "color": "tex/desk-vintage-pocket-watch-color.jpg",
      "orm": "tex/desk-vintage-pocket-watch-orm.jpg",
      "normal": "tex/desk-vintage-pocket-watch-normal.jpg",
-     "sheen": 0.0,
-     "coat": 0.0,
      "uv": 1
     }
    },
-   "lightCoverage": 0.708
+   "lightCoverage": 0.711
   },
   "furnishings": {
-   "faces": 237420,
-   "meshes": 46,
+   "faces": 262391,
+   "meshes": 48,
    "file": "railcar-furnishings.glb",
    "light": "railcar-furnishings-light.webp",
+   "lightRange": 16.0,
    "emit": "railcar-furnishings-emit.webp",
    "materials": {
-    "rc laid paper": {
+    "Heather safe \u2014 muted gold lining": {
      "kind": "plain",
      "color": [
-      0.8,
-      0.74,
-      0.6
+      0.43,
+      0.28,
+      0.095
      ],
-     "roughness": 0.9,
-     "metallic": 0.0,
+     "roughness": 0.3,
+     "metallic": 0.75,
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-static-metal.f16.gz",
+     "bakedResponseMode": "combined",
+     "renderRoute": "baked_room",
      "uv": 0
     },
     "rc mahogany": {
@@ -474,8 +823,8 @@
      "tintMode": "MULTIPLY",
      "roughMul": 0.8,
      "roughAdd": 0.0,
-     "coat": 0.55,
-     "coatRough": 0.14,
+     "coat": 0.550000011920929,
+     "coatRough": 0.14000000059604645,
      "normalStrength": 0.4,
      "sheen": 0.0,
      "sheenTint": [
@@ -484,6 +833,10 @@
       1.0
      ],
      "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc carrara marble": {
@@ -504,8 +857,8 @@
      "tintMode": "MULTIPLY",
      "roughMul": 1.0,
      "roughAdd": 0.0,
-     "coat": 0.4,
-     "coatRough": 0.08,
+     "coat": 0.4000000059604645,
+     "coatRough": 0.07999999821186066,
      "normalStrength": 1.0,
      "sheen": 0.0,
      "sheenTint": [
@@ -514,6 +867,10 @@
       1.0
      ],
      "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc verde antico": {
@@ -535,7 +892,7 @@
      "roughMul": 1.0,
      "roughAdd": 0.0,
      "coat": 0.5,
-     "coatRough": 0.06,
+     "coatRough": 0.05999999865889549,
      "normalStrength": 1.0,
      "sheen": 0.0,
      "sheenTint": [
@@ -544,6 +901,10 @@
       1.0
      ],
      "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc water gilt": {
@@ -563,6 +924,18 @@
       0.42,
       0.16
      ],
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-static-metal.f16.gz",
+     "bakedResponseMode": "combined",
+     "renderRoute": "baked_room",
      "uv": 0
     },
     "rc blackened iron": {
@@ -575,6 +948,18 @@
      "rough": 0.45,
      "noise": 40,
      "noiseAmount": 0.12,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-static-metal.f16.gz",
+     "bakedResponseMode": "combined",
+     "renderRoute": "baked_room",
      "uv": 0
     },
     "rc polished brass": {
@@ -587,20 +972,56 @@
      "rough": 0.1,
      "noise": 40,
      "noiseAmount": 0.12,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-static-metal.f16.gz",
+     "bakedResponseMode": "combined",
+     "renderRoute": "baked_room",
      "uv": 0
     },
     "rc charred log": {
      "kind": "atlas",
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "color": "tex/furnishings-atlas-color.jpg",
      "orm": "tex/furnishings-atlas-orm.jpg",
-     "size": 2048,
+     "size": 1024,
      "uv": 1
     },
     "rc embers": {
      "kind": "atlas",
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "color": "tex/furnishings-atlas-color.jpg",
      "orm": "tex/furnishings-atlas-orm.jpg",
-     "size": 2048,
+     "size": 1024,
      "uv": 1
     },
     "rc aged brass": {
@@ -613,6 +1034,18 @@
      "rough": 0.28,
      "noise": 40,
      "noiseAmount": 0.12,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-static-metal.f16.gz",
+     "bakedResponseMode": "combined",
+     "renderRoute": "baked_room",
      "uv": 0
     },
     "rc japanned black": {
@@ -627,6 +1060,16 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc mirror": {
@@ -641,62 +1084,11 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
-     "uv": 0
-    },
-    "rc oxblood velvet": {
-     "kind": "box",
-     "space": "object",
-     "scale": 0.25,
-     "maps": {
-      "color": "tex/velour_velvet_diff_2k.jpg",
-      "rough": "tex/velour_velvet_rough_2k.jpg",
-      "roughChannel": 0,
-      "normal": "tex/velour_velvet_nor_gl_2k.jpg"
-     },
-     "tint": [
-      0.42,
-      0.035,
-      0.04
-     ],
-     "tintMode": "MULTIPLY",
-     "roughMul": 1.0,
-     "roughAdd": 0.2,
-     "coat": 0.0,
-     "coatRough": 0.1,
-     "normalStrength": 1.0,
-     "sheen": 1.0,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
      "sheenTint": [
       1.0,
-      0.55,
-      0.5
-     ],
-     "metallic": 0.0,
-     "uv": 0
-    },
-    "rc longcase dial": {
-     "kind": "uvbake",
-     "size": 512,
-     "color": "tex/furnishings-rc-longcase-dial-color.jpg",
-     "orm": "tex/furnishings-rc-longcase-dial-orm.jpg",
-     "normal": "tex/furnishings-rc-longcase-dial-normal.jpg",
-     "sheen": 0.0,
-     "coat": 0.0,
-     "uv": 1
-    },
-    "rc etched tulip glass": {
-     "kind": "plain",
-     "color": [
       1.0,
-      0.92,
-      0.8
-     ],
-     "roughness": 0.45,
-     "metallic": 0.0,
-     "sheen": 0.0,
-     "coat": 0.0,
-     "emission": [
-      2.5,
-      1.75,
       1.0
      ],
      "uv": 0
@@ -719,8 +1111,8 @@
      "tintMode": "MULTIPLY",
      "roughMul": 0.7,
      "roughAdd": 0.0,
-     "coat": 0.6,
-     "coatRough": 0.1,
+     "coat": 0.6000000238418579,
+     "coatRough": 0.10000000149011612,
      "normalStrength": 0.3,
      "sheen": 0.0,
      "sheenTint": [
@@ -729,6 +1121,92 @@
       1.0
      ],
      "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
+     "uv": 0
+    },
+    "rc oxblood velvet": {
+     "kind": "box",
+     "space": "object",
+     "scale": 0.25,
+     "maps": {
+      "color": "tex/velour_velvet_diff_2k.jpg",
+      "rough": "tex/velour_velvet_rough_2k.jpg",
+      "roughChannel": 0,
+      "normal": "tex/velour_velvet_nor_gl_2k.jpg"
+     },
+     "tint": [
+      0.42,
+      0.035,
+      0.04
+     ],
+     "tintMode": "MULTIPLY",
+     "roughMul": 1.0,
+     "roughAdd": 0.2,
+     "coat": 0.0,
+     "coatRough": 0.10000000149011612,
+     "normalStrength": 1.0,
+     "sheen": 1.0,
+     "sheenTint": [
+      1.0,
+      0.550000011920929,
+      0.5
+     ],
+     "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
+     "uv": 0
+    },
+    "rc longcase dial": {
+     "kind": "uvbake",
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
+     "size": 1300,
+     "color": "tex/furnishings-rc-longcase-dial-color.jpg",
+     "orm": "tex/furnishings-rc-longcase-dial-orm.jpg",
+     "normal": "tex/furnishings-rc-longcase-dial-normal.jpg",
+     "uv": 1
+    },
+    "rc etched tulip glass": {
+     "kind": "plain",
+     "color": [
+      1.0,
+      0.92,
+      0.8
+     ],
+     "roughness": 0.45,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": [
+      2.5,
+      1.75,
+      1.0
+     ],
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc label backbar bottle A0": {
@@ -743,6 +1221,16 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc label backbar bottle A1": {
@@ -757,6 +1245,16 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc label backbar bottle A2": {
@@ -771,6 +1269,16 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc 18k gold": {
@@ -783,6 +1291,18 @@
      "rough": 0.07,
      "noise": 40,
      "noiseAmount": 0.12,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-static-metal.f16.gz",
+     "bakedResponseMode": "combined",
+     "renderRoute": "baked_room",
      "uv": 0
     },
     "rc label backbar bottle A3": {
@@ -797,6 +1317,16 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc label backbar bottle A4": {
@@ -811,6 +1341,16 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc label backbar bottle A5": {
@@ -825,6 +1365,16 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc label backbar bottle A6": {
@@ -839,6 +1389,16 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc sterling": {
@@ -851,6 +1411,18 @@
      "rough": 0.06,
      "noise": 40,
      "noiseAmount": 0.12,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-static-metal.f16.gz",
+     "bakedResponseMode": "combined",
+     "renderRoute": "baked_room",
      "uv": 0
     },
     "rc nickel plate": {
@@ -863,6 +1435,18 @@
      "rough": 0.08,
      "noise": 40,
      "noiseAmount": 0.12,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-static-metal.f16.gz",
+     "bakedResponseMode": "combined",
+     "renderRoute": "baked_room",
      "uv": 0
     },
     "rc label whisky bottle": {
@@ -877,6 +1461,16 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc emerald velvet": {
@@ -898,15 +1492,19 @@
      "roughMul": 1.0,
      "roughAdd": 0.2,
      "coat": 0.0,
-     "coatRough": 0.1,
+     "coatRough": 0.10000000149011612,
      "normalStrength": 1.0,
      "sheen": 1.0,
      "sheenTint": [
-      0.6,
+      0.6000000238418579,
       1.0,
       0.75
      ],
      "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc library bindings": {
@@ -978,67 +1576,120 @@
       0.62,
       0.26
      ],
-     "coat": 0.15,
+     "coat": 0.15000000596046448,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "Armchair_01": {
      "kind": "uvbake",
+     "sheenLinked": true,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      0.6000000238418579,
+      0.11999999731779099,
+      0.11999999731779099
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "size": 2048,
      "color": "tex/furnishings-armchair-01-color.jpg",
      "orm": "tex/furnishings-armchair-01-orm.jpg",
      "normal": "tex/furnishings-armchair-01-normal.jpg",
      "sheen": 0.0,
-     "coat": 0.0,
-     "uv": 1
-    },
-    "Armchair_01.001": {
-     "kind": "uvbake",
-     "size": 2048,
-     "color": "tex/furnishings-armchair-01-001-color.jpg",
-     "orm": "tex/furnishings-armchair-01-001-orm.jpg",
-     "normal": "tex/furnishings-armchair-01-001-normal.jpg",
-     "sheen": 0.0,
-     "coat": 0.0,
      "uv": 1
     },
     "Armchair_01.002": {
      "kind": "uvbake",
+     "sheenLinked": true,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      0.6000000238418579,
+      0.11999999731779099,
+      0.11999999731779099
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "size": 2048,
      "color": "tex/furnishings-armchair-01-002-color.jpg",
      "orm": "tex/furnishings-armchair-01-002-orm.jpg",
      "normal": "tex/furnishings-armchair-01-002-normal.jpg",
      "sheen": 0.0,
-     "coat": 0.0,
      "uv": 1
     },
     "sofa_03": {
      "kind": "uvbake",
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "size": 2048,
      "color": "tex/furnishings-sofa-03-color.jpg",
      "orm": "tex/furnishings-sofa-03-orm.jpg",
      "normal": "tex/furnishings-sofa-03-normal.jpg",
-     "sheen": 0.0,
-     "coat": 0.0,
      "uv": 1
     },
     "sofa_03_fringe": {
      "kind": "uvbake",
-     "size": 1024,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
+     "size": 2048,
      "color": "tex/furnishings-sofa-03-fringe-color.jpg",
      "orm": "tex/furnishings-sofa-03-fringe-orm.jpg",
      "normal": "tex/furnishings-sofa-03-fringe-normal.jpg",
-     "sheen": 0.0,
-     "coat": 0.0,
      "uv": 1
     },
     "Chandelier_02": {
      "kind": "uvbake",
-     "size": 1024,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
+     "size": 2048,
      "color": "tex/furnishings-chandelier-02-color.jpg",
      "orm": "tex/furnishings-chandelier-02-orm.jpg",
      "normal": "tex/furnishings-chandelier-02-normal.jpg",
-     "sheen": 0.0,
-     "coat": 0.0,
      "uv": 1
     },
     "Chandelier_02_bulb": {
@@ -1052,17 +1703,41 @@
      "metallic": 0.0,
      "sheen": 0.0,
      "coat": 0.0,
-     "emission": null,
+     "emission": [
+      3.0,
+      2.34,
+      1.65
+     ],
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "Chandelier_02.001": {
      "kind": "uvbake",
-     "size": 1024,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
+     "size": 2048,
      "color": "tex/furnishings-chandelier-02-001-color.jpg",
      "orm": "tex/furnishings-chandelier-02-001-orm.jpg",
      "normal": "tex/furnishings-chandelier-02-001-normal.jpg",
-     "sheen": 0.0,
-     "coat": 0.0,
      "uv": 1
     },
     "Chandelier_02_bulb.001": {
@@ -1076,17 +1751,41 @@
      "metallic": 0.0,
      "sheen": 0.0,
      "coat": 0.0,
-     "emission": null,
+     "emission": [
+      3.0,
+      2.34,
+      1.65
+     ],
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "Chandelier_02.002": {
      "kind": "uvbake",
-     "size": 1024,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
+     "size": 2048,
      "color": "tex/furnishings-chandelier-02-002-color.jpg",
      "orm": "tex/furnishings-chandelier-02-002-orm.jpg",
      "normal": "tex/furnishings-chandelier-02-002-normal.jpg",
-     "sheen": 0.0,
-     "coat": 0.0,
      "uv": 1
     },
     "Chandelier_02_bulb.002": {
@@ -1100,37 +1799,81 @@
      "metallic": 0.0,
      "sheen": 0.0,
      "coat": 0.0,
-     "emission": null,
+     "emission": [
+      3.0,
+      2.34,
+      1.65
+     ],
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "dining_chair_02": {
      "kind": "uvbake",
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "size": 2048,
      "color": "tex/furnishings-dining-chair-02-color.jpg",
      "orm": "tex/furnishings-dining-chair-02-orm.jpg",
      "normal": "tex/furnishings-dining-chair-02-normal.jpg",
-     "sheen": 0.0,
-     "coat": 0.0,
      "uv": 1
     },
     "vintage_microscope": {
      "kind": "uvbake",
-     "size": 1024,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
+     "size": 2048,
      "color": "tex/furnishings-vintage-microscope-color.jpg",
      "orm": "tex/furnishings-vintage-microscope-orm.jpg",
      "normal": "tex/furnishings-vintage-microscope-normal.jpg",
-     "sheen": 0.0,
-     "coat": 0.0,
      "uv": 1
     },
     "vintage_microscope_glass": {
      "kind": "uvbake",
-     "size": 512,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
+     "size": 2048,
      "color": "tex/furnishings-vintage-microscope-glass-color.jpg",
      "orm": "tex/furnishings-vintage-microscope-glass-orm.jpg",
      "normal": "tex/furnishings-vintage-microscope-glass-normal.jpg",
-     "sheen": 0.0,
-     "coat": 0.0,
      "uv": 1
     },
     "rc ivory": {
@@ -1145,13 +1888,35 @@
      "sheen": 0.0,
      "coat": 0.0,
      "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc antique globe": {
      "kind": "atlas",
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.6000000238418579,
+     "coatRough": 0.15000000596046448,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "color": "tex/furnishings-atlas-color.jpg",
      "orm": "tex/furnishings-atlas-orm.jpg",
-     "size": 2048,
+     "size": 1024,
      "uv": 1
     },
     "rc oxblood leather": {
@@ -1173,7 +1938,7 @@
      "roughMul": 1.0,
      "roughAdd": 0.0,
      "coat": 0.25,
-     "coatRough": 0.35,
+     "coatRough": 0.3499999940395355,
      "normalStrength": 1.4,
      "sheen": 0.0,
      "sheenTint": [
@@ -1182,26 +1947,113 @@
       1.0
      ],
      "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
+     "uv": 0
+    },
+    "rc laid paper": {
+     "kind": "plain",
+     "color": [
+      0.8,
+      0.74,
+      0.6
+     ],
+     "roughness": 0.9,
+     "metallic": 0.0,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
+     "uv": 0
+    },
+    "Heather safe \u2014 black iron": {
+     "kind": "plain",
+     "color": [
+      0.012,
+      0.015,
+      0.014
+     ],
+     "roughness": 0.4,
+     "metallic": 0.7,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-static-metal.f16.gz",
+     "bakedResponseMode": "combined",
+     "renderRoute": "baked_room",
+     "uv": 0
+    },
+    "Heather safe \u2014 deep green enamel": {
+     "kind": "plain",
+     "color": [
+      0.018,
+      0.036,
+      0.031
+     ],
+     "roughness": 0.3,
+     "metallic": 0.45,
+     "sheen": 0.0,
+     "coat": 0.0,
+     "emission": null,
+     "sheenRough": 0.5,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     }
    },
-   "lightCoverage": 0.333
+   "lightCoverage": 0.361
   },
   "architecture": {
-   "faces": 127427,
+   "faces": 129684,
    "meshes": 11,
    "file": "railcar-architecture.glb",
    "light": "railcar-architecture-light.webp",
+   "lightRange": 16.0,
    "emit": "railcar-architecture-emit.webp",
    "materials": {
     "rc persian carpet": {
      "kind": "uvbake",
+     "sheen": 0.6,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-architecture-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "size": 2048,
      "color": "tex/architecture-rc-persian-carpet-color.jpg",
      "orm": "tex/architecture-rc-persian-carpet-orm.jpg",
      "normal": "tex/architecture-rc-persian-carpet-normal.jpg",
-     "sheen": 0.6,
-     "coat": 0.0,
      "uv": 1
     },
     "rc mahogany dark": {
@@ -1223,7 +2075,7 @@
      "roughMul": 0.8,
      "roughAdd": 0.0,
      "coat": 0.5,
-     "coatRough": 0.16,
+     "coatRough": 0.1599999964237213,
      "normalStrength": 0.4,
      "sheen": 0.0,
      "sheenTint": [
@@ -1232,6 +2084,10 @@
       1.0
      ],
      "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-architecture-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc water gilt": {
@@ -1251,6 +2107,18 @@
       0.42,
       0.16
      ],
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-architecture-static-metal.f16.gz",
+     "bakedResponseMode": "combined",
+     "renderRoute": "baked_room",
      "uv": 0
     },
     "rc mahogany": {
@@ -1271,8 +2139,8 @@
      "tintMode": "MULTIPLY",
      "roughMul": 0.8,
      "roughAdd": 0.0,
-     "coat": 0.55,
-     "coatRough": 0.14,
+     "coat": 0.550000011920929,
+     "coatRough": 0.14000000059604645,
      "normalStrength": 0.4,
      "sheen": 0.0,
      "sheenTint": [
@@ -1281,6 +2149,10 @@
       1.0
      ],
      "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-architecture-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc rosewood panel": {
@@ -1301,8 +2173,8 @@
      "tintMode": "MULTIPLY",
      "roughMul": 0.7,
      "roughAdd": 0.0,
-     "coat": 0.6,
-     "coatRough": 0.1,
+     "coat": 0.6000000238418579,
+     "coatRough": 0.10000000149011612,
      "normalStrength": 0.3,
      "sheen": 0.0,
      "sheenTint": [
@@ -1311,6 +2183,10 @@
       1.0
      ],
      "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-architecture-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc satinwood stringing": {
@@ -1331,8 +2207,8 @@
      "tintMode": "MULTIPLY",
      "roughMul": 1.0,
      "roughAdd": 0.0,
-     "coat": 0.6,
-     "coatRough": 0.1,
+     "coat": 0.6000000238418579,
+     "coatRough": 0.10000000149011612,
      "normalStrength": 1.0,
      "sheen": 0.0,
      "sheenTint": [
@@ -1341,6 +2217,10 @@
       1.0
      ],
      "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-architecture-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc art glass": {
@@ -1348,16 +2228,25 @@
      "freq": 1.6,
      "lead": 0.035,
      "paneA": [
-      0.95,
-      0.72,
-      0.32
+      0.018,
+      0.025,
+      0.035
      ],
      "paneB": [
-      0.98,
-      0.9,
-      0.66
+      0.028,
+      0.036,
+      0.05
      ],
-     "emission": 0.55,
+     "emission": 0.008,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
      "uv": 0
     },
     "rc polished brass": {
@@ -1370,6 +2259,18 @@
      "rough": 0.1,
      "noise": 40,
      "noiseAmount": 0.12,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-architecture-static-metal.f16.gz",
+     "bakedResponseMode": "combined",
+     "renderRoute": "baked_room",
      "uv": 0
     },
     "rc oxblood velvet": {
@@ -1391,15 +2292,19 @@
      "roughMul": 1.0,
      "roughAdd": 0.2,
      "coat": 0.0,
-     "coatRough": 0.1,
+     "coatRough": 0.10000000149011612,
      "normalStrength": 1.0,
      "sheen": 1.0,
      "sheenTint": [
       1.0,
-      0.55,
+      0.550000011920929,
       0.5
      ],
      "metallic": 0.0,
+     "sheenRough": 0.5,
+     "bakedResponse": "railcar-architecture-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc lincrusta frieze": {
@@ -1428,6 +2333,18 @@
       0.25
      ],
      "bump": 0.6,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-architecture-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     },
     "rc stencilled ceiling": {
@@ -1456,24 +2373,254 @@
       0.3
      ],
      "bump": 0.0,
+     "sheen": 0.0,
+     "sheenRough": 0.5,
+     "coat": 0.0,
+     "coatRough": 0.029999999329447746,
+     "sheenTint": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "bakedResponse": "railcar-architecture-appearance.f16.gz",
+     "bakedResponseMode": "irradiance",
+     "renderRoute": "baked_irradiance_live_material",
      "uv": 0
     }
    },
-   "lightCoverage": 0.353
+   "lightCoverage": 0.344
+  }
+ },
+ "appearanceResponses": {
+  "desk": {
+   "file": "railcar-desk-appearance.f16.gz",
+   "encoding": "linear RGBA16F, gzip",
+   "size": [
+    2048,
+    2048
+   ],
+   "samples": 384,
+   "camera": "ACTIVE_CAMERA",
+   "mode": "irradiance",
+   "clippedTexels": 0,
+   "receiver": "neutral white diffuse, geometric normal; intact authored secondary transport",
+   "staticMaterials": [
+    "vintage_pocket_watch_hands",
+    "rc mahogany",
+    "rc tooled green leather",
+    "rc mahogany dark",
+    "rc rosewood panel",
+    "rc green cased glass",
+    "rc opal glass lining",
+    "Heather \u2014 balance warm rosewood",
+    "Heather \u2014 weight box honey maple",
+    "rc emerald velvet",
+    "Heather \u2014 inkstand ebonized wood",
+    "rc japanned black",
+    "rc ivory",
+    "Heather \u2014 blotter golden maple",
+    "rc paper white",
+    "rc paper blue",
+    "rc parcel label",
+    "rc oxblood leather",
+    "rc laid paper",
+    "rc ledger pages",
+    "vintage_pocket_watch_glass",
+    "vintage_pocket_watch"
+   ],
+   "liveMaterials": [
+    "rc water gilt",
+    "rc polished brass",
+    "rc blackened iron",
+    "rc 18k gold",
+    "rc nickel plate"
+   ]
+  },
+  "furnishings": {
+   "file": "railcar-furnishings-appearance.f16.gz",
+   "encoding": "linear RGBA16F, gzip",
+   "size": [
+    4096,
+    4096
+   ],
+   "samples": 256,
+   "camera": "ACTIVE_CAMERA",
+   "mode": "irradiance",
+   "clippedTexels": 0,
+   "receiver": "neutral white diffuse, geometric normal; intact authored secondary transport",
+   "staticMetalResponse": {
+    "file": "railcar-furnishings-static-metal.f16.gz",
+    "encoding": "linear RGBA16F, gzip",
+    "size": [
+     4096,
+     4096
+    ],
+    "samples": 256,
+    "camera": "ACTIVE_CAMERA",
+    "mode": "combined",
+    "clippedTexels": 0
+   },
+   "staticMaterials": [
+    "Heather safe \u2014 muted gold lining",
+    "rc mahogany",
+    "rc carrara marble",
+    "rc verde antico",
+    "rc water gilt",
+    "rc blackened iron",
+    "rc polished brass",
+    "rc charred log",
+    "rc embers",
+    "rc aged brass",
+    "rc japanned black",
+    "rc rosewood panel",
+    "rc oxblood velvet",
+    "rc longcase dial",
+    "rc etched tulip glass",
+    "rc label backbar bottle A0",
+    "rc label backbar bottle A1",
+    "rc label backbar bottle A2",
+    "rc 18k gold",
+    "rc label backbar bottle A3",
+    "rc label backbar bottle A4",
+    "rc label backbar bottle A5",
+    "rc label backbar bottle A6",
+    "rc sterling",
+    "rc nickel plate",
+    "rc label whisky bottle",
+    "rc emerald velvet",
+    "rc library bindings",
+    "Armchair_01",
+    "Armchair_01.002",
+    "sofa_03",
+    "sofa_03_fringe",
+    "Chandelier_02",
+    "Chandelier_02_bulb",
+    "Chandelier_02.001",
+    "Chandelier_02_bulb.001",
+    "Chandelier_02.002",
+    "Chandelier_02_bulb.002",
+    "dining_chair_02",
+    "vintage_microscope",
+    "vintage_microscope_glass",
+    "rc ivory",
+    "rc antique globe",
+    "rc oxblood leather",
+    "rc laid paper",
+    "Heather safe \u2014 black iron",
+    "Heather safe \u2014 deep green enamel"
+   ],
+   "liveMaterials": [
+    "rc mirror"
+   ]
+  },
+  "architecture": {
+   "file": "railcar-architecture-appearance.f16.gz",
+   "encoding": "linear RGBA16F, gzip",
+   "size": [
+    4096,
+    4096
+   ],
+   "samples": 256,
+   "camera": "ACTIVE_CAMERA",
+   "mode": "irradiance",
+   "clippedTexels": 0,
+   "receiver": "neutral white diffuse, geometric normal; intact authored secondary transport",
+   "staticMetalResponse": {
+    "file": "railcar-architecture-static-metal.f16.gz",
+    "encoding": "linear RGBA16F, gzip",
+    "size": [
+     4096,
+     4096
+    ],
+    "samples": 256,
+    "camera": "ACTIVE_CAMERA",
+    "mode": "combined",
+    "clippedTexels": 0
+   },
+   "staticMaterials": [
+    "rc persian carpet",
+    "rc mahogany dark",
+    "rc water gilt",
+    "rc mahogany",
+    "rc rosewood panel",
+    "rc satinwood stringing",
+    "rc polished brass",
+    "rc oxblood velvet",
+    "rc lincrusta frieze",
+    "rc stencilled ceiling"
+   ],
+   "liveMaterials": [
+    "rc art glass"
+   ]
   }
  },
  "glass": {
-  "objects": 142,
+  "objects": 141,
   "file": "railcar-glass.glb"
  },
  "paintings": {
   "objects": 4,
   "file": "railcar-paintings.glb"
  },
- "seconds": 1865,
- "sky": "railcar-sky.webp",
  "windows": {
   "objects": 8,
   "file": "railcar-windows.glb"
+ },
+ "sky": "railcar-sky.webp",
+ "seconds": 8741,
+ "liveAuthoring": "live-authoring.json",
+ "manualAssetCredits": "../HEATHER-ASSETS.json",
+ "probeOccluders": "probe-occluders.json",
+ "source": {
+  "file": "readable-source.blend",
+  "sha256": "404f997a056fcb39bdb46b021fc662969545b7e14a4e548fc7b975f67be98c45",
+  "manualEditsPreserved": true,
+  "lightingEvidence": "lighting-changes.json"
+ },
+ "paintingLighting": "painting-lighting.json",
+ "geometryRepair": {
+  "kind": "continuous curtain valances",
+  "sourceSha256": "41f3f4951821e5e78862d6b869071c8ce62045ed8f9d7fb8fd812aba75576e92",
+  "geometrySha256": "b4ae936e1a1104bb81a6816321b015e28aa8bc7615ac3e89777443ebd0be5703",
+  "removedInternalCapTriangles": 704,
+  "lightingBakeUnchanged": false,
+  "irradiancePatch": {
+   "file": "railcar-architecture-appearance.f16.gz",
+   "beforeSha256": "61dbeaa5a7f7823b32a71f40bbc4289acb6af3fc97c21c5055c28f51b57df36f",
+   "afterSha256": "df30b1375767b811cab30537eb67649f510b48f78d124076801220e3b33c7381",
+   "size": [
+    4096,
+    4096
+   ],
+   "patchedPixels": 123051,
+   "otherOccupiedChangedPixels": 0,
+   "outsideMaskChangedPixels": 0,
+   "mode": "white diffuse E/pi, RGBA16F",
+   "samples": 256
+  }
+ },
+ "interactions": {
+  "metadata": "railcar-interactions.json",
+  "props": "railcar-interactive-props.glb",
+  "lampLighting": "student-lamp-lighting.json",
+  "sourceSha256": "4c06518150487842539161f11a66bf062ec451181180270d0a6a8b1aab10bd36",
+  "lightDefault": "student lamp on",
+  "music": "Pie Jesu, Faur\u00e9 Requiem, arr. Vadim Ghin / Nikia Players (2026), CC BY-SA 4.0",
+  "musicCredits": "../audio/CREDITS.md",
+  "supportLightingPatch": {
+   "file": "railcar-desk-appearance.f16.gz",
+   "beforeSha256": "9b6d84a27c037abbcb4fabdbc3846fbb55839e69eaf5891b4ea270b3e8a0aafd",
+   "afterSha256": "cd569fd523834626e22755ae904707390992804ebe581d59b3bcfb7690d0a619",
+   "size": [
+    2048,
+    2048
+   ],
+   "patchedPixels": 45322,
+   "otherOccupiedChangedPixels": 0,
+   "outsideMaskChangedPixels": 0,
+   "mode": "white diffuse E/pi, RGBA16F",
+   "samples": 384
+  },
+  "roomBaseLighting": "Approved readable-lighting/continuous-valance transport retained; only balance support islands repaired."
  }
 }

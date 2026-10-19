@@ -1,4 +1,6 @@
-import "./build.mjs";
+// Local preview only: include personal-use audio (git-ignored, never in a normal build).
+process.env.LJ_LOCAL_AUDIO = "1";
+await import("./build.mjs");
 import http from "node:http";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -12,6 +14,8 @@ const types = {
   ".css": "text/css; charset=utf-8",
   ".png": "image/png",
   ".jpg": "image/jpeg",
+  ".m4a": "audio/mp4",
+  ".mp3": "audio/mpeg",
   ".gif": "image/gif",
   ".gltf": "model/gltf+json",
   ".json": "application/json",

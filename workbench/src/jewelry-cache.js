@@ -2,51 +2,53 @@ import * as THREE from "../vendor/three.module.js";
 
 // Keep the full-resolution precious-material image while only the hearth moves.
 // Both layers have depth, so velvet rims and scene objects still occlude rings.
-export function createJewelryCache(renderer, scene, camera, baseTarget) {
+export function createJewelryCache(renderer, scene, camera, baseTarget, { samples = 4 } = {}) {
   const target = new THREE.WebGLRenderTarget(1, 1, {
     type: THREE.HalfFloatType,
-    samples: Math.min(4, renderer.capabilities.maxSamples),
+    samples: Math.min(samples, renderer.capabilities.maxSamples),
   });
   target.depthTexture = new THREE.DepthTexture(1, 1, THREE.UnsignedIntType);
-  const front = new THREE.MeshBasicMaterial({ colorWrite: false }),
-    both = front.clone();
-  both.side = THREE.DoubleSide;
-  const precious = [];
-  scene.traverse((o) => {
-    if (o.isMesh && o.layers.isEnabled(1) && o.material.visible !== false)
-      precious.push(o);
-    if (o.isLight) o.layers.enable(1);
-  });
-  let revisions = 0;
+  // The room target contains room depth only. Live-object depth comes from
+  // the jewellery target, avoiding both self-occlusion and permissive biases.
+  scene.traverse(o => { if (o.isLight) o.layers.enable(1); });
+  let revisions = 0, roomKey = null, roomValid = false;
+  const stats = { roomRenders: 0, roomReuses: 0 };
+  function renderScene() {
+    const previous = renderer.shadowMap.render;
+    renderer.shadowMap.render = function(lights, currentScene, view) {
+      const mask = view.layers.mask;
+      try {
+        view.layers.enable(0); view.layers.enable(1);
+        return previous.call(this, lights, currentScene, view);
+      } finally { view.layers.mask = mask; }
+    };
+    try { renderer.render(scene, camera); }
+    finally { renderer.shadowMap.render = previous; }
+  }
   return {
+    stats,
     texture: target.texture,
     depth: target.depthTexture,
     resize(w, h) {
       target.setSize(w, h);
+      roomKey = null; roomValid = false;
     },
-    render(dirty) {
+    render(dirty, { reuseRoom = false, key = null } = {}) {
       const mask = camera.layers.mask;
-      const saved = precious.map((o) => ({
-        o,
-        material: o.material,
-        callback: o.onBeforeRender,
-      }));
-      try {
-        for (const s of saved) {
-          s.o.material = s.material.side === THREE.DoubleSide ? both : front;
-          s.o.onBeforeRender = () => {};
-        }
+      const redrawRoom = !reuseRoom || !roomValid || roomKey !== key;
+      if (redrawRoom) try {
         camera.layers.set(0);
-        camera.layers.enable(1);
         renderer.setRenderTarget(baseTarget);
-        renderer.render(scene, camera);
+        // Shadow casters still include live jewellery, although the room colour
+        // pass excludes it. Its current depth comes from the jewellery target.
+        renderScene();
+        stats.roomRenders++;
+        roomKey = reuseRoom ? key : null;
+        roomValid = true;
       } finally {
-        for (const s of saved) {
-          s.o.material = s.material;
-          s.o.onBeforeRender = s.callback;
-        }
         camera.layers.mask = mask;
       }
+      if (!redrawRoom) stats.roomReuses++;
       if (dirty) {
         const background = scene.background,
           clear = renderer.getClearColor(new THREE.Color()),
@@ -56,7 +58,7 @@ export function createJewelryCache(renderer, scene, camera, baseTarget) {
           scene.background = null;
           renderer.setClearColor(0, 0);
           renderer.setRenderTarget(target);
-          renderer.render(scene, camera);
+          renderScene();
           revisions++;
         } finally {
           scene.background = background;
@@ -68,8 +70,6 @@ export function createJewelryCache(renderer, scene, camera, baseTarget) {
     },
     dispose() {
       target.dispose();
-      front.dispose();
-      both.dispose();
     },
   };
 }

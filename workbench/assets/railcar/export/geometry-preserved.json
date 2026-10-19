@@ -1,0 +1,17 @@
+{
+  "desk": {
+    "sameMeshKeys": true,
+    "meshCount": 27,
+    "geometryDifferences": []
+  },
+  "furnishings": {
+    "sameMeshKeys": true,
+    "meshCount": 48,
+    "geometryDifferences": []
+  },
+  "architecture": {
+    "sameMeshKeys": true,
+    "meshCount": 11,
+    "geometryDifferences": []
+  }
+}

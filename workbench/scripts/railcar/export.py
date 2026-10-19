@@ -32,18 +32,19 @@ Outputs in workbench/assets/railcar/export/:
   railcar-paintings.glb, railcar-sky.webp (window HDRI), railcar-manifest.json
 """
 import json
+import hashlib
 import math
 import os
 import shutil
 import subprocess
 import time
-import zlib
 from collections import defaultdict
 
 import bmesh
 import bpy
 import numpy as np
 from mathutils import Vector
+from cycles_random import object_random
 
 ROOT = os.environ.get("LJ_ROOT", "/Users/heatherholtz/Downloads/CS116A/Renderer/renderer-ai")
 OUT = os.path.join(ROOT, "workbench/assets/railcar/export")
@@ -79,6 +80,26 @@ def output_node(nt):
         next((n for n in nt.nodes if n.type == "OUTPUT_MATERIAL"), None)
 
 
+def physical_parameters(material):
+    """Unlinked authored BSDF parameters; keep linked inputs explicit for review."""
+    b = principled(material)
+    if not b:
+        return {}
+    result = {}
+    for socket_name, key in (("Sheen Weight", "sheen"), ("Sheen Roughness", "sheenRough"),
+                             ("Coat Weight", "coat"), ("Coat Roughness", "coatRough"),
+                             ("Sheen Tint", "sheenTint")):
+        socket = b.inputs.get(socket_name)
+        if socket is None:
+            continue
+        if socket.is_linked:
+            result[key + "Linked"] = True
+        else:
+            value = socket.default_value
+            result[key] = [float(x) for x in value[:3]] if key == "sheenTint" else float(value)
+    return result
+
+
 def is_glass(m):
     if not m:
         return False
@@ -105,7 +126,7 @@ def classify():
     groups = {g: [] for g in GROUPS}
     glass, canvases, skipped, windows = [], [], [], []
     for o in bpy.context.scene.objects:
-        if o.type not in ("MESH", "CURVE") or o.hide_render:
+        if o.type not in ("MESH", "CURVE", "FONT") or o.hide_render:
             continue
         cols = {c.name for c in o.users_collection}
         if cols & SKIP_COLLECTIONS:
@@ -116,7 +137,7 @@ def classify():
         if " window " in o.name and o.name.endswith(" pane"):
             windows.append(o)  # glazing: reflection-only glass in the browser
             continue
-        if "rc flame" in names or " pane" in o.name:
+        if "rc flame" in names or o.name.endswith(" pane"):
             skipped.append(o)
             continue
         if mats and all(is_glass(m) for m in mats):
@@ -173,7 +194,7 @@ def coordinate_attributes(objs):
             a = me.attributes.get(name) or me.attributes.new(name, "FLOAT_VECTOR", "POINT")
             a.data.foreach_set("vector", np.ascontiguousarray(values, dtype=np.float32).ravel())
         r = me.attributes.get("_lj_rand") or me.attributes.new("_lj_rand", "FLOAT", "POINT")
-        r.data.foreach_set("value", np.full(n, (zlib.crc32(o.name.encode()) & 0xFFFFFF) / float(0xFFFFFF), dtype=np.float32))
+        r.data.foreach_set("value", np.full(n, object_random(o.name), dtype=np.float32))
     mats = {s.material for o in objs for s in o.material_slots if s.material and s.material.use_nodes}
     for m in mats:
         nt = m.node_tree
@@ -218,13 +239,48 @@ def _area(poly):
     return abs(sum(poly[i - 1][0] * poly[i][1] - poly[i][0] * poly[i - 1][1] for i in range(len(poly)))) / 2
 
 
-def resolve_coplanar(objs, step=0.002, push=0.01):
+def _positive_polygon_overlap(a, b, eps=1e-5):
+    """Positive-area overlap, not just overlapping axis-aligned bounds.
+
+    Separating axes are exact for convex faces. Concave n-gons are first
+    tessellated, so separated portions of decorative faces cannot trigger a
+    false repair. Shared edges are intentional joinery, not an overlap.
+    """
+    def convex(poly):
+        signs=[]
+        for i,p in enumerate(poly):
+            q,r=poly[(i+1)%len(poly)],poly[(i+2)%len(poly)]
+            cross=(q[0]-p[0])*(r[1]-q[1])-(q[1]-p[1])*(r[0]-q[0])
+            if abs(cross)>eps:signs.append(cross>0)
+        return not signs or all(s==signs[0] for s in signs)
+    def sat(p,q):
+        for poly in (p,q):
+            for i,v in enumerate(poly):
+                w=poly[(i+1)%len(poly)];axis=(v[1]-w[1],w[0]-v[0])
+                length=math.hypot(*axis)
+                if length<eps:continue
+                pa=[(x*axis[0]+y*axis[1])/length for x,y in p]
+                pb=[(x*axis[0]+y*axis[1])/length for x,y in q]
+                if min(max(pa),max(pb))-max(min(pa),min(pb))<=eps:return False
+        return True
+    if not sat(a,b):return False
+    if convex(a) and convex(b):return True
+    from mathutils.geometry import tessellate_polygon
+    def triangles(poly):
+        return [[(v.x,v.y) for v in t] for t in tessellate_polygon([[Vector((x,y,0)) for x,y in poly]])]
+    return any(sat(p,q) for p in triangles(a) for q in triangles(b))
+
+
+def resolve_coplanar(objs, step=0.002, push=0.01, preserve_bake_positions=False):
     """Axis-aligned faces of different objects lying in one plane and facing
     the same way: delete a face wholly covered by another (identical look, no
     flicker); push the smaller of two partly overlapping faces back by `push`."""
     faces = []
     bms = []
     for oi, o in enumerate(objs):
+        if preserve_bake_positions:
+            attribute=o.data.attributes.get('_lj_bake_pos') or o.data.attributes.new('_lj_bake_pos','FLOAT_VECTOR','POINT')
+            attribute.data.foreach_set('vector',np.array([o.matrix_world@v.co for v in o.data.vertices],dtype=np.float32).ravel())
         bm = bmesh.new()
         bm.from_mesh(o.data)
         bm.faces.ensure_lookup_table()
@@ -273,6 +329,8 @@ def resolve_coplanar(objs, step=0.002, push=0.01):
             w = min(A[1], B[1]) - max(A[0], B[0])
             h = min(A[3], B[3]) - max(A[2], B[2])
             if w <= 1e-4 or h <= 1e-4:
+                continue
+            if not _positive_polygon_overlap(a[5],b[5]):
                 continue
             a_in_b = all(_inside(p, b[5]) for p in shrunk)
             if a_in_b:
@@ -399,21 +457,45 @@ def orm_copy(m):
     return c
 
 
+def neutral_copy(m):
+    """White receiver used only with independent authored transport geometry."""
+    c = m.copy()
+    nt = c.node_tree
+    out = output_node(nt)
+    d = nt.nodes.new('ShaderNodeBsdfDiffuse')
+    d.inputs['Color'].default_value = (1, 1, 1, 1)
+    nt.links.new(d.outputs[0], out.inputs['Surface'])
+    return c
+
+
 def diffuse_copy(m):
-    """White diffuse with the material's emission kept off: the bake records
-    irradiance only. Normal maps stay out of the bake (they are low frequency
-    at lightmap scale and the browser applies them to reflections)."""
+    """Neutral bake receiver; secondary rays retain the original surface.
+
+    Replacing a whole group with white diffuse changes its bounced light
+    (the clock measured ~7x too bright). The initial bake segment has camera
+    visibility; later rays retain the authored BSDF and emission. Ray-depth
+    thresholds are insufficient: merged selection changed the clock's bake.
+    Receiver normals stay geometric; the browser supplies surface detail.
+    """
     c = m.copy()
     c.name = m.name + " [irradiance]"
     nt = c.node_tree
     out = output_node(nt)
     if not out:
         return c
+    surface = out.inputs["Surface"]
+    original = surface.links[0].from_socket if surface.is_linked else None
     d = nt.nodes.new("ShaderNodeBsdfDiffuse")
     d.inputs["Color"].default_value = (1, 1, 1, 1)
-    for l in list(out.inputs["Volume"].links):
-        nt.links.remove(l)
-    nt.links.new(d.outputs[0], out.inputs["Surface"])
+    if original is None:
+        nt.links.new(d.outputs[0], surface)
+        return c
+    path = nt.nodes.new("ShaderNodeLightPath")
+    mix = nt.nodes.new("ShaderNodeMixShader")
+    nt.links.new(path.outputs["Is Camera Ray"], mix.inputs[0])
+    nt.links.new(original, mix.inputs[1])
+    nt.links.new(d.outputs[0], mix.inputs[2])
+    nt.links.new(mix.outputs[0], surface)
     return c
 
 
@@ -612,13 +694,19 @@ def bake(objs, kind, image, uv_layer, samples, maker=None, passes=None, normal_s
     select(objs)
     attach_target(objs, image, uv_layer)
     t = time.time()
-    bpy.ops.object.bake(type=kind)
-    detach_target(objs)
-    if orig:
-        restore(objs, orig)
-    for o in objs:
-        o.data.uv_layers.active = o.data.uv_layers["UVMap"]
-        o.data.uv_layers["UVMap"].active_render = True
+    try:
+        bpy.ops.object.bake(type=kind)
+    finally:
+        detach_target(objs)
+        if orig:
+            overrides = {slot.material for o in objs for slot in o.material_slots if slot.material}
+            restore(objs, orig)
+            for material in overrides:
+                if material.users == 0:
+                    bpy.data.materials.remove(material)
+        for o in objs:
+            o.data.uv_layers.active = o.data.uv_layers["UVMap"]
+            o.data.uv_layers["UVMap"].active_render = True
     log("  bake", kind, image.name, f"{image.size[0]}px", f"{time.time() - t:.0f}s")
 
 
@@ -655,12 +743,12 @@ def denoise(img):
     return np.array(read_pfm(dst))
 
 
-def save_rgbm(px, path):
+def save_rgbm(px, path, value_range=None):
     """Float RGB -> RGBM (value = rgb * a * RGBM_RANGE), 8-bit lossless WebP
     (bit-exact, ~40% smaller than PNG). `path` may say .png; .webp is written."""
     path = os.path.splitext(path)[0] + ".webp"
     h, w, _ = px.shape
-    c = np.clip(px / RGBM_RANGE, 0, 1)
+    c = np.clip(px / (value_range or RGBM_RANGE), 0, 1)
     m = np.clip(np.ceil(c.max(-1, keepdims=True) * 255) / 255, 1 / 255, 1)
     rgba = np.concatenate([c / m, m], -1).astype(np.float32)
     img = bpy.data.images.new(os.path.basename(path), w, h, alpha=True)
@@ -727,7 +815,7 @@ def keep_attributes(me, names):
         me.attributes.remove(a)
 
 
-def export_group(name, pieces, specs):
+def _export_group(name, pieces, specs):
     """pieces: {material name: object}; one node per material."""
     objs = list(pieces.values())
     for mat, o in pieces.items():
@@ -756,6 +844,36 @@ def export_group(name, pieces, specs):
     faces = sum(len(o.data.polygons) for o in objs)
     log("  exported", path, faces, "faces", len(objs), "meshes")
     return {"faces": faces, "meshes": len(objs), "file": os.path.basename(path)}
+
+
+def export_group(name, pieces, specs):
+    """Strip materials/UVs only on temporary delivery copies.
+
+    Later groups still bounce light off earlier groups. Clearing the source
+    material slots turned the already-exported desk into default white clay
+    while baking the furnishings, independently of the receiver override.
+    """
+    copies = {}
+    try:
+        for mat, original in pieces.items():
+            copy = original.copy()
+            copy.data = original.data.copy()
+            bpy.context.scene.collection.objects.link(copy)
+            copies[mat] = copy
+        # glTF uses object names as material recipe keys in the browser.
+        for mat, copy in copies.items():
+            original = pieces[mat]
+            original.name = f"__bake_source__{name}|{mat}"
+            copy.name = f"{name}|{mat}"
+        return _export_group(name, copies, specs)
+    finally:
+        for copy in copies.values():
+            mesh = copy.data
+            bpy.data.objects.remove(copy, do_unlink=True)
+            if mesh.users == 0:
+                bpy.data.meshes.remove(mesh)
+        for mat, original in pieces.items():
+            original.name = f"{name}|{mat}"
 
 
 def export_simple(name, objs):
@@ -790,7 +908,18 @@ def app(v):
     return [round(v[0], 3), round(v[2], 3), round(-v[1], 3)]
 
 
-def run(groups_only=None):
+def run(groups_only=None, output_dir=None, authored_lighting=False, appearance_factor=False, appearance_mode="irradiance"):
+    # Partial/diagnostic exports must never erase the live texture directory
+    # or replace its complete manifest with a partial one.
+    global OUT, TEXOUT
+    if appearance_factor and not authored_lighting:
+        raise ValueError('Appearance responses require intact authored transport')
+    if groups_only and output_dir is None:
+        raise ValueError("groups_only requires a separate output_dir; partial exports cannot replace live assets")
+    OUT = os.path.abspath(os.fspath(output_dir)) if output_dir is not None else os.path.join(ROOT, "workbench/assets/railcar/export")
+    if groups_only and os.path.realpath(OUT) == os.path.realpath(os.path.join(ROOT, "workbench/assets/railcar/export")):
+        raise ValueError("partial exports cannot target the live export directory")
+    TEXOUT = os.path.join(OUT, "tex")
     os.makedirs(OUT, exist_ok=True)
     if os.path.isdir(TEXOUT):
         shutil.rmtree(TEXOUT)
@@ -818,13 +947,48 @@ def run(groups_only=None):
     canvases = [bpy.data.objects[o.name] for o in canvases if o.name in rset]
     windows = [bpy.data.objects[o.name] for o in windows if o.name in rset]
     allstatic = [o for g in groups.values() for o in g]
+    # Freeze the native shader coordinates first. The transport copies below
+    # share those shaders, so they must also contain every referenced attribute.
+    # Copying the meshes earlier left their texture coordinates and random IDs
+    # at zero after material graphs were rewritten for delivery.
     coordinate_attributes(allstatic)
     ensure_uvmap(allstatic)
     normalise_material_uvs({sl.material for o in allstatic for sl in o.material_slots if sl.material})
-    resolve_coplanar(allstatic)
+    # Keep the authored room intact for light transport. Delivery receivers are
+    # merged/UV-packed below, but must never replace the surfaces seen by bounce
+    # and shadow rays. In particular, white merged receivers lose rug shadows
+    # and alter the clock's illumination. This mode supersedes subset overrides.
+    transport = []
+    if authored_lighting:
+        for source in allstatic:
+            original = source.copy()
+            original.data = source.data.copy()
+            original.name = '__authored_transport__' + source.name
+            bpy.context.scene.collection.objects.link(original)
+            original.visible_camera = False
+            transport.append(original)
+            for flag in ('visible_diffuse', 'visible_glossy', 'visible_transmission',
+                         'visible_shadow', 'visible_volume_scatter'):
+                setattr(source, flag, False)
+        log('authored transport', len(transport), 'independent source surfaces')
+    if authored_lighting:
+        # The authored scene is the reference. Nearby parallel faces include
+        # intentional printed labels and veneers; deleting them changes the
+        # approved room. Export these evaluated surfaces exactly as authored.
+        log('authored geometry preserved; no automatic coplanar deletion or push')
+    else:
+        resolve_coplanar(allstatic)
     log("prepared", f"{time.time() - t0:.0f}s")
 
     manifest = {"version": 2, "units": "1 unit = 10 cm; app coords (x, y-up, z)", "rgbmRange": RGBM_RANGE,
+                "bake": {"receiver": "neutral diffuse for camera visibility; authored BSDF for other rays",
+                         "authoredLighting": authored_lighting,
+                         "authoredGeometryPreserved": authored_lighting,
+                         "requiredCollectionOverrides": [] if authored_lighting else (["longcase clock"] if not groups_only or "furnishings" in groups_only else [])
+                                                        + (["persian carpet"] if not groups_only or "architecture" in groups_only else []),
+                         "exporterSha256": hashlib.sha256(open(__file__, "rb").read()).hexdigest(),
+                         "groups": {k: {"lightSize": v[0], "emitSize": v[1], "samples": v[2],
+                                        "surfaceDensity": v[3], "maxSurfaceSize": v[4]} for k, v in GROUPS.items()}},
                 "fire": app(fire) if fire else None,
                 "room": {"x": [shell.X0, shell.X1], "floor": -9.0, "back_wall_z": -shell.Y_BACK, "front_wall_z": -shell.Y_FRONT,
                          "ceiling": shell.CL_TOP + 0.9},
@@ -837,14 +1001,42 @@ def run(groups_only=None):
         pieces = split_by_material(name, merge(name, groups[name]))
         objs = list(pieces.values())
         specs = {mat: classify_material(o.material_slots[0].material) for mat, o in pieces.items()}
+        for mat, ob in pieces.items():
+            specs[mat].update(physical_parameters(ob.material_slots[0].material))
         log("group", name, len(objs), "materials", {k: sum(1 for s in specs.values() if s["kind"] == k) for k in
                                                        sorted({s["kind"] for s in specs.values()})})
         # ---- light
         unwrap(objs, "LightUV")
         log("  LightUV coverage", f"{uv_coverage(objs, 'LightUV'):.2f}")
         light = new_image(f"railcar-{name}-light", lsize, float_buffer=True)
-        bake(objs, "DIFFUSE", light, "LightUV", samples, maker=diffuse_copy, passes={"DIRECT", "INDIRECT"})
-        save_rgbm(denoise(light), os.path.join(OUT, f"railcar-{name}-light.webp"))
+        if authored_lighting:
+            positions = {}
+            for ob in objs:
+                # A bounded 0.1 mm outward bias avoids self-shadow against the
+                # coincident authored surface. Delivery positions are restored.
+                positions[ob] = np.array([v.co[:] for v in ob.data.vertices], dtype=np.float32)
+                normals = np.array([v.normal[:] for v in ob.data.vertices], dtype=np.float32)
+                original=ob.data.attributes.get('_lj_bake_pos')
+                bake_positions=np.array([v.vector[:] for v in original.data],dtype=np.float32) if original else positions[ob]
+                ob.data.vertices.foreach_set('co', (bake_positions + normals * .001).ravel())
+                ob.data.update()
+            try:
+                live_receivers = objs
+                if appearance_factor:
+                    import appearance_response
+                    live_receivers, response_info = appearance_response.bake(objs, specs, name, light, samples, OUT, mode=appearance_mode)
+                    manifest.setdefault('appearanceResponses', {})[name] = response_info
+                if live_receivers:
+                    bake(live_receivers, "DIFFUSE", light, "LightUV", samples, maker=neutral_copy, passes={"DIRECT", "INDIRECT"})
+            finally:
+                for ob, coordinates in positions.items():
+                    ob.data.vertices.foreach_set('co', coordinates.ravel())
+                    ob.data.update()
+        else:
+            bake(objs, "DIFFUSE", light, "LightUV", samples, maker=diffuse_copy, passes={"DIRECT", "INDIRECT"})
+        light_pixels = denoise(light)
+        light_range = max(RGBM_RANGE, float(2 ** np.ceil(np.log2(max(float(light_pixels.max()), 1)))))
+        save_rgbm(light_pixels, os.path.join(OUT, f"railcar-{name}-light.webp"), value_range=light_range)
         emit = new_image(f"railcar-{name}-emit", esize, float_buffer=True)
         bake(objs, "EMIT", emit, "LightUV", 16)
         w, h = emit.size
@@ -856,6 +1048,12 @@ def run(groups_only=None):
             if spec["kind"] == "uvbake":
                 cov = max(uv_coverage([o], "UVMap"), 0.05)
                 size = pow2(math.sqrt(world_area([o]) / cov) * density, 256, max_bake)
+                # Keep native UV photographs at their authored resolution. The
+                # surface-area heuristic previously shrank the ledger 4-fold.
+                source_images = [n.image for n in o.material_slots[0].material.node_tree.nodes
+                                 if n.type == 'TEX_IMAGE' and n.image and not n.name.startswith('__bake')]
+                if source_images:
+                    size = max(size, max(max(image.size) for image in source_images))
                 stem = slug(f"{name}-{mat}")
                 col = new_image(stem + "-color", size, data=False)
                 bake([o], "EMIT", col, "UVMap", 4, maker=albedo_copy)
@@ -892,9 +1090,11 @@ def run(groups_only=None):
                 if specs[mat]["kind"] == "atlas":
                     specs[mat].update(color=f"tex/{name}-atlas-color.jpg", orm=f"tex/{name}-atlas-orm.jpg", size=size)
         info = export_group(name, pieces, specs)
-        info.update(light=f"railcar-{name}-light.webp", emit=f"railcar-{name}-emit.webp", materials=specs,
+        info.update(light=f"railcar-{name}-light.webp", lightRange=light_range,
+                    emit=f"railcar-{name}-emit.webp", materials=specs,
                     lightCoverage=round(uv_coverage(objs, "LightUV"), 3) if all("LightUV" in o.data.uv_layers for o in objs) else None)
         manifest["groups"][name] = info
+        json.dump(manifest, open(os.path.join(OUT, 'railcar-checkpoint.json'), 'w'), indent=1)
         log("  group done", name, f"{time.time() - tg:.0f}s")
     if not groups_only:
         manifest["glass"] = export_simple("glass", glass)
