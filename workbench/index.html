@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#f6f4ed" />
     <meta
       name="description"
-      content="An interactive jeweler’s workbench by Heather Holtz. Drag the ring to turn it, choose gemstones and metals, and take a closer look through the loupe."
+      content="The Diamond Express: an interactive jeweler’s workshop aboard a Victorian train, by Heather Holtz. Drag the ring to turn it, choose gemstones and metals, and take a closer look through the loupe."
     />
-    <title>The Little Jeweler · Heather Holtz</title>
+    <title>The Diamond Express · Heather Holtz</title>
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23304736' d='m20 3 16 17-16 17L4 20z'/%3E%3Cpath fill='none' stroke='%23edce8d' d='m20 8 10 12-10 12-10-12zM10 20h20M20 8v24'/%3E%3C/svg%3E"
@@ -27,12 +27,12 @@
   <body class="workshop-game static-mode">
     <a href="#bench" class="skip-link">Skip to the workbench</a>
     <header class="site-header">
-      <a class="brand" href="./" aria-label="The Little Jeweler home"
+      <a class="brand" href="./" aria-label="The Diamond Express home"
         ><svg viewBox="0 0 42 46" aria-hidden="true">
           <path
             d="M21 2 39 20 21 44 3 20Z M3 20h36M21 2 12 20l9 24 9-24Z"
           /></svg
-        ><span>THE LITTLE<br />JEWELER</span></a
+        ><span>THE DIAMOND<br />EXPRESS</span></a
       >
       <nav aria-label="Workshop menu">
         <button
@@ -57,7 +57,7 @@
     </header>
     <main>
       <h1 class="sr-only" id="page-title">
-        The Little Jeweler — an interactive jeweler’s workbench
+        The Diamond Express — a jeweler’s workshop aboard a Victorian train
       </h1>
       <section
         class="workspace"
@@ -92,7 +92,7 @@
               id="render-host"
               tabindex="0"
               role="region"
-              aria-label="Drag the ring or stone to turn it. Drag the room to look around, scroll or pinch to zoom, and double-click a surface to focus. Click the cases to choose gemstones and metals. Click the loupe to look closer. Keys 1 and arrows move the view; 2 and arrows turn the jewelry; 3 lifts the loupe. F focuses the center, Home resets, Escape returns to the bench."
+              aria-label="Drag the ring or stone to turn it. Drag the room to look around, scroll or pinch to zoom, and click the globe, gramophone, safe, clock, fireplace or boxes to focus. Click the cases to choose gemstones and metals. Click the loupe to look closer. Keys 1 and arrows move the view; 2 and arrows turn the jewelry; 3 lifts the loupe. Home resets, Escape returns to the bench."
             ></div>
             <div id="object-hint" class="object-hint" hidden></div>
             <div class="loading static" id="loading">
@@ -102,7 +102,7 @@
               <span class="loading-progress" id="loading-progress" aria-live="polite"></span>
               <div class="static-note" id="static-note">
                 <p>
-                  The Little Jeweler · a view of the railcar.
+                  The Diamond Express · a view of the railcar.
                   Explore the gallery on any device, or try the interactive room.
                 </p>
                 <a href="./gallery.html">View the gallery</a>
@@ -139,7 +139,7 @@
                   <path
                     d="m3 10 3-3m-3 3 3 3m-3-3h14m-3-3 3 3-3 3M10 3v14"
                   /></svg
-                >Drag the ring to turn it · drag the room to explore · scroll to zoom</span
+                >Click an area to focus · drag to look around · Escape returns to the desk</span
               ><button type="button" id="auto-turn" aria-pressed="false">
                 <span class="turn-icon" aria-hidden="true">↻</span> Slow turn
               </button>
@@ -174,7 +174,7 @@
             <button type="button" id="inspect-loupe" aria-keyshortcuts="3">Lift the loupe</button>
             <p class="keyboard-help">
               Drag the ring to turn it and the room to look around. Scroll or pinch
-              to zoom; double-click a surface to focus on it.
+              to zoom toward the selected area. Click the globe, gramophone, safe, clock, fireplace or boxes to focus.
             </p>
             <p class="keyboard-help">
               Keyboard: 1 then arrow keys to look around, 2 then arrow keys to turn
@@ -352,13 +352,21 @@
             <summary>Around the room</summary>
             <p>Click the objects in the room, or use these controls.</p>
             <div class="room-actions">
-              <button type="button" data-room="gramophone" aria-pressed="false">Gramophone</button>
-              <button type="button" data-room="safe" aria-pressed="false">Safe door</button>
-              <button type="button" data-room="globe">Spin globe</button>
+              <button type="button" data-room="gramophone">Look at gramophone</button>
+              <button type="button" data-room="gramophone-tonearm" aria-pressed="false">Lower / raise tonearm</button>
+              <button type="button" data-room="safe">Look at safe</button>
+              <button type="button" data-room="clock">Look at clock</button>
+              <button type="button" data-room="clock-door">Clock door</button>
+              <button type="button" data-room="clock-wind-0">Wind right weight (timekeeping)</button>
+              <button type="button" data-room="clock-wind-1">Wind left weight (chime)</button>
+              <button type="button" data-room="globe">Globe</button>
               <button type="button" data-room="lamp" aria-pressed="true">Student lamp</button>
               <button type="button" data-room="cigar">Cigar</button>
-              <button type="button" data-room="poker">Fire poker</button>
-              <button type="button" id="toggle-rail-ambience" aria-pressed="false">Train ambience</button>
+              <button type="button" data-room="fireplace">Look at fireplace</button>
+              <button type="button" data-room="poker">Stoke fire</button>
+              <button type="button" data-room="safe-control" aria-pressed="false">Safe handle / lock</button>
+              <button type="button" data-room="desk">Back to desk</button>
+              <button type="button" id="toggle-rail-ambience" aria-pressed="true">Train ambience</button>
             </div>
             <div class="room-actions" role="group" aria-label="Balance weights">
               <button type="button" data-room="weight-0" aria-pressed="false">Weight 1</button>
@@ -397,7 +405,7 @@
               surfaces, bends as it enters, and loses color as it travels through
               the material. Changing the cut changes the paths it can take.
             </p>
-            <a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/GEMS.md"
+            <a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/scripts/render_gem_gallery.py"
               target="_blank" rel="noopener">Code and render settings ↗</a>
           </figcaption>
         </figure>
@@ -425,7 +433,7 @@
               material beneath a clear shell. The fibers have more depth here,
               though the image still has some sampling noise.
             </p>
-            <a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/MITSUBA.md"
+            <a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/scripts/render_mitsuba_tigers_eye.py"
               target="_blank" rel="noopener">Material setup and render times ↗</a>
           </figcaption>
         </figure>
@@ -452,10 +460,25 @@
           gemstone cases, and loupe remain interactive: drag the ring to turn it,
           open a case to change materials, or click the loupe to inspect the stone.
         </p>
+        <h3>Room model credits</h3>
+        <p>Gramophone model by <a href="https://sketchfab.com/3d-models/vintage-gramophone-game-asset-e3a21ee0e1004cfea8c13dad50a18034">Rigdhi</a>, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Adapted with separate record and tonearm pivots and smaller web textures.</p>
+        <p>Room replacements: <a href="https://sketchfab.com/3d-models/grandfather-clock-5dfff9d9c87f44cba61fb83179b0e3e2">Grandfather Clock by Wille Evensson</a>, <a href="https://sketchfab.com/3d-models/floor-globe-0318ad51a7294885b452ff4f408353ba">Floor Globe by Chris Torres</a>, and <a href="https://sketchfab.com/3d-models/cigar-and-ashtray-74159cc31f974bcd95ba923a5bc052a6">Cigar and Ashtray by Miguel Adão</a>, all <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Adapted placement, moving parts and lighting; original texture resolution retained.</p>
+        <h3>Clock sound effects</h3>
+        <p>Clock recordings: <a href="https://freesound.org/people/FOSSarts/sounds/761919/">door by FOSSarts</a> (CC0, excerpts), <a href="https://freesound.org/people/day-garwood/sounds/619296/">winding by day-garwood</a> (<a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>), <a href="https://freesound.org/people/urbaneguerilla/sounds/161443/">ticking by urbaneguerilla</a> (<a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>, loop excerpt), and <a href="https://freesound.org/people/DiArchangeli/sounds/458592/">half-hour chime by DiArchangeli</a> (CC0, excerpt).</p>
         <h3>Gramophone music</h3>
         <p>The gramophone track is supplied by Heather and published with her permission.
           Horn filtering and surface hiss are added in the browser.
           <a href="./assets/railcar/audio/gramophone.mp3" download>Download recording</a>.
+        </p>
+        <h3>Sound effects</h3>
+        <p>Recordings selected by Heather from Freesound. Globe: “SpinningGlobeSound1” by
+          <a href="https://freesound.org/people/TunaBombs/sounds/848502/">TunaBombs</a>,
+          <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>.
+          Fire poker: “FIRESizz_Fire Poker Stirring The Coals 01_KVV AUDIO_FREE” by
+          <a href="https://freesound.org/people/KVV_Audio/sounds/784222/">KVV Audio</a>,
+          <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+          Excerpts are transcoded and their playback volume adjusted.
+          <a href="./assets/railcar/audio/CREDITS.md">All sound sources, licenses and edits</a>.
         </p>
         <h3>Credits</h3>
         <p>
@@ -467,8 +490,8 @@
           Many of the photographed materials, furnishings, and trees come from
           <a href="https://polyhaven.com/" target="_blank" rel="noopener">Poly Haven’s CC0 library</a>.
           The paintings are public-domain works from the Met’s Open Access
-          collection; the globe uses NASA’s Blue Marble. The carpet, clock dial,
-          ledger, labels, and damask were made for this project.
+          collection. The carpet, ledger, labels, and damask were made for this
+          project. The imported clock and globe are credited above.
           <a href="./assets/materials/CREDITS.html" target="_blank" rel="noopener">Texture and environment credits</a>
           · <a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/workbench/assets/railcar/polyhaven/credits.json" target="_blank" rel="noopener">Railcar asset credits</a>
           · <a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/GEM-COLOR.md"

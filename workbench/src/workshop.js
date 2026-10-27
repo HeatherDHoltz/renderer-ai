@@ -2,17 +2,18 @@ import * as THREE from "../vendor/three.module.js";
 import { GLTFLoader } from "../vendor/addons/loaders/GLTFLoader.js";
 import { createHearth } from "./hearth.js";
 import { createNightForest } from "./night-forest.js";
-import { railcarMaterial, boxProjection } from "./railcar-materials.js";
+import { railcarMaterial, boxProjection, preloadMaterialTextures } from "./railcar-materials.js";
 import { loadBakedRoom, renderRoute } from "./baked-room.js";
 import { makeFacetMaterial, convexFacetHull } from "./gem-optics.js";
 import { examinationLights, bindExaminationLights } from "./examination-light.js";
-import { loadFloatResponse } from "./float-response.js";
+import { loadFloatResponse, startFloatResponse } from "./float-response.js";
 import { loadRoomAsset } from "./room-asset.js";
 import { assetStream } from "./asset-stream.js";
 import { patchProbeOcclusion } from "./probe-occlusion.js";
 import { createAreaCaseShadows } from "./area-case-shadows.js";
 import { batchCaseShadows } from "./shadow-batch.js";
 import { createRoomInteractions } from "./room-interactions.js";
+import { createRoomDetails } from "./room-details.js";
 
 // The 1890 private railcar (workbench/scripts/railcar/export.py, manifest v2).
 // Light is baked in Cycles: a denoised irradiance lightmap and an emission map
@@ -158,14 +159,18 @@ async function roomJSON(name) {
   return new Response(name.endsWith('.gz') ? stream.pipeThrough(new DecompressionStream('gzip')) : stream).json();
 }
 
-export async function buildWorkshop(scene, surfaces, renderer, host) {
-  // Browser-owned foreground is not part of the authored room's lighting.
-  const foregroundForProbe = scene.children.filter(o=>!o.isLight);
+// Loading is independent of the foreground and reflection capture. Begin it
+// while the studio textures and jewelry are prepared, preserving probe contents.
+export async function prepareWorkshop(host, aniso = 1, renderer) {
   // Loading progress for the poster screen (GLTF + texture loaders share it).
   THREE.DefaultLoadingManager.onProgress = (_url, loaded, total) =>
     host?.dispatchEvent(new CustomEvent("loadprogress", { detail: { loaded, total } }));
   const gltf = new GLTFLoader();
   const images = new THREE.TextureLoader();
+  const readyTexture = promise => promise.then(texture => {
+    renderer?.initTexture(texture);return texture;
+  });
+  const loadDataTexture = name => readyTexture(dataTexture(images,name));
   const manifestResponse = await fetch(url("railcar-manifest.json"));
   if (!manifestResponse.ok) throw new Error(`Room manifest: ${manifestResponse.status}`);
   const manifestText = await manifestResponse.text();
@@ -173,57 +178,108 @@ export async function buildWorkshop(scene, surfaces, renderer, host) {
   const manifestHash = [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(manifestText)))]
     .map(v=>v.toString(16).padStart(2,'0')).join('');
   if (host) {host.dataset.roomManifest=manifestHash;host.dataset.roomSource=manifest.source?.sha256 || '';}
-  const liveAuthoring = manifest.liveAuthoring
-    ? await fetch(url(manifest.liveAuthoring)).then((r) => {
+  const cache = new Map();
+  // Construct lighting workers before starting the surface-image request queue.
+  const materialTextures = Promise.resolve().then(() => preloadMaterialTextures(Object.values(manifest.groups)
+    .flatMap(g => Object.values(g.materials)), images, cache, new URL(BASE, import.meta.url).href, aniso, renderer));
+  materialTextures.catch(() => {});
+  const lampPromise = fetch(url("student-lamp-lighting.json")).then(r => {
+    if (!r.ok) throw new Error("Student lamp lighting missing");
+    return r.json();
+  }).then(async lampLighting => ({lampLighting, lampMaps: new Map(await Promise.all(
+    Object.entries(lampLighting).map(async ([g,v]) => [g,await loadDataTexture(v.file)])))}));
+  lampPromise.catch(() => {});
+  const interactionPromise = roomJSON(manifest.interactions?.metadata || "railcar-interactions.json")
+    .then(async interactionMetadata => {
+      const [entries,safeLights] = await Promise.all([
+        Promise.all((interactionMetadata.importedLighting || []).map(async r => [r.file,await loadDataTexture(r.file)])),
+        Promise.all((interactionMetadata.safeLighting || []).map(async r => ({...r,texture:await loadDataTexture(r.file)}))),
+      ]);
+      return {interactionMetadata,importedLights:new Map(entries),safeLights};
+    });
+  interactionPromise.catch(() => {});
+  const liveAuthoringPromise = manifest.liveAuthoring
+    ? fetch(url(manifest.liveAuthoring)).then((r) => {
         if (!r.ok) throw new Error("Edited-room live material metadata could not load");
         return r.json();
       }) : null;
-  const [groups, glass, paintings, sky, windows, interactionMetadata, interactiveProps, lampLighting] = await Promise.all([
+  liveAuthoringPromise?.catch(() => {});
+  const paintingPromise = (manifest.paintingLighting
+    ? fetch(url(manifest.paintingLighting)).then(r => {
+      if (!r.ok) throw new Error(`Painting lighting: ${r.status}`);
+      return r.json();
+    }) : Promise.resolve({})).then(async paintingInfo => ({paintingInfo,
+      paintingMaps: new Map(await Promise.all(Object.entries(paintingInfo)
+        .map(async ([name, record]) => [name, await loadDataTexture(record.file)])))}));
+  paintingPromise.catch(() => {});
+  const responseJobs=[];
+  const [groups, glass, paintings, sky, windows, interactionAssets, interactiveProps, lampAssets] = await Promise.all([
     Promise.all(
       GROUPS.map(async (g) => {
         const info = manifest.groups[g];
+        // Start response maps alongside geometry, not after it has loaded.
+        const responses=new Map([...new Set(Object.values(info.materials)
+          .map(m=>m.bakedResponse).filter(Boolean))].map(file=>{
+            const job=startFloatResponse(url(file));responseJobs.push(readyTexture(job.ready));
+            return [file,job.texture];
+          }));
         const [asset, light, emit] = await Promise.all([
           loadRoomAsset(gltf, url(info.file)),
-          dataTexture(images, info.light),
-          dataTexture(images, info.emit),
+          loadDataTexture(info.light),
+          loadDataTexture(info.emit),
         ]);
-        const responses = new Map(await Promise.all([...new Set(Object.values(info.materials)
-          .map((m) => m.bakedResponse).filter(Boolean))].map(async (file) =>
-            [file, await loadFloatResponse(url(file))])));
         return { g, info, asset, light, emit, responses };
       }),
     ),
     loadRoomAsset(gltf, url(manifest.glass?.file || "railcar-glass.glb")),
-    gltf.loadAsync(url("railcar-paintings.glb")),
+    loadRoomAsset(gltf, url("railcar-paintings.glb")),
     null, // (exterior sky is drawn by night-forest.js)
     // Window glazing reflections read as white smudges over the forest; Heather
     // asked for no reflections that don't add anything. Kept in the export.
     null,
-    roomJSON(manifest.interactions?.metadata || "railcar-interactions.json"),
+    interactionPromise,
     loadRoomAsset(gltf, url(manifest.interactions?.props || "railcar-interactive-props.glb")),
-    fetch(url("student-lamp-lighting.json")).then(r => { if (!r.ok) throw new Error("Student lamp lighting missing"); return r.json(); }),
+    lampPromise,
   ]);
   const probeOccluders = manifest.probeOccluders && tuning('probeocclusion', 1) > 0
     ? await fetch(url(manifest.probeOccluders)).then(r=>{
         if(!r.ok)throw new Error('Local reflection bounds could not load');
         return r.json();
       }) : null;
-  const lampOn = { value: 1 }, fireBoost = { value: 0 };
-  const lampMaps = new Map(await Promise.all(Object.entries(lampLighting).map(async ([g, v]) => [g, await dataTexture(images, v.file)])));
+  const liveAuthoring = await liveAuthoringPromise;
+  const {paintingInfo, paintingMaps} = await paintingPromise;
+  const {lampLighting, lampMaps} = lampAssets;
+  const {interactionMetadata, importedLights, safeLights} = interactionAssets;
+  const texturesReady=Promise.all([...responseJobs,materialTextures]);
+  texturesReady.catch(() => {});
+  return {gltf, images, manifest, manifestHash, liveAuthoring, groups, glass, paintings, sky,
+    windows, interactionMetadata, interactiveProps, lampLighting, probeOccluders,
+    paintingInfo, paintingMaps, lampMaps, cache, importedLights, safeLights, texturesReady};
+}
+
+export async function buildWorkshop(scene, surfaces, renderer, host, preparation, delivery) {
+  // Browser-owned foreground is not part of the authored room's lighting.
+  const foregroundForProbe = scene.children.filter(o=>!o.isLight);
+  const {gltf, images, manifest, manifestHash, liveAuthoring, groups, glass, paintings, sky,
+    windows, interactionMetadata, interactiveProps, lampLighting, probeOccluders,
+    paintingInfo, paintingMaps, lampMaps, cache, importedLights, safeLights, texturesReady} = await (preparation || prepareWorkshop(host,renderer.capabilities.getMaxAnisotropy(),renderer));
+  const lampOn = { value: 1 }, fireBoost = { value: 0 }, safeOpen = { value: 0 }, safeAngle={value:0};
+  // The diffuse pool is baked from this authored emitter. Its live counterpart
+  // lights moving objects and highlights; static diffuse remains baked once.
+  let studentSpot;
+  if (interactionMetadata.lampSpot) {
+    const f = interactionMetadata.lampSpot;
+    studentSpot = new THREE.SpotLight(new THREE.Color(...f.color), f.power / (2 * Math.PI), 12, f.angle, f.penumbra, 2);
+    studentSpot.position.fromArray(f.position);
+    studentSpot.target.position.copy(studentSpot.position).add(new THREE.Vector3(...f.direction));
+    scene.add(studentSpot, studentSpot.target);
+  }
   const materialContexts = new Map(), movingMaterialCache = new Map();
   const roomMaterials = new Set();
   const additionalMaterials = new Set();
   const deskMaterials = new Set();
   const textures = [...lampMaps.values()];
-  const cache = new Map();
   const maxAniso = renderer.capabilities.getMaxAnisotropy();
-  const paintingInfo = manifest.paintingLighting
-    ? await fetch(url(manifest.paintingLighting)).then((r) => {
-      if (!r.ok) throw new Error(`Painting lighting: ${r.status}`);
-      return r.json();
-    }) : {};
-  const paintingMaps = new Map(await Promise.all(Object.entries(paintingInfo)
-    .map(async ([name, record]) => [name, await dataTexture(images, record.file)])));
   textures.push(...paintingMaps.values());
   const car = new THREE.Group();
   const baked = await loadBakedRoom(new URL(BASE, import.meta.url), gltf, images,
@@ -233,7 +289,8 @@ export async function buildWorkshop(scene, surfaces, renderer, host) {
     car.add(baked.group);
     textures.push(...baked.textures);
   }
-  car.name = "1890 private railcar — Cycles baked light, full-resolution materials";
+  car.name = delivery?.version===1 ? "1890 private railcar — staged Cycles lighting/materials"
+    : "1890 private railcar — Cycles baked light, full-resolution materials";
   const room = manifest.room;
   const PROBE_AT = new THREE.Vector3(0, 2.2, 7);
   const DESK_PROBE_AT = new THREE.Vector3(0, 1.0, 1);
@@ -451,17 +508,27 @@ export async function buildWorkshop(scene, surfaces, renderer, host) {
   // Capture baked room radiance without feeding studio/environment reflections
   // back into the probes. Source photographs and baked lamp emission remain.
   for(const m of roomMaterials)m.envMapIntensity=0;
-  let roomProbe,deskProbe;
+  let roomProbe,deskProbe,roomProbeTarget,deskProbeTarget;
   try {
-    probe.position.copy(PROBE_AT);scene.add(probe);probe.update(renderer,scene);
-    roomProbe=pmrem.fromCubemap(probeTarget.texture).texture;
+    probe.position.copy(PROBE_AT);scene.add(probe);
+    // Compile the actual capture programs while the remaining lighting and
+    // surface pixels download. No placeholder texture is ever drawn.
+    performance.mark('lj:shader-warmup-start');
+    const previousTarget=renderer.getRenderTarget();
+    renderer.setRenderTarget(probeTarget,0);
+    try { await renderer.compileAsync(scene,probe.children[0]); }
+    finally { renderer.setRenderTarget(previousTarget); }
+    performance.measure('lj:shader-warmup','lj:shader-warmup-start');
+    await texturesReady;
+    probe.update(renderer,scene);
+    roomProbeTarget=pmrem.fromCubemap(probeTarget.texture);roomProbe=roomProbeTarget.texture;
     probe.position.copy(DESK_PROBE_AT);probe.update(renderer,scene);
-    deskProbe=pmrem.fromCubemap(probeTarget.texture).texture;
+    deskProbeTarget=pmrem.fromCubemap(probeTarget.texture);deskProbe=deskProbeTarget.texture;
   } finally {
     hiddenForProbe.forEach((o,i)=>{o.visible=visibility[i]});scene.remove(probe);
   }
-  pmrem.dispose();
-  probeTarget.dispose();
+  pmrem?.dispose();
+  probeTarget?.dispose();
   textures.push(roomProbe, deskProbe);
   // Metals, mirrors and gilt reflect it fully; for varnish and cloth a
   // single-point probe over-reflects (no parallax, no occlusion), so less.
@@ -492,9 +559,43 @@ export async function buildWorkshop(scene, surfaces, renderer, host) {
 
   const fixturesAt = (point) => [...interactionMetadata.fixtures].sort((a,b) =>
     new THREE.Vector3(...a.position).distanceToSquared(point) - new THREE.Vector3(...b.position).distanceToSquared(point)).slice(0,8);
+  let globeAlbedo;
+  if (interactionMetadata.globeProjection && !interactionMetadata.replacements?.globe) {
+    globeAlbedo = await images.loadAsync(new URL('../assets/railcar/textures/antique-globe.jpg',import.meta.url).href);
+    globeAlbedo.colorSpace=THREE.SRGBColorSpace; globeAlbedo.wrapS=THREE.RepeatWrapping; globeAlbedo.wrapT=THREE.ClampToEdgeWrapping;
+    globeAlbedo.channel=2; globeAlbedo.anisotropy=maxAniso; textures.push(globeAlbedo);
+  }
+  const importedLightRecords=new Map((interactionMetadata.importedLighting || []).map(record=>[record.file,record]));
+  textures.push(...importedLights.values());
+  textures.push(...safeLights.map(record=>record.texture));
+  const blackEmit = new THREE.DataTexture(new Uint8Array([0,0,0,255]),1,1,THREE.RGBAFormat);
+  blackEmit.needsUpdate=true;textures.push(blackEmit);
   const interactions = createRoomInteractions({ car, props: interactiveProps.scene, metadata: interactionMetadata,
-    lampUniform: lampOn, fireUniform: fireBoost, hearth,
-    propMaterial(material) {
+    lampUniform: lampOn, fireUniform: fireBoost, safeOpenUniform: safeOpen, safeAngleUniform:safeAngle, hearth,
+    propMaterial(material, object) {
+      if (material.name.startsWith('Railcar asset — ')) {
+        const bakedSource=object.userData.railcarStaticLight;
+        const baked=bakedSource ? {...bakedSource,...importedLightRecords.get(bakedSource.file)} : null;
+        const key=material.uuid+'|'+(baked?.file || 'live');
+        if(movingMaterialCache.has(key))return movingMaterialCache.get(key);
+        const context=materialContexts.get('furnishings');
+        const point=new THREE.Box3().setFromObject(object).getCenter(new THREE.Vector3());
+        const m=railcarMaterial(material.name,{kind:'imported',color:material.color.toArray(),roughness:material.roughness,metallic:material.metalness,uv:1},
+          {...context,channels:new Map(),live:!baked,light:baked?importedLights.get(baked.file):context.light,emit:blackEmit,
+            lightRange:baked?.range || context.lightRange,interactive:baked?null:context.interactive,
+            lightIntensity:Math.PI,liveLight:.42,envMap:roomProbe,metalEnv:1,roomEnv:.45,specular:.42,box,
+            fixtureSources:fixturesAt(point)});
+        for(const k of ['map','normalMap','normalScale','roughnessMap','metalnessMap','aoMap','aoMapIntensity','side','transparent','opacity','alphaMap','alphaTest','depthWrite'])m[k]=material[k];
+        m.needsUpdate=true;movingMaterialCache.set(key,m);return m;
+      }
+      if (material.name.startsWith('Rigdhi ')) {
+        if (movingMaterialCache.has(material.uuid)) return movingMaterialCache.get(material.uuid);
+        const m = railcarMaterial(material.name, { kind: 'imported', color: material.color.toArray(), roughness: material.roughness, metallic: material.metalness },
+          { ...materialContexts.get('furnishings'), live: true, liveLight: .42, envMap: roomProbe, metalEnv: 1, roomEnv: .45, specular: .42, box,
+            fixtureSources: fixturesAt(new THREE.Vector3(-23,-.4,-3.1)) });
+        for (const key of ['map','normalMap','normalScale','roughnessMap','metalnessMap','aoMap','aoMapIntensity','side']) m[key] = material[key];
+        m.needsUpdate = true; movingMaterialCache.set(material.uuid, m); return m;
+      }
       if (material.name === 'gramophone rosewood') {
         const spec = { ...manifest.groups.desk.materials['Heather — balance warm rosewood'] };
         delete spec.bakedResponse; delete spec.bakedResponseMode;
@@ -508,25 +609,33 @@ export async function buildWorkshop(scene, surfaces, renderer, host) {
     },
     liveMaterial(material, objectName) {
       const g = objectName.startsWith('safe ') || objectName === 'globe' ? 'furnishings' : 'desk';
-      const name = material.name, key = g + '|' + name;
+      const interior = ['safe back','safe floor','safe left wall','safe right wall','safe roof'].includes(objectName);
+      const name = material.name, key = g + '|' + name + (interior ? '|safe-interior' : '');
       if (movingMaterialCache.has(key)) return movingMaterialCache.get(key);
       const recipe = manifest.groups[g].materials[name];
       if (!recipe) throw new Error('Missing moving material: ' + key);
       const spec = { ...recipe }; delete spec.bakedResponse; delete spec.bakedResponseMode;
-      const materialContext = { ...materialContexts.get(g), live: true, liveLight: .42,
+      const useSafeBake=interior&&safeLights.length===3;
+      const materialContext = { ...materialContexts.get(g), channels:new Map(), live: !useSafeBake, liveLight: .42,
+        ...(useSafeBake ? {light:safeLights[0].texture,emit:blackEmit,interactive:null,lightRange:safeLights[0].range,
+          safeBaked:{records:safeLights,angle:safeAngle}} : {}),
+        safeInterior: interior&&!useSafeBake ? { openness:safeOpen, center:new THREE.Vector3(-23.1,-5.6,-3.1) } : null,
         envMap: g === 'desk' ? deskProbe : roomProbe, metalEnv: 1, roomEnv: .45, specular: .42,
         fixtureSources:fixturesAt(new THREE.Vector3(...interactionMetadata.objects[objectName].center)) };
       const moving = railcarMaterial(name, spec, materialContext);
+      if (objectName === 'globe' && globeAlbedo) { moving.map=globeAlbedo; moving.needsUpdate=true; }
       movingMaterialCache.set(key, moving); return moving;
     },
   });
-  if (new URLSearchParams(globalThis.location?.search || "").has("debug")) globalThis.__railcar = { car, scene, renderer, manifest, manifestHash, interactions };
+  if (new URLSearchParams(globalThis.location?.search || "").has("debug")) globalThis.__railcar = { car, scene, renderer, manifest, manifestHash, interactions, probeTargets:{room:roomProbeTarget,desk:deskProbeTarget} };
   const focusTargets = new THREE.Group();
   let areaCaseShadows;
   let caseShadowBatch;
   scene.add(focusTargets);
   focusTargets.attach(car);
+  const details=createRoomDetails(delivery,scene,textures,renderer,host);
   return {
+    details,
     mat,
     sun,
     interactions,
@@ -595,13 +704,17 @@ export async function buildWorkshop(scene, surfaces, renderer, host) {
     causticReceivers: [mat.material, ...deskMaterials],
     animate(t, motion, camera) {
       interactions.animate(t, motion, camera, renderer);
+      if (studentSpot) studentSpot.intensity = interactionMetadata.lampSpot.power / (2 * Math.PI) * lampOn.value;
       const casesChanged = caseShadowBatch?.update();
       areaCaseShadows?.update(casesChanged);
       hearth.animate(t, motion);
       forest.animate(t, motion);
     },
     dispose() {
+      details.dispose();
       interactions.dispose();
+      roomProbeTarget?.dispose();deskProbeTarget?.dispose();
+      if (studentSpot) { scene.remove(studentSpot, studentSpot.target); studentSpot.dispose(); }
       areaCaseShadows?.dispose();
       caseShadowBatch?.dispose();
       for (const material of additionalMaterials) material.dispose();

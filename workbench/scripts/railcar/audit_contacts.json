@@ -2,8 +2,77 @@
   "schema": 1,
   "description": "Source-reviewed exact contacts only. No collection-wide or name-prefix exemptions. New defects stay unresolved. Limits are physical millimetres of AABB overlap, not penetration depths.",
   "pairs": [
-    {"objects": ["student lamp base", "student lamp rod"], "max_overlap_mm": [12, 12, 12], "reason": "trinkets.student_lamp: vertical rod is socketed into the lamp base."},
-    {"objects": ["student lamp rod", "student lamp arm"], "max_overlap_mm": [6, 8, 8], "reason": "trinkets.student_lamp: arm joins the lamp's supporting rod."},
-    {"objects": ["balance beam", "balance pillar"], "max_overlap_mm": [44, 5, 8], "reason": "trinkets.carat_balance: beam is mounted at the top of the central pillar."}
+    {
+      "objects": [
+        "student lamp base",
+        "student lamp rod"
+      ],
+      "max_overlap_mm": [
+        12,
+        12,
+        12
+      ],
+      "reason": "trinkets.student_lamp: vertical rod is socketed into the lamp base."
+    },
+    {
+      "objects": [
+        "student lamp rod",
+        "student lamp arm"
+      ],
+      "max_overlap_mm": [
+        6,
+        8,
+        8
+      ],
+      "reason": "trinkets.student_lamp: arm joins the lamp's supporting rod."
+    },
+    {
+      "objects": [
+        "balance beam",
+        "balance pillar"
+      ],
+      "max_overlap_mm": [
+        44,
+        5,
+        8
+      ],
+      "reason": "trinkets.carat_balance: beam is mounted at the top of the central pillar."
+    },
+    {
+      "objects": [
+        "gramophone Rigdhi cabinet and horn",
+        "gramophone fixed crank"
+      ],
+      "max_overlap_mm": [
+        35,
+        39,
+        46
+      ],
+      "reason": "replace_gramophone: original creator crank spindle and mounting escutcheon pass through the cabinet side. Split components19/34 remain fixed; no same-facing patch found. Cycles and browser close-ups inspected."
+    },
+    {
+      "objects": [
+        "gramophone Rigdhi cabinet and horn",
+        "gramophone tonearm"
+      ],
+      "max_overlap_mm": [
+        69,
+        83,
+        28
+      ],
+      "reason": "replace_gramophone: original tonearm end and hinge sleeve enter the fixed horn-neck socket around original model pivot(.095,.255,.28). Only components10/21/28/32 move. Audited rest witness at the socket, not the free needle; no same-facing patch. Rest/playing Cycles and native browser poses inspected."
+    },
+    {
+      "objects": [
+        "gramophone Rigdhi cabinet and horn",
+        "gramophone record"
+      ],
+      "max_overlap_mm": [
+        176,
+        176,
+        1
+      ],
+      "reason": "replace_gramophone: original central spindle passes through the rotating disc at model(.001975,.001834,.2532945); platter supports its underside. Record/body AABB overlap is broad because horn and spindle share body mesh; actual witness is at the spindle. No same-facing patch. Preserve creator spindle/record contact."
+    }
   ]
 }

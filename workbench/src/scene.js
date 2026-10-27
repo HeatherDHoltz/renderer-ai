@@ -129,10 +129,12 @@ import { createJewelryCache } from "./jewelry-cache.js";
 import { createBloom } from "./bloom.js";
 import { BenchOrbit } from "./orbit.js";
 import { GEMS } from "./gems.js";
-import { cutGeometry } from "./cuts.js";
+import { loadPreparedCuts } from "./prepared-cuts.js";
 import { applyMetal } from "./metals.js";
 import { specimenEnvironment } from "./reflections.js";
-import { buildWorkshop } from "./workshop.js";
+import { buildWorkshop, prepareWorkshop } from "./workshop.js";
+import { prepareLightingWorkers } from "./float-response.js";
+import { deliveryPlan } from "./room-details.js";
 import { createCaustics } from "./caustics.js";
 import { makeBenchObjects } from "./bench-objects.js";
 import {
@@ -147,6 +149,7 @@ import {
 } from "./interaction.js";
 
 export async function createWorkbench(host, onFatalError) {
+  performance.mark("lj:startup");
   RectAreaLightUniformsLib.init();
   // Balanced rendering is now authorized: 25% fewer pixels along each axis.
   // ?scale=1 restores native pixels without changing geometry or gem optics.
@@ -175,7 +178,18 @@ export async function createWorkbench(host, onFatalError) {
   const expParam = Number(new URLSearchParams(location.search).get("exp"));
   const viewExposure =
     Number.isFinite(expParam) && expParam > 0 ? expParam : 2 ** 1.1;
-  const viewLut = await loadViewLut();
+  await prepareLightingWorkers();
+  const deliveryPromise=deliveryPlan();
+  deliveryPromise.catch(()=>{});
+  const cutsPromise = loadPreparedCuts();
+  cutsPromise.catch(() => {});
+  const viewLutPromise = loadViewLut();
+  const surfacesPromise = loadSurfaces(renderer);
+  const roomPreparation = prepareWorkshop(host, renderer.capabilities.getMaxAnisotropy(), renderer);
+  // Attach rejection handlers immediately while independent startup work runs.
+  surfacesPromise.catch(() => {});
+  roomPreparation.catch(() => {});
+  const viewLut = await viewLutPromise;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.transmissionResolutionScale = 0.75;
@@ -184,7 +198,7 @@ export async function createWorkbench(host, onFatalError) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#120d0a");
   scene.fog = new THREE.Fog("#120d0a", 70, 160);
-  const surfaces = await loadSurfaces(renderer);
+  const surfaces = await surfacesPromise;
   scene.environment = surfaces.environment.texture;
   scene.environmentIntensity = 0.55;
   const reflectionTarget = new THREE.WebGLCubeRenderTarget(256, {
@@ -234,6 +248,8 @@ export async function createWorkbench(host, onFatalError) {
     flight = null,
     hover = null,
     boxFlight = null,
+    activeFocus = "desk",
+    deskClose = false,
     pendingLoupe = false,
     pendingBox = null,
     surroundMix = 0;
@@ -252,8 +268,9 @@ export async function createWorkbench(host, onFatalError) {
   root.add(setting);
   setting.add(mount);
   scene.add(spin);
+  const delivery=await deliveryPromise;
   const response = await Promise.all(
-    ["cabochon.obj", "solitaire-setting.mesh.gz", "solitaire-sample.obj"].map(
+    ["cabochon.obj", delivery.ring?.initial || "solitaire-setting.mesh.gz", "solitaire-sample.obj"].map(
       async (name) => {
         const r = await fetch(new URL(`../assets/${name}`, import.meta.url));
         if (!r.ok) throw new Error("Jewelry mesh could not load");
@@ -264,7 +281,28 @@ export async function createWorkbench(host, onFatalError) {
     ),
   );
   const shank = new THREE.BufferGeometry();
-  const settingSource = readSettingBinary(response[1]);
+  let settingSource = readSettingBinary(response[1]);
+  host.dataset.ringTriangles=String(settingSource.index.count/3);
+  host.dataset.ringDetail=delivery.ring?'initial':'full';
+  let ringDetailPromise;
+  function requestRingDetail() {
+    // The 123K band remains smooth even in the loupe. Keep the million-triangle
+    // original as an explicit comparison: its fitting pass can stall animation.
+    if(new URLSearchParams(location.search).get('ringdetail')!=='full')return;
+    if(!delivery.ring || host.dataset.ringDetail==='ready' || ringDetailPromise)return;
+    host.dataset.ringDetail='loading';
+    ringDetailPromise=(async()=>{
+      const r=await fetch(new URL('../assets/'+delivery.ring.detail,import.meta.url));
+      if(!r.ok)throw new Error('Detailed ring could not load');
+      const bytes=await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+      const next=readSettingBinary(bytes);
+      if(stopped){next.dispose();return;}
+      settingSource.dispose();settingSource=next;
+      updateMount();key.shadow.needsUpdate=true;workshop.sun.shadow.needsUpdate=true;
+      jewelryDirty=true;invalidate();
+      host.dataset.ringTriangles=String(next.index.count/3);host.dataset.ringDetail='ready';
+    })().catch(()=>{host.dataset.ringDetail='retry';}).finally(()=>{ringDetailPromise=null;});
+  }
   const band = new THREE.Mesh(shank, metal);
   band.castShadow = true;
   setting.add(band);
@@ -276,9 +314,7 @@ export async function createWorkbench(host, onFatalError) {
   const stone = new THREE.Mesh();
   stone.castShadow = true;
   root.add(stone);
-  const cuts = Object.fromEntries(
-    ["brilliant", "step", "oval", "cushion"].map((k) => [k, cutGeometry(k)]),
-  );
+  const cuts = await cutsPromise;
   const geometries = {
     tiger: normalizeGem(readGemOBJ(response[0], true), 1.38),
     shank: solitaireGeometry(response[2]),
@@ -463,12 +499,20 @@ export async function createWorkbench(host, onFatalError) {
   }
   let objects,
     objectsMoving = false;
+  performance.mark("lj:mount-start");
   updateMount();
+  performance.measure("lj:initial-ring-fit", "lj:mount-start");
   updateLight();
-  const workshop = await buildWorkshop(scene, surfaces, renderer, host);
+  performance.mark("lj:workshop-start");
+  const workshop = await buildWorkshop(scene, surfaces, renderer, host, roomPreparation, delivery);
+  const onRoomDetail=()=>{reflectionDirty=true;jewelryDirty=true;invalidate();};
+  host.addEventListener('roomdetail',onRoomDetail);
+  performance.measure("lj:workshop-build", "lj:workshop-start");
   const caustics = createCaustics(renderer, workshop.causticReceivers, host);
+  performance.mark("lj:bench-start");
   objects = makeBenchObjects(scene, geometries, materials, surfaces, key);
   workshop.configureBench(objects, { environment: reflectionTarget.texture, light: key, orbit });
+  performance.measure("lj:bench-build", "lj:bench-start");
   const pointShadowCache = new URLSearchParams(location.search).get("shadowcache") !== "1"
     ? null : cachePointShadows(renderer, scene, key, spin);
   if (globalThis.__railcar) globalThis.__railcar.pointShadowCache = pointShadowCache;
@@ -524,9 +568,6 @@ export async function createWorkbench(host, onFatalError) {
   reflectionCamera.layers.enable(2);
   reflectionDirty = true;
   const raycaster = new THREE.Raycaster();
-  let zoomAnchor = null,
-    zoomAt = -Infinity;
-  const zoomPointer = new THREE.Vector2();
   function pick(x, y) {
     if (boxFlight && boxFlight.progress < 1) return null;
     if (inspectionDestination || inspection > 0)
@@ -540,19 +581,43 @@ export async function createWorkbench(host, onFatalError) {
       ...(setting.visible ? [bandPick] : []),
       ...workshop.interactionTargets,
     ]);
-    if (hits[0]?.object.userData.action?.kind === 'room') {
+    if (hits[0]) {
       const occluder = benchIntersections(raycaster, camera, x, y, [workshop.focusTargets])
         .find(h => h.object.material?.visible !== false);
       if (occluder && occluder.distance < hits[0].distance - .015 && occluder.object !== hits[0].object)
-        return occluder.object.userData.action || null;
+        return resolveAction(occluder.object.userData.action,occluder.point) || locationAction(occluder.point);
     }
     if (hits[0]?.object.userData.blockPointer) return null;
-    return hits.length
-      ? hits[0].object.userData.action || {
-          kind: "jewelry",
-          label: "Drag to turn · double-click to focus",
-        }
-      : null;
+    if (!hits.length) {
+      const surface=benchIntersections(raycaster,camera,x,y,[workshop.focusTargets,workshop.mat])
+        .find(h=>h.object.material?.visible !== false);
+      return surface ? locationAction(surface.point) : null;
+    }
+    return resolveAction(hits[0].object.userData.action || {kind:'jewelry',label:'Drag to turn the jewelry'},hits[0].point);
+
+  }
+  function resolveAction(action, point) {
+    if (!action) return null;
+    if (action.value === 'safe-door') action = workshop.interactions.state.safeGoal
+      ? {kind:'room',value:'safe-control',label:'Push the safe door closed'}
+      : {kind:'location',value:'safe',label:'Look at the safe'};
+    if(action.value === 'weight-pan' && point) action=workshop.interactions.weightAt(point,'pan');
+    if (!action) return null;
+    let required;
+    if (action.kind === 'room') required=({globe:'globe',poker:'fireplace','gramophone-tonearm':'gramophone','safe-control':'safe',lamp:'desk',cigar:'desk'})[action.value] || (action.value.startsWith('clock-') ? 'clock' : action.value.startsWith('weight-') ? 'desk' : null);
+    else if (action.kind === 'gem') required='gems';
+    else if (action.kind === 'metal') required='metals';
+    else if (action.kind === 'jewelry' || action.kind === 'loupe') required='desk';
+    if (required && activeFocus !== required) return {kind:'location',value:required,label:'Look at the '+({gems:'stone box',metals:'ring box'}[required] || required)};
+    return action;
+  }
+  function locationAction(point) {
+    if (activeFocus === 'desk') {
+      const weight = workshop.interactions.weightAt(point);
+      if (weight) return weight;
+    }
+    const id=workshop.interactions.locationAt(point);
+    return id ? {kind:'location',value:id,label:`Look at ${id === 'desk' ? 'the desk' : 'the '+id}`} : null;
   }
   function releaseCollectionCamera() {
     if (!boxFlight) return;
@@ -560,50 +625,45 @@ export async function createWorkbench(host, onFatalError) {
     orbitFov = camera.fov;
     boxFlight = null;
   }
-  function focusPoint(x, y) {
-    scene.updateMatrixWorld(true);
-    const hits = benchIntersections(raycaster, camera, x, y, [
-      workshop.focusTargets,
-      spin,
-      ...objects.targets,
-      support,
-      workshop.mat,
-    ]);
-    return hits.find((h) => !h.object.userData.blockPointer)?.point || null;
-  }
   function focusBox(id) {
+    const returning = !id;
+    id = id || 'desk';
+    if (!['desk','globe','gramophone','fireplace','safe','clock','gems','metals'].includes(id)) return;
     if (inspection > 0 || inspectionDestination) {
-      pendingBox = id;
+      pendingBox = returning ? 'home' : id;
       inspectionDestination = 0;
       invalidate();
       return;
     }
-    const view = id
-      ? objects.boxView(id, camera.aspect)
-      : {
-          position: collectionReturn?.position || benchPosition,
-          quaternion: collectionReturn?.quaternion || benchQuaternion,
-          center: collectionReturn?.center || orbit.target,
-        };
-    if (id && !collectionReturn)
-      collectionReturn = {
-        position: camera.position.clone(),
-        quaternion: camera.quaternion.clone(),
-        center: orbit.target.clone(),
-        fov: camera.fov,
-      };
+    const isCase = id === 'gems' || id === 'metals';
+    workshop.details.request(id);
+    if(id==='desk' && !returning)requestRingDetail();
+    const view = id === 'desk' ? {position:returning ? benchPosition : benchPosition.clone().lerp(benchTarget,.22),quaternion:benchQuaternion,center:benchTarget,fov:benchFov}
+      : isCase ? objects.boxView(id,camera.aspect) : workshop.interactions.locationView(id,camera.aspect);
+    // Constrain the destination before flying, rather than snapping on the first orbit frame.
+    view.position = orbit.constrainPosition(view.position.clone());
+    const viewCamera = new THREE.PerspectiveCamera(); viewCamera.position.copy(view.position); viewCamera.lookAt(view.center);
+    view.quaternion = viewCamera.quaternion.clone();
+    activeFocus = id;
+    deskClose = id === "desk" && !returning;
+    host.dataset.focus = id;
+    collectionReturn = null;
     boxFlight = {
       id,
       progress: 0,
       fromPosition: camera.position.clone(),
       fromQuaternion: camera.quaternion.clone(),
       fromFov: camera.fov,
-      fov: id ? 40 : collectionReturn?.fov || benchFov,
+      fromLensShift: lensShift,
+      fov: view.fov || 40,
       position: view.position.clone(),
       quaternion: view.quaternion.clone(),
       center: view.center || new THREE.Vector3(0, 0.3, 0),
     };
-    objects.focusBox(id);
+    for (const [key, c] of Object.entries(objects.cases))
+      if (c.destination !== (key === id ? 1 : 0))
+        workshop.interactions.audio.sound('box', { group: `box-${key}` });
+    objects.focusBox(isCase ? id : null);
 
     invalidate();
   }
@@ -661,14 +721,15 @@ export async function createWorkbench(host, onFatalError) {
         .copy(boxFlight.fromQuaternion)
         .slerp(boxFlight.quaternion, t);
       camera.fov = THREE.MathUtils.lerp(boxFlight.fromFov, boxFlight.fov, t);
-      lensShift = boxFlight.id ? LENS_SHIFT * (1 - t) : LENS_SHIFT * t;
+      lensShift = THREE.MathUtils.lerp(boxFlight.fromLensShift, boxFlight.id === 'desk' ? LENS_SHIFT : 0, t);
       host.dataset.box = boxFlight.id || "returning";
-      if (boxFlight.progress === 1 && !boxFlight.id) {
-        orbit.adopt(camera.position, boxFlight.center);
+      if (boxFlight.progress === 1) {
+        orbit.station(camera.position, boxFlight.center);
+        orbit.maxZoom = ['desk','fireplace'].includes(activeFocus) ? 2.25 : 1.25;
         orbitFov = boxFlight.fov;
         collectionReturn = null;
         boxFlight = null;
-        host.dataset.box = "";
+        host.dataset.box = activeFocus === 'gems' || activeFocus === 'metals' ? activeFocus : '';
         if (pendingLoupe) {
           pendingLoupe = false;
           prepareFlight();
@@ -678,7 +739,7 @@ export async function createWorkbench(host, onFatalError) {
     } else if (inspection === 0 && inspectionDestination === 0) {
       orbit.update(camera, dt);
       camera.fov = orbitFov;
-      lensShift = LENS_SHIFT;
+      lensShift = activeFocus === "desk" ? LENS_SHIFT : 0;
     } else if (flight) {
       // The tool visibly lifts first. The seated camera then leans toward it.
       const t = ease(THREE.MathUtils.clamp((inspection - 0.45) / 0.55, 0, 1));
@@ -996,11 +1057,12 @@ export async function createWorkbench(host, onFatalError) {
       collectionReturn.fov = benchFov;
     }
     orbit.home(benchPosition, benchTarget);
+    orbit.maxZoom = activeFocus === "desk" || activeFocus === "fireplace" ? 2.25 : 1.25;
     camera.aspect = width / heightPx;
     camera.fov = benchFov;
     camera.updateProjectionMatrix();
     inspectionCamera.aspect = width / heightPx;
-    if (boxFlight) focusBox(boxFlight.id);
+    if (boxFlight || activeFocus !== "desk" || deskClose) focusBox(boxFlight?.id || activeFocus);
     updateOptics();
     invalidate();
   }
@@ -1124,7 +1186,7 @@ export async function createWorkbench(host, onFatalError) {
       if (inspection === 0 && pendingBox) {
         const next = pendingBox;
         pendingBox = null;
-        focusBox(next);
+        focusBox(next === "home" ? null : next);
       }
       if (moving || caustics.settling) jewelryDirty = true;
       updateCamera(dt);
@@ -1184,7 +1246,10 @@ export async function createWorkbench(host, onFatalError) {
   };
   document.addEventListener("visibilitychange", wake);
   reduced.addEventListener("change", wake);
+  performance.mark("lj:first-frame-start");
   resize();
+  performance.measure("lj:first-frame", "lj:first-frame-start");
+  performance.measure("lj:startup-through-first-frame", "lj:startup");
   let paused = false;
   return {
     renderer,
@@ -1196,12 +1261,14 @@ export async function createWorkbench(host, onFatalError) {
       if (!value) invalidate();
     },
     setGem(value) {
+      if (value === selectedGem) return;
       selectedGem = value;
       objects.select("gem", value);
       updateMount();
       invalidate();
     },
     setSetting(value) {
+      if (value === selectedSetting) return;
       selectedSetting = value;
       updateMount();
       invalidate();
@@ -1244,9 +1311,12 @@ export async function createWorkbench(host, onFatalError) {
       invalidate();
     },
     focusBox,
+    focusLocation: focusBox,
+    get focusState() { return { location:activeFocus, arrived:!boxFlight && inspection === 0, deskClose, pivot:orbit.target.toArray(), yawCenter:orbit.yawCenter }; },
     setTool(value) {
+      if(value==='loupe')requestRingDetail();
       tool = value;
-      if (boxFlight || collectionReturn) {
+      if (boxFlight || collectionReturn || (["loupe","turn"].includes(value) && activeFocus !== "desk")) {
         pendingLoupe = value === "loupe";
         focusBox(null);
         return;
@@ -1257,9 +1327,19 @@ export async function createWorkbench(host, onFatalError) {
       invalidate();
     },
     pick,
-    activateRoom(id) { const message = workshop.interactions.activate(id); reflectionDirty = true; invalidate(); return message; },
+    activateRoom(id) {
+      if (boxFlight || inspection || inspectionDestination) return 'Finish moving to the selected area first.';
+      const location = ({safe:'safe',clock:'clock',gramophone:'gramophone',fireplace:'fireplace',globe:'globe',poker:'fireplace','gramophone-tonearm':'gramophone','safe-control':'safe',lamp:'desk',cigar:'desk'})[id] || (id.startsWith('clock-') ? 'clock' : id.startsWith('weight-') ? 'desk' : null);
+      // Area selection and operation are separate clicks, including control shortcuts.
+      if (['safe','clock','gramophone','fireplace','desk'].includes(id)) { focusBox(id === 'desk' ? null : id); return `Looking at the ${id}. Escape returns to the desk.`; }
+      if (location && activeFocus !== location) { focusBox(location); return `Move to the ${location}, then click its control to interact.`; }
+      const message = workshop.interactions.activate(id); reflectionDirty = true; invalidate(); return message;
+    },
+    setTrain(value) { workshop.interactions.audio.setTrain(value); },
     setSound(value) { workshop.interactions.audio.setEnabled(value); },
+    unlockAudio() { workshop.interactions.audio.unlock(); },
     get roomState() { return workshop.interactions.state; },
+    get deliveryState() { return {textures:workshop.details.state,ringTriangles:Number(host.dataset.ringTriangles),ringDetail:host.dataset.ringDetail}; },
     hover(action) {
       if (
         hover?.kind === action?.kind &&
@@ -1290,11 +1370,15 @@ export async function createWorkbench(host, onFatalError) {
     reset() {
       spin.quaternion.copy(neutral);
       orbit.home(benchPosition, benchTarget);
+      orbit.maxZoom = 2.25;
       orbitFov = benchFov;
       collectionReturn = null;
       boxFlight = null;
+      activeFocus = "desk"; deskClose = false; host.dataset.focus = "desk";
       pendingBox = null;
       pendingLoupe = false;
+      for (const [key, c] of Object.entries(objects.cases))
+        if (c.destination !== 0) workshop.interactions.audio.sound('box', { group: `box-${key}` });
       objects.focusBox(null);
       inspectionDestination = 0;
       if (flight) {
@@ -1307,6 +1391,7 @@ export async function createWorkbench(host, onFatalError) {
       invalidate();
     },
     rotate(dx, dy) {
+      if (activeFocus !== "desk" && inspection === 0) return;
       if (inspection > 0 && inspection < 1) return;
       const center =
         inspection === 1
@@ -1332,43 +1417,12 @@ export async function createWorkbench(host, onFatalError) {
       )
         return;
       releaseCollectionCamera();
-      zoomAt = -Infinity;
       orbit.drag(dx, dy);
       invalidate(false);
     },
-    focus(x, y) {
-      if (
-        inspection ||
-        inspectionDestination ||
-        (boxFlight && boxFlight.progress < 1)
-      )
-        return;
-      const point = focusPoint(x, y);
-      if (!point) return;
-      releaseCollectionCamera();
-      orbit.focus(point);
-      invalidate(false);
-    },
-    zoom(factor, x = 0.5, y = 0.5) {
-      if (
-        inspection ||
-        inspectionDestination ||
-        (boxFlight && boxFlight.progress < 1)
-      )
-        return;
-      const now = performance.now();
-      // Reuse a world-space gesture anchor instead of raycasting the entire
-      // static room on every tiny trackpad delta.
-      if (
-        now - zoomAt > 150 ||
-        zoomPointer.distanceToSquared(new THREE.Vector2(x, y)) > 0.0025
-      ) {
-        zoomAnchor = focusPoint(x, y);
-        zoomPointer.set(x, y);
-      }
-      zoomAt = now;
-      releaseCollectionCamera();
-      orbit.zoom(factor, zoomAnchor);
+    zoom(factor) {
+      if (inspection || inspectionDestination || boxFlight) return;
+      orbit.zoom(factor);
       invalidate(false);
     },
     async photo() {
@@ -1388,6 +1442,7 @@ export async function createWorkbench(host, onFatalError) {
       reduced.removeEventListener("change", wake);
       pointShadowCache?.dispose();
       workshop.dispose();
+      host.removeEventListener('roomdetail',onRoomDetail);
       caustics.dispose();
       reflectionTarget.dispose();
       reflectionFiltered?.dispose();

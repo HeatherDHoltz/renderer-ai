@@ -3,7 +3,7 @@
  "units": "1 unit = 10 cm; app coords (x, y-up, z)",
  "rgbmRange": 16.0,
  "bake": {
-  "receiver": "neutral diffuse for camera visibility; authored BSDF for other rays",
+  "receiver": "Secondary-invisible neutral white receiver, original scene transport",
   "authoredLighting": true,
   "authoredGeometryPreserved": true,
   "requiredCollectionOverrides": [],
@@ -30,6 +30,14 @@
     "surfaceDensity": 100,
     "maxSurfaceSize": 2048
    }
+  },
+  "implementationSha256": {
+   "sync_saved_room.py": "6445cc458d87154e28c9673d75a4093d2e8c27310bbd986974c0499683ed6526",
+   "bake_saved_lighting.py": "cdf1db258e452d115968c83a0541e94f8a590719e81723b2b208b0e2e8a24f64",
+   "safe_lighting.py": "088973cc0cb68bf690fd6111a14de9df217552fee75d9854f587698846578a4f",
+   "bake_replacement_props.py": "3326561620d0d23bf624f1879b509fb9136569eea5dc834af6c41e5311377f41",
+   "replace_room_assets.py": "08585627847e8294c42ae842c303072cedb480d001a96b8522597564eb617034",
+   "pack_room_assets.py": "4f800d0c43fd09e9d2de7992ddcdb8e25a296295ed6d21c18458597fe068c983"
   }
  },
  "fire": null,
@@ -778,7 +786,7 @@
    "meshes": 48,
    "file": "railcar-furnishings.glb",
    "light": "railcar-furnishings-light.webp",
-   "lightRange": 16.0,
+   "lightRange": 256.0,
    "emit": "railcar-furnishings-emit.webp",
    "materials": {
     "Heather safe \u2014 muted gold lining": {
@@ -1160,26 +1168,6 @@
      "bakedResponseMode": "irradiance",
      "renderRoute": "baked_irradiance_live_material",
      "uv": 0
-    },
-    "rc longcase dial": {
-     "kind": "uvbake",
-     "sheen": 0.0,
-     "sheenRough": 0.5,
-     "coat": 0.0,
-     "coatRough": 0.029999999329447746,
-     "sheenTint": [
-      1.0,
-      1.0,
-      1.0
-     ],
-     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
-     "bakedResponseMode": "irradiance",
-     "renderRoute": "baked_irradiance_live_material",
-     "size": 1300,
-     "color": "tex/furnishings-rc-longcase-dial-color.jpg",
-     "orm": "tex/furnishings-rc-longcase-dial-orm.jpg",
-     "normal": "tex/furnishings-rc-longcase-dial-normal.jpg",
-     "uv": 1
     },
     "rc etched tulip glass": {
      "kind": "plain",
@@ -1876,49 +1864,6 @@
      "normal": "tex/furnishings-vintage-microscope-glass-normal.jpg",
      "uv": 1
     },
-    "rc ivory": {
-     "kind": "plain",
-     "color": [
-      0.78,
-      0.7,
-      0.55
-     ],
-     "roughness": 0.3,
-     "metallic": 0.0,
-     "sheen": 0.0,
-     "coat": 0.0,
-     "emission": null,
-     "sheenRough": 0.5,
-     "coatRough": 0.029999999329447746,
-     "sheenTint": [
-      1.0,
-      1.0,
-      1.0
-     ],
-     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
-     "bakedResponseMode": "irradiance",
-     "renderRoute": "baked_irradiance_live_material",
-     "uv": 0
-    },
-    "rc antique globe": {
-     "kind": "atlas",
-     "sheen": 0.0,
-     "sheenRough": 0.5,
-     "coat": 0.6000000238418579,
-     "coatRough": 0.15000000596046448,
-     "sheenTint": [
-      1.0,
-      1.0,
-      1.0
-     ],
-     "bakedResponse": "railcar-furnishings-appearance.f16.gz",
-     "bakedResponseMode": "irradiance",
-     "renderRoute": "baked_irradiance_live_material",
-     "color": "tex/furnishings-atlas-color.jpg",
-     "orm": "tex/furnishings-atlas-orm.jpg",
-     "size": 1024,
-     "uv": 1
-    },
     "rc oxblood leather": {
      "kind": "box",
      "space": "world",
@@ -2033,7 +1978,7 @@
    "meshes": 11,
    "file": "railcar-architecture.glb",
    "light": "railcar-architecture-light.webp",
-   "lightRange": 16.0,
+   "lightRange": 128.0,
    "emit": "railcar-architecture-emit.webp",
    "materials": {
     "rc persian carpet": {
@@ -2400,7 +2345,7 @@
     2048
    ],
    "samples": 384,
-   "camera": "ACTIVE_CAMERA",
+   "camera": "Independent diffuse irradiance; static-metal combined field retains prior view",
    "mode": "irradiance",
    "clippedTexels": 0,
    "receiver": "neutral white diffuse, geometric normal; intact authored secondary transport",
@@ -2434,7 +2379,8 @@
     "rc blackened iron",
     "rc 18k gold",
     "rc nickel plate"
-   ]
+   ],
+   "sha256": "f3f074f2d74aca155da1ddbd8eddcfd809666ad65026a45b539d6a59b6866134"
   },
   "furnishings": {
    "file": "railcar-furnishings-appearance.f16.gz",
@@ -2444,7 +2390,7 @@
     4096
    ],
    "samples": 256,
-   "camera": "ACTIVE_CAMERA",
+   "camera": "Independent diffuse irradiance; static-metal combined field retains prior view",
    "mode": "irradiance",
    "clippedTexels": 0,
    "receiver": "neutral white diffuse, geometric normal; intact authored secondary transport",
@@ -2474,7 +2420,6 @@
     "rc japanned black",
     "rc rosewood panel",
     "rc oxblood velvet",
-    "rc longcase dial",
     "rc etched tulip glass",
     "rc label backbar bottle A0",
     "rc label backbar bottle A1",
@@ -2502,8 +2447,6 @@
     "dining_chair_02",
     "vintage_microscope",
     "vintage_microscope_glass",
-    "rc ivory",
-    "rc antique globe",
     "rc oxblood leather",
     "rc laid paper",
     "Heather safe \u2014 black iron",
@@ -2511,7 +2454,8 @@
    ],
    "liveMaterials": [
     "rc mirror"
-   ]
+   ],
+   "sha256": "5ab65e4800b823f83bd453f7e80e230cc230bc5c3c23feaddd1f5707aa2c8e33"
   },
   "architecture": {
    "file": "railcar-architecture-appearance.f16.gz",
@@ -2521,7 +2465,7 @@
     4096
    ],
    "samples": 256,
-   "camera": "ACTIVE_CAMERA",
+   "camera": "Independent diffuse irradiance; static-metal combined field retains prior view",
    "mode": "irradiance",
    "clippedTexels": 0,
    "receiver": "neutral white diffuse, geometric normal; intact authored secondary transport",
@@ -2551,7 +2495,8 @@
    ],
    "liveMaterials": [
     "rc art glass"
-   ]
+   ],
+   "sha256": "096a6d56fa48d980850dbb525f3e47d601cdbfb01c859aa82ee00955cb21bb59"
   }
  },
  "glass": {
@@ -2567,60 +2512,63 @@
   "file": "railcar-windows.glb"
  },
  "sky": "railcar-sky.webp",
- "seconds": 8741,
  "liveAuthoring": "live-authoring.json",
  "manualAssetCredits": "../HEATHER-ASSETS.json",
  "probeOccluders": "probe-occluders.json",
  "source": {
-  "file": "readable-source.blend",
-  "sha256": "404f997a056fcb39bdb46b021fc662969545b7e14a4e548fc7b975f67be98c45",
+  "file": "aperture-source.blend",
+  "sha256": "b6e2dc3aaa2e77d58968bfc4c1723496fdbdc47292f0d50aabf3434eb2f503ff",
   "manualEditsPreserved": true,
-  "lightingEvidence": "lighting-changes.json"
+  "manualSnapshot": {
+   "file": "source.blend",
+   "sha256": "ac56d1248033d40ec22343e87578a2f7527050a8e5a05f1b10aa1f7472620667"
+  },
+  "lightingSnapshot": {
+   "file": "lighting-source.blend",
+   "sha256": "4e6fc91caef602a1e37033c5c2e578743bbdf2064f1d9f0d4012dcd09ca9dc13"
+  },
+  "isolatedLampSnapshot": {
+   "file": "fitted-source.blend",
+   "sha256": "82adc9616578440041a51e2f47dc66a62ef66702deb3af13aa83ea260ca0ae18"
+  },
+  "lightingEvidence": [
+   "room-bake.json",
+   "lamp-bake.json",
+   "aperture-bake.json",
+   "safe-lighting.json"
+  ],
+  "replacementCredits": "../replacement-credits.json"
  },
  "paintingLighting": "painting-lighting.json",
  "geometryRepair": {
-  "kind": "continuous curtain valances",
-  "sourceSha256": "41f3f4951821e5e78862d6b869071c8ce62045ed8f9d7fb8fd812aba75576e92",
-  "geometrySha256": "b4ae936e1a1104bb81a6816321b015e28aa8bc7615ac3e89777443ebd0be5703",
-  "removedInternalCapTriangles": 704,
-  "lightingBakeUnchanged": false,
-  "irradiancePatch": {
-   "file": "railcar-architecture-appearance.f16.gz",
-   "beforeSha256": "61dbeaa5a7f7823b32a71f40bbc4289acb6af3fc97c21c5055c28f51b57df36f",
-   "afterSha256": "df30b1375767b811cab30537eb67649f510b48f78d124076801220e3b33c7381",
-   "size": [
-    4096,
-    4096
-   ],
-   "patchedPixels": 123051,
-   "otherOccupiedChangedPixels": 0,
-   "outsideMaskChangedPixels": 0,
-   "mode": "white diffuse E/pi, RGBA16F",
-   "samples": 256
-  }
+  "kind": "saved manual layout, continuous valances and fitted replacement assets",
+  "sourceSha256": "b6e2dc3aaa2e77d58968bfc4c1723496fdbdc47292f0d50aabf3434eb2f503ff",
+  "evidence": "fitted-audit.json",
+  "unresolvedPairs": 2649,
+  "exposedPairs": 863,
+  "supportFailures": 0,
+  "visualApproval": "Matching captures required separately"
  },
  "interactions": {
   "metadata": "railcar-interactions.json",
   "props": "railcar-interactive-props.glb",
   "lampLighting": "student-lamp-lighting.json",
-  "sourceSha256": "4c06518150487842539161f11a66bf062ec451181180270d0a6a8b1aab10bd36",
+  "sourceSha256": "b6e2dc3aaa2e77d58968bfc4c1723496fdbdc47292f0d50aabf3434eb2f503ff",
   "lightDefault": "student lamp on",
   "music": "Pie Jesu, Faur\u00e9 Requiem, arr. Vadim Ghin / Nikia Players (2026), CC BY-SA 4.0",
   "musicCredits": "../audio/CREDITS.md",
-  "supportLightingPatch": {
-   "file": "railcar-desk-appearance.f16.gz",
-   "beforeSha256": "9b6d84a27c037abbcb4fabdbc3846fbb55839e69eaf5891b4ea270b3e8a0aafd",
-   "afterSha256": "cd569fd523834626e22755ae904707390992804ebe581d59b3bcfb7690d0a619",
-   "size": [
-    2048,
-    2048
-   ],
-   "patchedPixels": 45322,
-   "otherOccupiedChangedPixels": 0,
-   "outsideMaskChangedPixels": 0,
-   "mode": "white diffuse E/pi, RGBA16F",
-   "samples": 384
-  },
-  "roomBaseLighting": "Approved readable-lighting/continuous-valance transport retained; only balance support islands repaired."
+  "roomBaseLighting": "Fresh saved-layout neutral irradiance plus independently baked student-lamp outlet; prior static-metal combined response retained."
+ },
+ "savedLayoutLighting": {
+  "source": "fitted-source.blend",
+  "evidence": "output/railcar/heather-sync",
+  "receiver": "secondary-invisible neutral white; original scene transport",
+  "staticMetalFields": "prior camera-dependent combined response retained"
+ },
+ "additiveLampLighting": {
+  "source": "aperture-source.blend",
+  "sourceSha256": "b6e2dc3aaa2e77d58968bfc4c1723496fdbdc47292f0d50aabf3434eb2f503ff",
+  "method": "full-resolution independently baked outlet added linearly before tone mapping",
+  "evidence": "output/railcar/heather-sync"
  }
 }

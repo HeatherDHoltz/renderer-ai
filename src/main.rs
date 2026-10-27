@@ -16,7 +16,7 @@ use std::{
 };
 
 #[derive(Parser)]
-#[command(version, about = "A reproducible educational Rust CPU renderer")]
+#[command(version, about = "The Diamond Express — offline Rust renderer")]
 struct Cli {
     #[command(subcommand)]
     command: Command,

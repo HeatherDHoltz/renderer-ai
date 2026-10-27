@@ -1,5 +1,5 @@
 // Prepare an isolated Sites checkout; never change the working room exports.
-// Every geometry buffer and compressed lighting byte is retained exactly.
+// Geometry and decoded lighting bits are retained exactly. Lighting may be byte-shuffled before lossless gzip.
 import { cp, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
@@ -20,11 +20,11 @@ for (const name of ["assets", "src", "vendor"])
 for (const name of ["index.html", "gallery.html", "assets", "src", "vendor"])
   await cp(path.join(bench, "dist", name), path.join(destination, name), { recursive: true });
 await mkdir(path.join(destination, "scripts"), { recursive: true });
-for (const file of ["build.mjs", "serve.mjs"])
+for (const file of ["build.mjs", "serve.mjs", "prepare-cuts.mjs"])
   await cp(path.join(bench, "scripts", file), path.join(destination, "scripts", file));
 await writeFile(path.join(destination, ".gitignore"), ".DS_Store\nnode_modules/\ndist/\n");
 await writeFile(path.join(destination, "package.json"), JSON.stringify({
-  name: "the-little-jeweler", private: true, type: "module",
+  name: "the-diamond-express", private: true, type: "module",
   scripts: { build: "node scripts/build.mjs", dev: "node scripts/serve.mjs" },
   engines: { node: ">=20" },
 }, null, 2) + "\n");
@@ -40,6 +40,24 @@ for (const filename of ["cabochon.obj", "solitaire-sample.obj"]) {
   sceneSource = sceneSource.replaceAll(filename, filename + ".gz");
 }
 await writeFile(scenePath, sceneSource);
+// Keep the same three supplementary gallery images at immutable existing
+// public-repository URLs, freeing host archive space for Heather's recordings.
+// Verify every remote byte against the local original before publishing.
+const galleryImages = [];
+for (const file of ["rust-tigers-eye.gif", "rust-gems.png", "mitsuba-tigers-eye.png"]) {
+  const remote = `https://raw.githubusercontent.com/HeatherDHoltz/renderer-ai/edb46820ce54b3281d10cb6d6e5f415b9553b917/workbench/assets/${file}`;
+  const response = await fetch(remote);
+  assert(response.ok, `Existing public gallery image unavailable: ${file}`);
+  const remoteBytes = Buffer.from(await response.arrayBuffer());
+  const localBytes = await readFile(path.join(destination, "assets", file));
+  assert.deepEqual(remoteBytes, localBytes, `Gallery image must remain identical: ${file}`);
+  for (const html of ["index.html", "gallery.html"]) {
+    const htmlPath = path.join(destination, html);
+    await writeFile(htmlPath, (await readFile(htmlPath, "utf8")).replaceAll(`./assets/${file}`, remote));
+  }
+  await rm(path.join(destination, "assets", file));
+  galleryImages.push({ file, remote, sha256: hash(localBytes), byteLength: localBytes.length });
+}
 const exported = path.join(destination, "assets/railcar/export");
 const interactiveGeometry = JSON.parse(await readFile(path.join(exported, "railcar-interactions.json")));
 for (const [group, expected] of Object.entries(interactiveGeometry.geometryHashes))
@@ -48,8 +66,11 @@ for (const [group, expected] of Object.entries(interactiveGeometry.geometryHashe
 // Retired resources are not requested by the current room. Keep authoring
 // originals in the working repository; omit them from the publication only.
 const publishedManifest = JSON.parse(await readFile(path.join(exported, "railcar-manifest.json")));
+const deliveryPath=path.join(destination,'assets/delivery-details.json');
+const deliveryPlan=JSON.parse(await readFile(deliveryPath,'utf8'));
 const activeResponses = new Set(Object.values(publishedManifest.groups)
   .flatMap(group => Object.values(group.materials).map(material => material.bakedResponse)).filter(Boolean));
+for(const entry of Object.values(deliveryPlan.entries))if(entry.kind==='float')activeResponses.add(path.basename(entry.file));
 for (const filename of await readdir(exported)) {
   if (filename.endsWith(".f16.gz") && !activeResponses.has(filename))
     await rm(path.join(exported, filename));
@@ -64,23 +85,50 @@ for (const filename of await readdir(path.join(exported, "tex"))) {
     await rm(path.join(exported, "tex", filename));
 }
 // These props and plaster maps belong to the retired atelier, not this car.
-for (const name of ["props", "materials/plaster-color.jpg", "materials/plaster-normal.jpg", "materials/plaster-roughness.jpg"])
+for (const name of ["props", "materials/window-forest.hdr", "materials/plaster-color.jpg", "materials/plaster-normal.jpg", "materials/plaster-roughness.jpg"])
   await rm(path.join(destination, "assets", name), { force: true, recursive: true });
 const manifestPath = path.join(exported, "railcar-manifest.json");
 const originalManifest = await readFile(path.join(bench, "dist/assets/railcar/export/railcar-manifest.json"));
 let manifestText = await readFile(manifestPath, "utf8");
-const evidence = { sourceManifestSha256: hash(originalManifest), geometry: [], streams: [] };
+const evidence = { sourceManifestSha256: hash(originalManifest), geometry: [], streams: [], galleryImages };
+evidence.delivery={version:deliveryPlan.version,tradeoffs:deliveryPlan.tradeoffs || 'Original source quality'};
 const limit = 8 * 1024 * 1024;
+const transportPaths=new Map();
 for (const filename of await readdir(exported)) {
   const input = path.join(exported, filename);
-  if ((await stat(input)).size <= limit && !(["railcar-desk.glb", "railcar-glass.glb", "railcar-interactive-props.glb", "railcar-interactions.json"].includes(filename))) continue;
-  const original = await readFile(input);
+  if ((await stat(input)).size <= limit && !filename.endsWith(".f16.gz") && !(["railcar-desk.glb", "railcar-glass.glb", "railcar-interactive-props.glb", "railcar-interactions.json"].includes(filename))) continue;
+  let original = await readFile(input);
+  if (filename.endsWith('.f16.gz')) {
+    const decoded = gunzipSync(original), count = (decoded.length - 8) / 8;
+    if (!(decoded.readUInt32LE(0) & 0x80000000)) {
+      const shuffled = Buffer.allocUnsafe(decoded.length); decoded.copy(shuffled,0,0,8);
+      shuffled.writeUInt32LE((decoded.readUInt32LE(0) | 0x80000000) >>> 0,0);
+      for(let byte=0;byte<8;byte++)for(let i=0;i<count;i++)shuffled[8+byte*count+i]=decoded[8+i*8+byte];
+      const compressed=gzipSync(shuffled,{level:9});
+      if(compressed.length<original.length){
+        const restored=Buffer.allocUnsafe(decoded.length);decoded.copy(restored,0,0,8);
+        for(let byte=0;byte<8;byte++)for(let i=0;i<count;i++)restored[8+i*8+byte]=shuffled[8+byte*count+i];
+        assert.deepEqual(restored,decoded);
+        evidence.streams.push({file:filename,encoding:'lossless half-float byte shuffle + gzip',decodedSha256:hash(decoded),originalBytes:original.length,packedBytes:compressed.length});
+        original=compressed;
+      }
+    }
+  }
   if (filename.endsWith(".glb")) {
     const compressed = gzipSync(original, { level: 9 });
     assert.deepEqual(gunzipSync(compressed), original);
-    if (compressed.length > limit) throw new Error("Compressed GLB exceeds source delivery limit");
-    await writeFile(input + ".gz", compressed);
-    manifestText = manifestText.replaceAll(filename, filename + ".gz");
+    if (compressed.length > limit) {
+      const parts=[];
+      for(let offset=0,i=0;offset<compressed.length;offset+=limit,i++){
+        const data=compressed.subarray(offset,offset+limit),file=filename+'.gz.part-'+i;
+        await writeFile(path.join(exported,file),data);parts.push({file,byteLength:data.length});
+      }
+      await writeFile(input+'.gz.parts.json',JSON.stringify({version:1,byteLength:compressed.length,sha256:hash(compressed),parts})+'\n');
+      manifestText=manifestText.replaceAll(filename,filename+'.gz.parts.json');
+    } else {
+      await writeFile(input + ".gz", compressed);
+      manifestText = manifestText.replaceAll(filename, filename + ".gz");
+    }
     evidence.geometry.push({ file: filename, sourceSha256: hash(original),
       encoding: "lossless gzip", gzipBytes: compressed.length });
   } else if (filename === "railcar-interactions.json") {
@@ -102,17 +150,24 @@ for (const filename of await readdir(exported)) {
     const record = { version: 1, byteLength: original.length, sha256: hash(original), parts };
     await writeFile(input + ".parts.json", JSON.stringify(record) + "\n");
     manifestText = manifestText.replaceAll(filename, filename + ".parts.json");
+    transportPaths.set(filename,filename+'.parts.json');
     evidence.streams.push({ file: filename, sha256: record.sha256, byteLength: record.byteLength, parts: parts.length });
   } else throw new Error(`Unexpected large delivery asset: ${filename}`);
   await rm(input);
 }
 await writeFile(manifestPath, manifestText);
+for(const entry of Object.values(deliveryPlan.entries)) {
+  const replacement=transportPaths.get(path.basename(entry.file));
+  if(replacement)entry.file=path.posix.join(path.posix.dirname(entry.file),replacement);
+}
+await writeFile(deliveryPath,JSON.stringify(deliveryPlan)+'\n');
 await writeFile(path.join(destination, "PUBLICATION.json"), JSON.stringify(evidence, null, 2) + "\n");
 await writeFile(path.join(destination, "README.md"),
-  "# The Little Jeweler\n\nStatic publication source for Heather Holtz’s interactive workbench. " +
+  "# The Diamond Express\n\nStatic publication source for Heather Holtz’s interactive workbench. " +
   "Full authoring source and credits: https://github.com/HeatherDHoltz/renderer-ai\n\n" +
-  "Run `npm run build`. Geometry buffer views and lighting streams are packed losslessly; " +
-  "PUBLICATION.json records exact source hashes. The current room is a work in progress.\n");
+  "Run `npm run build`. This delivery uses smaller images/lightmaps, a lighter default ring, " +
+  "and optional room detail loaded after focus. Authoring originals remain in the main repository. " +
+  "Transport is lossless after those intentional quality changes; PUBLICATION.json records delivery hashes.\n");
 console.log(JSON.stringify(evidence, null, 2));
 
 function hash(bytes) { return createHash("sha256").update(bytes).digest("hex"); }

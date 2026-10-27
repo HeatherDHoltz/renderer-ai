@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Heather Holtz’s railcar, gemstone rendering experiments, and interactive jeweler’s workbench. View the project without interactive graphics." />
-    <title>The Little Jeweler · Image gallery</title>
+    <meta name="description" content="The Diamond Express by Heather Holtz: a Victorian railcar, gemstone studies and an interactive workshop. View the project without interactive graphics." />
+    <title>The Diamond Express · Image gallery</title>
     <link rel="stylesheet" href="./src/gallery.css" />
   </head>
   <body>
     <header>
-      <a href="./">The Little Jeweler</a>
+      <a href="./">The Diamond Express</a>
       <nav aria-label="Gallery menu"><a href="./?interactive">Explore in 3D ↗</a><a href="https://github.com/HeatherDHoltz/renderer-ai">Source on GitHub ↗</a></nav>
     </header>
     <main>
@@ -23,16 +23,16 @@
           <figcaption>The bench. The room was modeled in Blender and lit in Cycles; gemstones, jewelry, and moving objects are rendered live in the browser.</figcaption>
         </figure>
         <div class="pair">
-          <figure><a href="./assets/railcar/gallery-room.jpg"><img src="./assets/railcar/gallery-room.jpg" width="1920" height="1080" loading="lazy" alt="The fireplace end of the railcar, with its armchair, painting, gramophone, and bookshelves" /></a><figcaption>Around the room. Wood, velvet, brass, paintings, and pools of lamplight.</figcaption></figure>
+          <figure><a href="./assets/railcar/gallery-room.jpg"><img src="./assets/railcar/gallery-room.jpg" width="1920" height="1080" loading="lazy" alt="The railcar fireplace and brass screen, with a velvet armchair, a book and drink on the small table, and the safe at the edge" /></a><figcaption>Around the room. Wood, velvet, brass, paintings, and pools of lamplight.</figcaption></figure>
           <figure><a href="./assets/railcar/gallery-loupe.jpg"><img src="./assets/railcar/gallery-loupe.jpg" width="1920" height="1080" loading="lazy" alt="A faceted diamond and gold ring enlarged through the brass jeweler’s loupe" /></a><figcaption>Through the loupe. The gemstone shader follows refraction, absorption, and internal reflections through the cut.</figcaption></figure>
         </div>
       </section>
       <section aria-labelledby="studies-title">
         <h2 id="studies-title">How it started</h2>
         <div class="studies">
-          <figure><img src="./assets/rust-gems.png" loading="lazy" alt="Six colored faceted gemstones rendered by the Rust CPU ray tracer" /><figcaption><h3>Faceted gemstones · Rust</h3><p>Offline reflection and refraction studies.</p><a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/GEMS.md">Code and render settings ↗</a></figcaption></figure>
+          <figure><img src="./assets/rust-gems.png" loading="lazy" alt="Six colored faceted gemstones rendered by the Rust CPU ray tracer" /><figcaption><h3>Faceted gemstones · Rust</h3><p>Offline reflection and refraction studies.</p><a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/scripts/render_gem_gallery.py">Code and render settings ↗</a></figcaption></figure>
           <figure><img src="./assets/rust-tigers-eye.gif" loading="lazy" alt="A moving golden highlight on a tiger’s-eye-inspired stone rendered in Rust" /><figcaption><h3>Tiger’s eye · Rust</h3><p>A surface model with a directional highlight.</p></figcaption></figure>
-          <figure><img src="./assets/mitsuba-tigers-eye.png" loading="lazy" alt="A tiger’s-eye material with fibers beneath a clear shell, rendered in Mitsuba" /><figcaption><h3>Fiber depth · Mitsuba</h3><p>A separate layered scattering study, with some remaining sampling noise.</p><a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/docs/MITSUBA.md">Material setup ↗</a></figcaption></figure>
+          <figure><img src="./assets/mitsuba-tigers-eye.png" loading="lazy" alt="A tiger’s-eye material with fibers beneath a clear shell, rendered in Mitsuba" /><figcaption><h3>Fiber depth · Mitsuba</h3><p>A separate layered scattering study, with some remaining sampling noise.</p><a href="https://github.com/HeatherDHoltz/renderer-ai/blob/main/scripts/render_mitsuba_tigers_eye.py">Material setup ↗</a></figcaption></figure>
         </div>
       </section>
       <section class="about" aria-labelledby="about-title">
@@ -46,6 +46,6 @@
         <p><a class="action" href="./?interactive">Try the interactive workbench ↗</a></p>
       </section>
     </main>
-    <footer>The Little Jeweler · Heather Holtz</footer>
+    <footer>The Diamond Express · Heather Holtz</footer>
   </body>
 </html>

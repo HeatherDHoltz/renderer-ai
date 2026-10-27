@@ -1,6 +1,7 @@
 import * as THREE from '../vendor/three.module.js';
 import { createRoomAudio } from './room-audio.js';
 import { mergeGeometries } from '../vendor/addons/utils/BufferGeometryUtils.js';
+import { createRoomClock } from './room-clock.js';
 
 const smooth = x => { x = THREE.MathUtils.clamp(x, 0, 1); return x * x * (3 - 2 * x); };
 const nameOf = o => (o.userData.name || o.name).replaceAll('_', ' ');
@@ -56,13 +57,13 @@ function separateParts(car, metadata) {
   return parts;
 }
 
-export function createRoomInteractions({ car, props, metadata, lampUniform, hearth, fireUniform, liveMaterial, propMaterial }) {
-  const audio = createRoomAudio(), targets = [], parts = separateParts(car, metadata), ownedMaterials = new Set();
+export function createRoomInteractions({ car, props, metadata, lampUniform, hearth, fireUniform, safeOpenUniform, safeAngleUniform, liveMaterial, propMaterial }) {
+  const audio = createRoomAudio(), targets = [], parts = separateParts(car, metadata), ownedMaterials = new Set(), ownedGeometries = new Set();
   car.add(props);
   let revision = 0, last = null, safeProgress = 0, safeGoal = 0, safeBusy = false;
   let globeAngle = 0, globeStart = 0, globeEnd = 0, globeAt = -Infinity, globeDuration = 5;
-  let gramOn = false, gramRequest = 0, gramSpeed = 0, inhaleAt = -Infinity, stokeAt = -Infinity;
-  let tilt = 0, tiltVelocity = 0, crackleAt = 0, fireReset;
+  let gramOn = false, gramRequest = 0, armProgress = 0, armGoal = 0, inhaleAt = -Infinity, stokeAt = -Infinity;
+  let tilt = 0, tiltVelocity = 0, fireReset;
   const onScale = [false, false, false, false, false], masses = [2, 1, .5, .2, .1];
   const root = new THREE.Group(); root.name = 'Interactive room assemblies'; car.add(root);
   function assembly(name, pivot, filter, parent = root) {
@@ -94,20 +95,54 @@ export function createRoomInteractions({ car, props, metadata, lampUniform, hear
   }
   function mark(group, id, label) {
     const action = { kind: 'room', value: id, label };
-    group.traverse(o => { if (o.isMesh) { o.userData.action = action; targets.push(o); } });
+    group.traverse(o => { if (o.isMesh) { o.userData.action = action; if (!targets.includes(o)) targets.push(o); } });
   }
   const shellNames = new Set(['safe back','safe floor','safe left wall','safe right wall','safe roof']);
   assembly('Safe interior and carcass', [0,0,0], n => shellNames.has(n));
   const hinge = [-21.3965, -5.595, -5.0465];
-  const safe = assembly('Safe hinged door', hinge, n => n.startsWith('safe ') && !shellNames.has(n) && !n.startsWith('safe handle ') && !n.startsWith('safe combination dial') && !n.startsWith('safe dial '));
+  const isDial = n => n === 'safe combination dial' || n.startsWith('safe dial ') || n.startsWith('safe Victorian dial number ');
+  const safe = assembly('Safe hinged door', hinge, n => n.startsWith('safe ') && !shellNames.has(n) && !n.startsWith('safe handle ') && !isDial(n));
   // Handle and dial belong to the door; their own spin axes follow its swing.
   const handle = assembly('Safe turning handle', [-20.8835, -5.8125, -3.6555], n => /^safe handle (hub|knob|spoke)/.test(n));
   safe.attach(handle);
   const handleBase = assembly('Safe handle escutcheon', hinge, n => n === 'safe handle base'); safe.attach(handleBase);
-  const dial = assembly('Safe combination wheel', metadata.objects['safe combination dial'].center, n => n === 'safe combination dial' || n.startsWith('safe dial ')); safe.attach(dial);
-  mark(safe, 'safe', 'Open / close the safe');
-  const globe = assembly('Spinning globe', metadata.objects.globe.center, n => n === 'globe');
-  const globeAxis = vec(metadata.objects.globe.axis).normalize(); mark(globe, 'globe', 'Spin the globe');
+  const dial = assembly('Safe combination wheel', metadata.objects['safe combination dial'].center, isDial); safe.attach(dial);
+  mark(safe, 'safe-door', 'Look at the safe / push the open door closed');
+  mark(handle, 'safe-control', 'Turn the handle to open / close the safe');
+  mark(dial, 'safe-control', 'Turn the lock to open / close the safe');
+  const globeInfo = metadata.replacements?.globe;
+  const globeCenter = globeInfo?.center || metadata.objects.globe.center;
+  const globe = assembly('Spinning globe', globeCenter, n => n === 'globe');
+  if (globeInfo) {
+    let sphere;
+    props.traverse(o=>{if(nameOf(o)===globeInfo.sphere)sphere=o;});
+    if(!sphere)throw Error('Replacement globe sphere is missing');
+    const material=propMaterial?.(sphere.material,sphere);
+    if(material){sphere.material=material;ownedMaterials.add(material);}
+    car.updateMatrixWorld(true);globe.attach(sphere);
+  }
+  const globeMeshes = [];
+  globe.traverse(o => { if (o.isMesh) globeMeshes.push(o); });
+  if (metadata.globeProjection && !globeInfo) {
+    const north=vec(metadata.globeProjection.north).normalize(), prime=vec(metadata.globeProjection.prime).normalize();
+    const east=new THREE.Vector3().crossVectors(north,prime).normalize(), center=vec(metadata.objects.globe.center);
+    car.updateMatrixWorld(true);
+    for(const mesh of globeMeshes) {
+      const original=mesh.geometry, geometry=original.index ? original.toNonIndexed() : original.clone();
+      const positions=geometry.attributes.position, values=new Float32Array(positions.count*2);
+      for(let i=0;i<positions.count;i++) {
+        const p=new THREE.Vector3().fromBufferAttribute(positions,i).applyMatrix4(mesh.matrixWorld).sub(center).normalize();
+        values[i*2]=.5+Math.atan2(p.dot(east),p.dot(prime))/(2*Math.PI);
+        values[i*2+1]=.5+Math.asin(THREE.MathUtils.clamp(p.dot(north),-1,1))/Math.PI;
+      }
+      for(let i=0;i<positions.count;i+=3) {
+        const u=[values[i*2],values[(i+1)*2],values[(i+2)*2]];
+        if(Math.max(...u)-Math.min(...u)>.5)for(let k=0;k<3;k++)if(values[(i+k)*2]<.5)values[(i+k)*2]+=1;
+      }
+      geometry.setAttribute('uv2',new THREE.BufferAttribute(values,2)); mesh.geometry=geometry; original.dispose();
+    }
+  }
+  const globeAxis = vec(globeInfo?.axis || metadata.globeProjection?.north || metadata.objects.globe.axis).normalize(); mark(globe, 'globe', 'Spin the globe');
   const leftInfo = metadata.objects['balance pan -1'], rightInfo = metadata.objects['balance pan 1'];
   const leftAt = vec(leftInfo.center), rightAt = vec(rightInfo.center);
   const beamAt = metadata.objects['balance beam'].center;
@@ -116,6 +151,7 @@ export function createRoomInteractions({ car, props, metadata, lampUniform, hear
   const beamAxis = new THREE.Vector3(0, 1, 0).cross(direction).normalize();
   const left = assembly('Balance left suspension', leftInfo.center, n => n === 'balance pan -1' || n.startsWith('pan wire -1'));
   const right = assembly('Balance right suspension', rightInfo.center, n => n === 'balance pan 1' || n.startsWith('pan wire 1'));
+  mark(right, 'weight-pan', 'Choose the nearest weight on this side of the scale');
   const weights = masses.map((_, i) => {
     const body = i < 3 ? `weight ${i}.001` : `weight ${i}`;
     const g = assembly(`Clickable weight ${i}`, metadata.objects[body].center, n => n === body || n === `weight knob ${i}`);
@@ -125,6 +161,11 @@ export function createRoomInteractions({ car, props, metadata, lampUniform, hear
   // Fixed authored surfaces get bounds for picking only. Invisible materials do
   // not draw, but raycasting still sees the proxy. Main picking checks occlusion.
   const pickMaterial = new THREE.MeshBasicMaterial({ visible: false }); ownedMaterials.add(pickMaterial);
+  // A generous moving hit volume covers the receiving bowl and its suspension.
+  const panProxy = new THREE.Mesh(new THREE.CylinderGeometry(.52,.52,1.6,24),pickMaterial);
+  panProxy.name='Forgiving right weight pan'; panProxy.position.y=.65; right.add(panProxy);
+  panProxy.userData.action={kind:'room',value:'weight-pan',label:'Choose the nearest weight on this side of the scale'};
+  targets.push(panProxy);
   for (const [name, info] of Object.entries(metadata.objects)) if (name.startsWith('student lamp ') || name.startsWith('fire iron ')) {
     const size = vec(info.max).sub(vec(info.min)).addScalar(.045);
     const proxy = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), pickMaterial);
@@ -133,36 +174,31 @@ export function createRoomInteractions({ car, props, metadata, lampUniform, hear
     targets.push(proxy);
   }
   const record = [], cigar = [], ember = [];
+  let tonearm;
+  props.traverse(o => { if (nameOf(o) === 'gramophone tonearm') tonearm = o; });
+  if (!tonearm) throw new Error('Gramophone tonearm is missing');
   props.traverse(o => {
     if (!o.isMesh) return;
     o.castShadow = true; o.receiveShadow = true;
-    const replacement = propMaterial?.(o.material);
+    const replacement = propMaterial?.(o.material, o);
     if (replacement) { o.material = replacement; ownedMaterials.add(replacement); }
     const name = nameOf(o);
-    if (name.startsWith('gramophone')) { o.userData.action = { kind: 'room', value: 'gramophone', label: 'Play / stop the gramophone' }; targets.push(o); }
+    // Static dressing already casts shadows in the room bake. Keep it out
+    // of the desk atlas; clock hands must not dirty its 18 views continuously.
+    if (name.startsWith('replacement clock ') || name.startsWith('replacement cigar ') || name === 'replacement globe stand') o.castShadow=false;
+    if (name.startsWith('gramophone')) { o.userData.action = { kind: 'room', value: name === 'gramophone tonearm' ? 'gramophone-tonearm' : 'gramophone', label: name === 'gramophone tonearm' ? 'Lower / raise the tonearm' : 'Look at the gramophone' }; targets.push(o); }
     if (name === 'gramophone record' || name === 'gramophone record label') { record.push(o); o.castShadow = false; }
-    if (name.startsWith('cigar') || name.startsWith('ashtray')) { o.userData.action = { kind: 'room', value: 'cigar', label: 'Draw on the cigar' }; targets.push(o); cigar.push(o); }
+    if (name.startsWith('cigar') || name.startsWith('ashtray') || name.startsWith('replacement cigar')) { o.userData.action = { kind: 'room', value: 'cigar', label: 'Draw on the cigar' }; targets.push(o); cigar.push(o); }
     if (name === 'cigar ember') { o.material = o.material.clone(); ownedMaterials.add(o.material); ember.push(o); }
   });
-  const labelSource = record.find(o=>nameOf(o)==='gramophone record label');
-  let labelTexture;
-  if (labelSource) {
-    const canvas=document.createElement('canvas');canvas.width=canvas.height=512;
-    const c=canvas.getContext('2d');c.fillStyle='#b99a5b';c.fillRect(0,0,512,512);
-    c.strokeStyle=c.fillStyle='#342116';c.lineWidth=7;c.beginPath();c.arc(256,256,235,0,Math.PI*2);c.stroke();
-    c.textAlign='center';c.font='bold 46px Georgia';c.fillText('FAURÉ',256,148);
-    c.font='bold 53px Georgia';c.fillText('PIE JESU',256,232);
-    c.font='27px Georgia';c.fillText('REQUIEM · OP. 48',256,293);
-    c.font='22px Georgia';c.fillText('NIKIA PLAYERS',256,370);
-    labelTexture=new THREE.CanvasTexture(canvas);labelTexture.colorSpace=THREE.SRGBColorSpace;
-    labelSource.updateWorldMatrix(true,false);labelSource.geometry.computeBoundingSphere();
-    const at=labelSource.geometry.boundingSphere.center.clone().applyMatrix4(labelSource.matrixWorld);at.y+=.004;
-    const material=new THREE.MeshBasicMaterial({map:labelTexture,color:0x777777});ownedMaterials.add(material);
-    const label=new THREE.Mesh(new THREE.CircleGeometry(.255,64),material);label.name='Printed gramophone label';
-    label.position.copy(props.worldToLocal(at));label.rotation.x=-Math.PI/2;label.userData.action={kind:'room',value:'gramophone',label:'Play / stop the gramophone'};
-    props.add(label);targets.push(label);record.push(label);labelSource.visible=false;
+  const clock = createRoomClock({props,rig:metadata.replacements?.clock,audio,mark});
+  const smokeAt = vec(metadata.replacements?.cigar.ember || [-7.807, -1.135, -2.7]);
+  if (metadata.replacements?.cigar) {
+    const material=new THREE.MeshStandardMaterial({color:0x170502,emissive:0xff2402,emissiveIntensity:.6,roughness:1});
+    const tip=new THREE.Mesh(new THREE.SphereGeometry(.035,12,8),material);
+    tip.name='Live smoldering cigar tip';tip.position.copy(smokeAt);root.add(tip);
+    tip.userData.action={kind:'room',value:'cigar',label:'Draw on the cigar'};targets.push(tip);ember.push(tip);ownedMaterials.add(material);ownedGeometries.add(tip.geometry);
   }
-  const smokeAt = new THREE.Vector3(-7.807, -1.135, -2.7);
   const smokeGeometry = new THREE.BufferGeometry(), smokePositions = new Float32Array(24 * 3), smokeAlpha = new Float32Array(24);
   smokeGeometry.setAttribute('position', new THREE.BufferAttribute(smokePositions, 3)); smokeGeometry.setAttribute('opacity', new THREE.BufferAttribute(smokeAlpha, 1));
   const smokeMaterial = new THREE.ShaderMaterial({ transparent: true, depthWrite: false,
@@ -174,40 +210,101 @@ export function createRoomInteractions({ car, props, metadata, lampUniform, hear
   const frustum = new THREE.Frustum(), matrix = new THREE.Matrix4(), box = new THREE.Box3();
   function visible(camera, object) { matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); frustum.setFromProjectionMatrix(matrix); box.setFromObject(object); return frustum.intersectsBox(box); }
   function bump() { revision++; }
-  function state() { return { lampOn: lampUniform.value > .5, safeProgress, safeGoal, globeAngle, gramophone: gramOn, weights: onScale.slice(), tilt, fireBoost: fireUniform.value, audio: audio.state, revision }; }
+  function state() { return { lampOn: lampUniform.value > .5, safeProgress, safeGoal, safeDoorAngle:safe.rotation.y, globeAngle, clock:clock?.state || null, gramophone: gramOn, armProgress, armGoal, recordSpinning: true, weights: onScale.slice(), tilt, fireBoost: fireUniform.value, audio: audio.state, revision }; }
   function activate(id) {
+    if (id.startsWith('clock-')) return clock?.activate(id) || '';
     if (id === 'lamp') { lampUniform.value = 1 - lampUniform.value; audio.sound('lamp'); bump(); return lampUniform.value ? 'Student lamp lit.' : 'Student lamp extinguished.'; }
-    if (id === 'safe') { if (!safeBusy) { safeGoal = 1 - safeGoal; safeBusy = true; audio.sound('safe'); bump(); } return safeGoal ? 'Opening the safe.' : 'Closing the safe.'; }
-    if (id === 'globe') { globeStart = globeAngle; globeEnd = globeAngle + Math.PI * 2 * (2 + Math.random() * 2); globeDuration = 4.5 + Math.random() * 1.5; globeAt = performance.now() / 1000; audio.sound('globe'); bump(); return 'The globe is spinning.'; }
-    if (id === 'gramophone') {
-      gramOn = !gramOn; const requested = gramOn, request = ++gramRequest; audio.sound('lamp');
-      audio.gramophone(requested).then(ok => { if (request === gramRequest && requested && !ok && gramOn) { gramOn = false; bump(); } }); bump();
-      return gramOn ? 'The gramophone is playing.' : 'Gramophone stopped.';
+    if (id === 'safe-control') { if (!safeBusy) { safeGoal = 1 - safeGoal; safeBusy = true; audio.sound(safeGoal ? 'safe-open' : 'safe-close'); bump(); } return safeGoal ? 'Opening the safe.' : 'Closing the safe.'; }
+    if (id === 'globe') { globeStart = globeAngle; globeEnd = globeAngle + Math.PI * 2 * (2 + Math.random() * 2); globeDuration = 1.99351; globeAt = performance.now() / 1000; audio.sound('globe'); bump(); return 'The globe is spinning.'; }
+    if (id === 'gramophone') return 'Click the tonearm to lower it onto the spinning record.';
+    if (id === 'gramophone-tonearm') {
+      armGoal = 1 - armGoal;
+      gramOn = !!armGoal; const requested = gramOn, request = ++gramRequest;
+      audio.gramophone(requested, { delay: requested ? 1.3 : 0 }).then(ok => { if (request === gramRequest && requested && !ok && gramOn) { gramOn = false; armGoal = 0; bump(); } }); bump();
+      return gramOn ? 'Lowering the tonearm. The gramophone is playing.' : 'Lifting the tonearm. Gramophone stopped.';
     }
     if (id === 'cigar') { inhaleAt = performance.now() / 1000; audio.sound('cigar'); bump(); return 'The cigar ember glows.'; }
     if (id === 'poker') { stokeAt = performance.now() / 1000; audio.sound('poker'); bump(); clearTimeout(fireReset); fireReset = setTimeout(() => { audio.fire(0); }, 7000); return 'Fire stoked.'; }
     const match = /^weight-([0-4])$/.exec(id);
-    if (match) { const i = Number(match[1]); onScale[i] = !onScale[i]; audio.sound('weight'); bump(); return onScale[i] ? 'Weight placed on the scale.' : 'Weight returned to its tray.'; }
+    if (match) { const i = Number(match[1]); onScale[i] = !onScale[i]; audio.sound('weight', { rate: 2 ** ([0, 2, 4, 6, 8][i] / 12), group: `weight-${i}` }); bump(); return onScale[i] ? 'Weight placed on the scale.' : 'Weight returned to its tray.'; }
     return '';
   }
   return {
     targets, activate, audio, root,
+    weightAt(point, area) {
+      // Actual tray surfaces get a generous margin; the moving pan follows its suspension.
+      const tray = point.x >= -2.83 && point.x <= -1.16 && point.z >= -4.85 && point.z <= -3.55 && point.y >= -1.65 && point.y <= -.65;
+      const pan = area === 'pan' || Math.hypot(point.x-right.position.x,point.z-right.position.z)<.56 && Math.abs(point.y-right.position.y)<.65;
+      let candidates=weights.map((w,i)=>({w,i})).filter(({i})=>tray ? !onScale[i] : pan ? onScale[i] : false);
+      if(!tray && !pan)return null;
+      if(!candidates.length)candidates=weights.map((w,i)=>({w,i}));
+      candidates.sort((a,b)=> {
+        const da=a.w.g.position,db=b.w.g.position;
+        return (da.x-point.x)**2+(da.z-point.z)**2-((db.x-point.x)**2+(db.z-point.z)**2);
+      });
+      return {kind:'room',value:`weight-${candidates[0].i}`,label:onScale[candidates[0].i]?'Return the nearest weight to its tray':'Place the nearest weight on the scale'};
+    },
+    locationAt(point) {
+      const regions = [
+        ['gramophone', [-24.5,-2.3,-5.1],[-21,1.7,-1.1]],
+        ['safe',[-25.1,-9.1,-5.6],[-20.6,-2.25,-.7]],
+        ['clock',[8.5,-9.1,-11.1],[14.9,14.8,-5.8]],
+        ['fireplace',[-26.5,-9.1,4.5],[-21.5,4,12.5]],
+        ['globe',[16.4,-9.1,-9.9],[23.4,1.3,-2.9]],
+        ['desk',[-9,-4.2,-6.4],[9,.1,4.0]],
+      ];
+      return regions.find(([,lo,hi]) => point.x>=lo[0] && point.x<=hi[0] && point.y>=lo[1] && point.y<=hi[1] && point.z>=lo[2] && point.z<=hi[2])?.[0] || null;
+    },
+    locationView(id, aspect) {
+      if (id === 'gramophone') return this.gramophoneView(aspect);
+      const spec = {
+        globe: { center:globeCenter, size:[6.7,6.7,6.7], direction:[-1,.32,.35] },
+        clock: { center:metadata.replacements?.clock.view?.center || [11.7,2.6,-7.4], size:metadata.replacements?.clock.view?.size || [5.7,23.5,4.8], direction:[-.12,.08,1] },
+        safe: { center:[-22.7,-5.6,-3.1], size:[4.3,6.8,4.6], direction:[1,.28,0] },
+        fireplace: { center:[-24,-4.7,8.5], size:[2,7,6.8], direction:[1,.5,0] },
+      }[id];
+      if (!spec) throw new Error('Unknown fixed room view: '+id);
+      const center=vec(spec.center), direction=vec(spec.direction).normalize();
+      const fov=aspect<.8?52:40, tan=Math.tan(THREE.MathUtils.degToRad(fov/2));
+      const view=new THREE.PerspectiveCamera(); view.position.copy(center).add(direction); view.lookAt(center);
+      const right=new THREE.Vector3(1,0,0).applyQuaternion(view.quaternion), up=new THREE.Vector3(0,1,0).applyQuaternion(view.quaternion);
+      let distance=0;
+      for(const x of [-1,1])for(const y of [-1,1])for(const z of [-1,1]) {
+        const corner=new THREE.Vector3(x*spec.size[0]/2,y*spec.size[1]/2,z*spec.size[2]/2);
+        distance=Math.max(distance,corner.dot(direction)+Math.abs(corner.dot(right))/(tan*aspect),corner.dot(direction)+Math.abs(corner.dot(up))/tan);
+      }
+      return {center,position:center.clone().addScaledVector(direction,distance*1.08),quaternion:view.quaternion.clone(),fov};
+    },
+    gramophoneView(aspect) {
+      car.updateMatrixWorld(true);
+      const cabinet = targets.find(o => nameOf(o) === 'gramophone Rigdhi cabinet and horn');
+      const bounds = new THREE.Box3().setFromObject(cabinet);
+      const center = bounds.getCenter(new THREE.Vector3());
+      const size = bounds.getSize(new THREE.Vector3());
+      const distance = Math.max(size.y, size.z / aspect) / (2 * Math.tan(THREE.MathUtils.degToRad(20))) * 1.24;
+      const position = center.clone().add(new THREE.Vector3(distance * .88, distance * .60, -distance * .70));
+      const view = new THREE.PerspectiveCamera(); view.position.copy(position); view.lookAt(center);
+      return { position, center, quaternion: view.quaternion.clone() };
+    },
     shadowRoots: { dressing: {root:props}, balanceBeam: {root:beam}, balanceLeft: {root:left}, balanceRight: {root:right}, ...Object.fromEntries(weights.map((w,i)=>[`weight${i}`,{root:w.g}])) },
     get revision() { return revision; },
-    get moving() { return safeBusy || performance.now() / 1000 - globeAt < globeDuration || Math.abs(tiltVelocity) > .0005 || Math.abs(tilt - targetTilt()) > .0001; },
+    get moving() { return clock?.moving || Math.abs(armProgress - armGoal) > .0001 || safeBusy || performance.now() / 1000 - globeAt < globeDuration || Math.abs(tiltVelocity) > .0005 || Math.abs(tilt - targetTilt()) > .0001; },
     get state() { return state(); },
-    needsAnimation(camera) { return this.moving || (gramOn && visible(camera, props)) || visible(camera, cigar[0] || smoke); },
+    needsAnimation(camera) { return this.moving || visible(camera, props) || visible(camera, cigar[0] || smoke); },
     animate(t, motion, camera, renderer) {
       const dt = last === null ? 0 : Math.min(.05, Math.max(0, t - last)); last = t;
       let changed = false;
+      changed ||= clock?.animate(t,camera) || false;
       if (safeBusy) {
-        const old = safeProgress; safeProgress = THREE.MathUtils.clamp(safeProgress + (safeGoal ? 1 : -1) * dt / 2.4, 0, 1);
+        const old = safeProgress; safeProgress = THREE.MathUtils.clamp(safeProgress + (safeGoal ? 1 : -1) * dt / 3.05, 0, 1);
         const p = safeProgress;
-        safe.rotation.y = smooth((p - .22) / .78) * Math.PI * .58;
-        handle.rotation.x = smooth(p / .25) * Math.PI * .65;
-        dial.rotation.x = smooth(p / .20) * Math.PI * 2;
+        safe.rotation.y = smooth((p - .65) / .35) * Math.PI * .58;
+        if (safeAngleUniform) safeAngleUniform.value=safe.rotation.y;
+        if (safeOpenUniform) safeOpenUniform.value = Math.sin(Math.min(Math.PI / 2, safe.rotation.y));
+        handle.rotation.x = smooth(p / .65) * Math.PI * .65;
+        dial.rotation.x = smooth(p / .65) * Math.PI * 2;
         changed ||= old !== p;
-        if (p === safeGoal) { safeBusy = false; audio.sound('safe-end'); }
+        if (p === safeGoal) { safeBusy = false; }
       }
       if (t - globeAt < globeDuration) {
         const p = THREE.MathUtils.clamp((t - globeAt) / globeDuration, 0, 1);
@@ -230,13 +327,21 @@ export function createRoomInteractions({ car, props, metadata, lampUniform, hear
         if (!g.position.equals(at)) { g.position.copy(at); changed = true; }
       });
       let cacheChanged = changed;
-      const speedGoal = gramOn ? 1 : 0; gramSpeed += (speedGoal - gramSpeed) * (1 - Math.exp(-dt * 4));
-      if (gramSpeed > .001) { for (const r of record) r.rotateOnWorldAxis(new THREE.Vector3(0,1,0), dt * 8.168 * gramSpeed); changed = true; }
+      // Only the record spins. The hand crank remains a static mesh.
+      for (const r of record) r.rotateOnAxis(new THREE.Vector3(0,1,0), -dt * 8.168);
+      if (record.length) changed = true;
+      if (armProgress !== armGoal) {
+        armProgress = THREE.MathUtils.clamp(armProgress + (armGoal ? 1 : -1) * dt / 1.35, 0, 1);
+        // First swing over the disc while lifted, then lower the needle.
+        const lift = -.3 * (1 - smooth((armProgress - .55) / .45));
+        const swing = .8 * (1 - smooth(armProgress / .65));
+        tonearm.quaternion.setFromEuler(new THREE.Euler(lift, swing, 0, 'YZX'));
+        changed = true; cacheChanged = true;
+      }
       const age = t - stokeAt;
       const boost = age >= 0 && age < 7 ? Math.sin(Math.min(1, age / .38) * Math.PI / 2) * (1 - smooth((age - 3.8) / 3.2)) * (1 + .1 * Math.sin(t * 5.7) + .06 * Math.sin(t * 11.3)) : 0;
       if (fireUniform.value !== boost) { fireUniform.value = boost; changed = true; cacheChanged = true; }
       hearth.setBoost(boost); audio.fire(boost);
-      if (boost > 0 && t > crackleAt) { audio.sound('crackle'); crackleAt = t + .07 + Math.random() * .16; }
       const puffAge = t - inhaleAt, puff = puffAge >= 0 && puffAge < 2.2 ? Math.sin(puffAge / 2.2 * Math.PI) : 0;
       for (const e of ember) e.material.emissiveIntensity = .7 + puff * 5;
       if (motion && camera && visible(camera, cigar[0] || smoke)) {
@@ -254,7 +359,7 @@ export function createRoomInteractions({ car, props, metadata, lampUniform, hear
       if (cacheChanged) bump();
       return changed;
     },
-    dispose() { clearTimeout(fireReset); labelTexture?.dispose(); audio.dispose(); for (const m of ownedMaterials) m.dispose(); smokeGeometry.dispose(); },
+    dispose() { clearTimeout(fireReset); clock?.dispose(); audio.dispose(); for (const m of ownedMaterials) m.dispose(); for(const g of ownedGeometries)g.dispose(); smokeGeometry.dispose(); },
   };
   function targetTilt() { return Math.min(.15, onScale.reduce((n, on, i) => n + (on ? masses[i] : 0), 0) * .04); }
 }

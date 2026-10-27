@@ -32,12 +32,13 @@ test("split hosted lighting preserves every half-float and rejects missing or tr
   await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   try {
+    const expectedAsset = { parser: { associations: new Map(), json: {} } };
     const parsed = await loadRoomAsset({ parseAsync(bytes, path) {
       assert.deepEqual(Buffer.from(bytes), binary);
       assert.equal(path, `${base}/`);
-      return "original GLB bytes";
+      return expectedAsset;
     } }, `${base}/room.glb.gz`);
-    assert.equal(parsed, "original GLB bytes");
+    assert.equal(parsed, expectedAsset);
     for (const file of ["whole.gz", "valid.parts.json"]) {
       const texture = await loadFloatResponse(`${base}/${file}`);
       assert.equal(texture.image.width, 2);

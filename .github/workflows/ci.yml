@@ -1,4 +1,4 @@
-name: Rust renderer
+name: The Diamond Express
 on: [push, pull_request]
 permissions:
   contents: read

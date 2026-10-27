@@ -7,7 +7,7 @@ import json
 import os
 import urllib.request
 
-ROOT = os.environ.get("LJ_ROOT", "/Users/heatherholtz/Downloads/CS116A/Renderer/renderer-ai")
+ROOT = os.environ.get("LJ_ROOT", os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 CACHE = os.path.join(ROOT, "workbench/assets/railcar/polyhaven")
 UA = {"User-Agent": "LittleJewelerPortfolio/1.0 (Heather Holtz portfolio; CC0 asset cache)"}
 

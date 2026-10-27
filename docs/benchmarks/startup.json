@@ -1,0 +1,79 @@
+{
+  "measured": "2026-10-23",
+  "hardware": "Apple M1 Max",
+  "conditions": {
+    "browser": "native Chrome/ANGLE Metal",
+    "cssViewport": [
+      1280,
+      720
+    ],
+    "devicePixelRatio": 1,
+    "renderScale": 0.75,
+    "sharedDownloadBytesPerSecond": 5000000,
+    "requestLatencyMs": 40,
+    "readyDefinition": "navigation to true readiness plus two animation frames",
+    "cold": "HTTP cache cleared; GPU caches and background work uncontrolled"
+  },
+  "baselineVersion28": {
+    "runsSeconds": {
+      "cold": [
+        52.98540000009537,
+        52.96270000004768,
+        52.45370000004768
+      ],
+      "warm": [
+        9.043300000190735,
+        8.846199999809265,
+        8.818799999952317
+      ]
+    },
+    "mediansSeconds": {
+      "cold": 52.96270000004768,
+      "warm": 8.846199999809265
+    },
+    "note": "Final v28: one pair plus two pairs in two fresh owned browser profiles. Same shared 40Mbps /40ms server and viewport; GPU cache/background load uncontrolled; root CDP byte totals omit worker downloads."
+  },
+  "smallerAssetsVersion29": {
+    "mediansSeconds": {
+      "cold": 11.594799999952317,
+      "warm": 2.3754000000953672
+    },
+    "runsSeconds": {
+      "cold": [
+        11.6426,
+        11.5948,
+        11.5314
+      ],
+      "warm": [
+        2.4216,
+        2.3583,
+        2.3754
+      ]
+    },
+    "coldPayloadBytes": [
+      47766349,
+      47766349,
+      47766349
+    ],
+    "detailRequests": []
+  },
+  "publicSinglePairSeconds": {
+    "cold": 28.2698,
+    "cached": 5.2045,
+    "note": "Variable Internet connection; not a controlled before/after comparison."
+  },
+  "sourceReports": {
+    "output/startup-fast/final-timing.json": {
+      "sha256": "2b3dfb79a653b683319c9993c63acfed6dfe6d3ffd428b42fc47adce5215d07e"
+    },
+    "output/startup-fast/final-summary.json": {
+      "sha256": "9343426be6ea61cab42dd3010b1ab2a9ee210cb6c4393d0b4b4e169613a37002"
+    },
+    "output/startup-perf/v28-summary.json": {
+      "sha256": "0ae817a44a30a058747e6f44b036df3bd318810616cf94245933d42450eba1e1"
+    },
+    "output/startup-fast/asset-reduction.json": {
+      "sha256": "d21e25dc45747fdf90cc66ef2104a00fa99e23f09cd0cc4dd34f5c847972c257"
+    }
+  }
+}

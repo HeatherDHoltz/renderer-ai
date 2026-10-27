@@ -12,7 +12,7 @@ import sys
 
 import bpy
 
-ROOT = os.environ.get("LJ_ROOT", "/Users/heatherholtz/Downloads/CS116A/Renderer/renderer-ai")
+ROOT = os.environ.get("LJ_ROOT", os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 HERE = os.path.join(ROOT, "workbench/scripts/railcar")
 if HERE not in sys.path:
     sys.path.insert(0, HERE)

@@ -3,36 +3,24 @@
     "file": "railcar-desk-student-lamp.webp",
     "size": 2048,
     "samples": 384,
-    "seconds": 139.11630177497864,
-    "max": 50.22706985473633,
-    "range": 64,
-    "encoding": "linear RGBM8, lossless WebP, full atlas resolution",
-    "encodingMaxAbsoluteError": 0.0876312255859375,
-    "encodingMeanAbsoluteError": 3.80861310986802e-05,
-    "bytes": 194934
+    "range": 128.0,
+    "max": 69.99945831298828,
+    "encoding": "linear RGBM8, lossless WebP"
   },
   "architecture": {
     "file": "railcar-architecture-student-lamp.webp",
     "size": 4096,
     "samples": 256,
-    "seconds": 187.96427297592163,
-    "max": 3.459721326828003,
-    "range": 4,
-    "encoding": "linear RGBM8, lossless WebP, full atlas resolution",
-    "encodingMaxAbsoluteError": 0.0059125423431396484,
-    "encodingMeanAbsoluteError": 2.4836608645273373e-06,
-    "bytes": 1062824
+    "range": 8.0,
+    "max": 6.779369354248047,
+    "encoding": "linear RGBM8, lossless WebP"
   },
   "furnishings": {
     "file": "railcar-furnishings-student-lamp.webp",
     "size": 4096,
     "samples": 256,
-    "seconds": 532.9834847450256,
-    "max": 13.985027313232422,
-    "range": 16,
-    "encoding": "linear RGBM8, lossless WebP, full atlas resolution",
-    "encodingMaxAbsoluteError": 0.024175167083740234,
-    "encodingMeanAbsoluteError": 1.8476484910934232e-05,
-    "bytes": 1506050
+    "range": 32.0,
+    "max": 28.888198852539062,
+    "encoding": "linear RGBM8, lossless WebP"
   }
 }

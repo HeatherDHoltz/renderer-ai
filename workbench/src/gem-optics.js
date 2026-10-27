@@ -42,13 +42,19 @@ export function dielectricFresnel(cosine, etaI, etaT) {
   return (rs * rs + rp * rp) / 2;
 }
 
+const preparedCuts = new WeakMap();
+
 export function makeFacetMaterial(
   geometry,
   environment,
   { ior = 2.417, dispersion = 0.018, absorption = [0.004, 0.004, 0.004] } = {},
 ) {
-  const planes = facetPlanes(geometry);
-  const hierarchy = buildFacetBVH(geometry);
+  let prepared = preparedCuts.get(geometry);
+  if (!prepared) {
+    prepared = { planes: facetPlanes(geometry), hierarchy: buildFacetBVH(geometry) };
+    preparedCuts.set(geometry, prepared);
+  }
+  const { planes, hierarchy } = prepared;
   const tree = new THREE.DataTexture(
     hierarchy.data,
     hierarchy.data.length / 4,

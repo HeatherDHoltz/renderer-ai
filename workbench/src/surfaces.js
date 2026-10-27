@@ -24,7 +24,6 @@ export async function loadSurfaces(renderer) {
     woodNormal,
     woodRough,
     hdr,
-    forest,
   ] = await Promise.all([
     load("velvet-color.jpg", true, 2),
     load("velvet-normal.jpg", false, 2),
@@ -35,9 +34,6 @@ export async function loadSurfaces(renderer) {
     load("wood-roughness.jpg"),
     new HDRLoader().loadAsync(
       new URL("../assets/materials/hdri-workshop.hdr", import.meta.url).href,
-    ),
-    new HDRLoader().loadAsync(
-      new URL("../assets/materials/window-forest.hdr", import.meta.url).href,
     ),
   ]);
   hdr.mapping = THREE.EquirectangularReflectionMapping;
@@ -51,13 +47,11 @@ export async function loadSurfaces(renderer) {
     velvet,
     redVelvet,
     wood,
-    forest,
     hdr,
     environment,
     dispose() {
       environment.dispose();
       hdr.dispose();
-      forest.dispose();
       for (const t of [
         velvetColor,
         velvetNormal,

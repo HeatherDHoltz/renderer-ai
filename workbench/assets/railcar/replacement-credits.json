@@ -1,0 +1,29 @@
+[
+  {
+    "name": "grandfather_clock",
+    "creator": "Wille Evensson",
+    "url": "https://sketchfab.com/3d-models/5dfff9d9c87f44cba61fb83179b0e3e2",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "downloadedGlbSha256": "acf89a8814964cbfbdf5d9e51e5a9e0668867887913ba58312dab8ba0c0067dc",
+    "changes": "Placement, separation of moving parts, preserved source-resolution textures, bit-exact image packing, static irradiance lighting and live material response."
+  },
+  {
+    "name": "floor_globe",
+    "creator": "Chris Torres",
+    "url": "https://sketchfab.com/3d-models/0318ad51a7294885b452ff4f408353ba",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "downloadedGlbSha256": "d0d2d82e96508da1ba8f4e3c2bd9a4a9ee6b722bb5c8e03e8e5921e6b576f06c",
+    "changes": "Placement, separation of moving parts, preserved source-resolution textures, bit-exact image packing, static irradiance lighting and live material response."
+  },
+  {
+    "name": "cigar_and_ashtray",
+    "creator": "Miguel Ad\u00e3o",
+    "url": "https://sketchfab.com/3d-models/74159cc31f974bcd95ba923a5bc052a6",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "downloadedGlbSha256": "1ca581d030f102be3e4e05f3d9934d04ce5fc144c76f3c211da6f1060259688e",
+    "changes": "Placement, separation of moving parts, preserved source-resolution textures, bit-exact image packing, static irradiance lighting and live material response."
+  }
+]

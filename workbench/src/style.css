@@ -2144,7 +2144,7 @@ dialog h2 {
 /* Loading: a softly focused still of the car, then the live room fades in. */
 .workshop-game .loading {
   overflow: hidden;
-  transition: opacity 0.9s ease;
+  transition: opacity 0.2s ease;
 }
 .loading-poster {
   position: absolute;

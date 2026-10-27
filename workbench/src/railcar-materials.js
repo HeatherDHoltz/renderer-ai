@@ -119,19 +119,69 @@ float ljDamask(vec3 b) {
 }
 `;
 
+// Keep material downloads from flooding the connection ahead of lighting worker
+// modules. Reserve textures immediately so later material creation joins this
+// queue instead of starting duplicate/deferred requests outside it.
+const imageQueues = new WeakMap();
+function queueImage(loader, url, texture, resolve, reject) {
+  let queue = imageQueues.get(loader);
+  if (!queue) { queue = {active: 0, pending: []}; imageQueues.set(loader, queue); }
+  const drain = () => {
+    while (queue.active < 6 && queue.pending.length) queue.pending.shift()();
+  };
+  queue.pending.push(() => {
+    queue.active++;
+    const finish = () => { queue.active--; drain(); };
+    try {
+      loader.load(url, loaded => {
+        texture.image = loaded.image;
+        texture.needsUpdate = true;
+        resolve(texture);
+        finish();
+      }, undefined, error => { reject(error); finish(); });
+    } catch (error) { reject(error); finish(); }
+  });
+  drain();
+}
+
 function texture(loader, cache, url, srgb, aniso, flip = true) {
   const key = url + (srgb ? "|srgb" : "") + (flip ? "" : "|noflip");
   if (!cache.has(key)) {
-    const t = loader.load(url);
+    let loaded, failed;
+    const ready = new Promise((resolve, reject) => { loaded = resolve; failed = reject; });
+    ready.catch(() => {});
+    const t = new THREE.Texture();
+    t.userData.ready = ready;
     // Box/damask lookups use Blender's own UV convention (flipped image rows);
     // bakes on glTF UVs must not be flipped.
     t.flipY = flip;
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.wrapS = t.wrapT = flip ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
     t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
     t.anisotropy = aniso;
     cache.set(key, t);
+    queueImage(loader, url, t, loaded, failed);
   }
   return cache.get(key);
+}
+
+// Use the same texture objects, color spaces and UV conventions as runtime
+// materials, but discover their requests before geometry has finished loading.
+export async function preloadMaterialTextures(specs, loader, cache, base, aniso, renderer) {
+  const pending = [];
+  const add = (file, srgb, flip = true) => {
+    if (file) pending.push(texture(loader, cache, base + file, srgb, aniso, flip).userData.ready
+      .then(t => { renderer?.initTexture(t); }));
+  };
+  for (const spec of specs) {
+    if (spec.kind === "box") {
+      add(spec.maps.color, true); add(spec.maps.rough, false);
+      if (spec.space !== "object") add(spec.maps.normal, false);
+    } else if (spec.kind === "damask") add(spec.mask, false);
+    else if (spec.kind === "uvbake" || spec.kind === "atlas") {
+      add(spec.color, true, false); add(spec.orm, false, false); add(spec.normal, false, false);
+    }
+  }
+  await Promise.all(pending);
 }
 
 // Box-projected (parallax-corrected) reflections of the room probe: each
@@ -202,6 +252,15 @@ export function railcarMaterial(name, spec, ctx) {
   }
   const uniforms = { ljProbeDielectric: { value: ctx.probeDielectric ?? 1 }, ljRgbm: { value: ctx.rgbm }, ljLightRgbm: { value: ctx.lightRange ?? ctx.rgbm } };
   const defines = {};
+  if (ctx.safeInterior) Object.assign(uniforms, {
+    ljSafeOpen: ctx.safeInterior.openness,
+    ljSafeCenter: {value:ctx.safeInterior.center},
+  });
+  if (ctx.safeBaked) Object.assign(uniforms, {
+    ljSafeDoorAngle:ctx.safeBaked.angle,
+    ljSafeHalf:{value:ctx.safeBaked.records[1].texture},ljSafeFull:{value:ctx.safeBaked.records[2].texture},
+    ljSafeHalfRange:{value:ctx.safeBaked.records[1].range},ljSafeFullRange:{value:ctx.safeBaked.records[2].range},
+  });
   const fixtures = ctx.live ? (ctx.fixtureSources || []) : [];
   if (fixtures.length) Object.assign(uniforms, {
     ljFixturePosition: {value: fixtures.map(f => new THREE.Vector3(...f.position))},
@@ -224,7 +283,8 @@ export function railcarMaterial(name, spec, ctx) {
     Object.assign(uniforms, {
       ljColorMap: { value: tex(maps.color, true) },
       ljRoughMap: { value: maps.rough ? tex(maps.rough, false) : null },
-      ljNormalMap: { value: maps.normal ? tex(maps.normal, false) : null },
+      // Object-space boxes already skip this normal branch below.
+      ljNormalMap: { value: maps.normal && spec.space !== "object" ? tex(maps.normal, false) : null },
       ljScale: { value: spec.scale },
       ljTint: { value: rgb(spec.tint) },
       ljRoughMul: { value: spec.roughMul ?? 1 },
@@ -428,6 +488,8 @@ export function railcarMaterial(name, spec, ctx) {
         #endif`,
       );
     let pars = COMMON_PARS;
+    if (ctx.safeInterior) pars += 'uniform float ljSafeOpen; uniform vec3 ljSafeCenter;\n';
+    if (ctx.safeBaked) pars += 'uniform float ljSafeDoorAngle,ljSafeHalfRange,ljSafeFullRange; uniform sampler2D ljSafeHalf,ljSafeFull;\n';
     if (fixtures.length) pars += `uniform vec3 ljFixturePosition[${fixtures.length}], ljFixturePower[${fixtures.length}];
       uniform float ljFixtureLampMask[${fixtures.length}], ljFixtureLampOn;\n`;
     if (ctx.interactive && !ctx.live) pars += `uniform sampler2D ljStudentLampMap;
@@ -476,6 +538,10 @@ export function railcarMaterial(name, spec, ctx) {
         vec3 ljIllumination = ${["diffuse", "irradiance"].includes(spec.bakedResponseMode)
           ? "texture2D(ljClothResponse, vLightMapUv).rgb"
           : "ljL.rgb * ljL.a * ljLightRgbm"};
+        ${ctx.safeBaked ? `vec4 ljHalf=texture2D(ljSafeHalf,vLightMapUv),ljFull=texture2D(ljSafeFull,vLightMapUv);
+        ljIllumination=ljSafeDoorAngle<.7853981634
+          ? mix(ljIllumination,ljHalf.rgb*ljHalf.a*ljSafeHalfRange,clamp(ljSafeDoorAngle/.7853981634,0.,1.))
+          : mix(ljHalf.rgb*ljHalf.a*ljSafeHalfRange,ljFull.rgb*ljFull.a*ljSafeFullRange,clamp((ljSafeDoorAngle-.7853981634)/1.0367255757,0.,1.));` : ''}
         ${ctx.interactive ? `vec4 ljLampSample = texture2D(ljStudentLampMap, vLightMapUv);
         ljIllumination = max(vec3(0.), ljIllumination - (1. - ljStudentLampOn) * ljLampSample.rgb * ljLampSample.a * ljStudentLampRange);
         vec3 ljFireDelta = ljInteractiveFirePosition - ljPos;
@@ -517,6 +583,13 @@ export function railcarMaterial(name, spec, ctx) {
     }
     reflectedLight.indirectDiffuse += material.diffuseColor * ljFixtureIrradiance;` : ""}
   reflectedLight.directSpecular *= ${specular.toFixed(3)};
+  ${ctx.safeInterior ? `// Only inward-facing carcass surfaces are occluded by the door.
+  float ljInside = step(.15, dot(normalize(ljNrm), normalize(ljSafeCenter-ljPos)));
+  float ljDoorTransmission = mix(1., .018 + .982 * ljSafeOpen, ljInside);
+  reflectedLight.directDiffuse *= ljDoorTransmission;
+  reflectedLight.indirectDiffuse *= ljDoorTransmission;
+  reflectedLight.directSpecular *= ljDoorTransmission;
+  reflectedLight.indirectSpecular *= ljDoorTransmission;` : ''}
   #ifdef USE_CLEARCOAT
     clearcoatSpecularDirect *= ${specular.toFixed(3)};
   #endif
@@ -531,7 +604,7 @@ export function railcarMaterial(name, spec, ctx) {
     shader.fragmentShader = fs;
     ctx.box?.patch(shader);
   };
-  const key = `railcar-v11-fixtures-${fixtures.length}-interactive-${!!ctx.interactive}|${kind}|${Object.keys(defines).sort().join(",")}|${specular}|${ctx.box ? "box" : ""}|${ctx.live ? `live-${ctx.liveLight ?? 0.42}` : "baked"}|${!!spec.bakedResponse}-${spec.bakedResponseMode || "combined"}|${ctx.shadowFloor ?? 1}`;
+  const key = `railcar-v13-safe-${!!ctx.safeInterior}-${!!ctx.safeBaked}-fixtures-${fixtures.length}-interactive-${!!ctx.interactive}|${kind}|${Object.keys(defines).sort().join(",")}|${specular}|${ctx.box ? "box" : ""}|${ctx.live ? `live-${ctx.liveLight ?? 0.42}` : "baked"}|${!!spec.bakedResponse}-${spec.bakedResponseMode || "combined"}|${ctx.shadowFloor ?? 1}`;
   m.customProgramCacheKey = () => key;
   return m;
 }

@@ -45,7 +45,8 @@ const scene = new THREE.Scene();
 const bench = makeBenchObjects(scene, geometries, materials, surfaces, new THREE.PointLight());
 bench.select('gem', 'diamond');
 bench.select('metal', 'gold', 8);
-for (const c of Object.values(bench.cases)) c.destination = 1;
+// Export a settled pose; the browser animates against wall-clock time.
+for (const c of Object.values(bench.cases)) c.progress = c.destination = 1;
 bench.animate(100, null, false);
 scene.updateMatrixWorld(true);
 

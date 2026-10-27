@@ -7,7 +7,7 @@ import bpy
 from geo import FLOOR, box, cyl, sphere, lathe, coll, anchor, adopt
 from mats import G, TEX, runtime
 
-PAINT_DIR = "/Users/heatherholtz/Downloads/CS116A/Renderer/renderer-ai/workbench/assets/railcar/paintings"
+PAINT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../assets/railcar/paintings"))
 
 
 def binding_material():
@@ -227,8 +227,8 @@ def globe(loc, M, c, tex_path):
     g = G("rc antique globe")
     t = g.n("ShaderNodeTexImage")
     t.image = bpy.data.images.load(tex_path, check_existing=True)
-    t.projection = "SPHERE"
-    g.L(g.n("ShaderNodeTexCoord").outputs["Object"], t.inputs["Vector"])
+    t.projection = "FLAT"
+    g.L(g.n("ShaderNodeTexCoord").outputs["UV"], t.inputs["Vector"])
     g.set("Base Color", t.outputs[0])
     g.b.inputs["Roughness"].default_value = 0.35
     g.b.inputs["Coat Weight"].default_value = 0.6
@@ -242,7 +242,7 @@ def globe(loc, M, c, tex_path):
     gl = bpy.data.objects.new("globe", me)
     c.objects.link(gl)
     gl.location = (x, y, cz)
-    gl.rotation_euler = (0, math.radians(23.4), math.radians(95))
+    gl.rotation_euler = (0, math.radians(23.4), 0)
     for p in me.polygons:
         p.use_smooth = True
     me.materials.append(g.m)

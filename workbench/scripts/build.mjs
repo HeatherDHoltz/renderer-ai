@@ -1,6 +1,7 @@
 import { cp, mkdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { prepareCuts } from "./prepare-cuts.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const dist = path.join(root, "dist");
@@ -25,6 +26,10 @@ await cp(path.join(root, "assets"), path.join(dist, "assets"), {
   recursive: true,
   filter: (src) => !authoringOnly.some((p) => src === p || src.startsWith(p + path.sep)),
 });
+// The globe now samples its centered geographic source directly at runtime.
+await mkdir(path.join(dist,'assets/railcar/textures'),{recursive:true});
+await cp(path.join(root,'assets/railcar/textures/antique-globe.jpg'),path.join(dist,'assets/railcar/textures/antique-globe.jpg'));
+await prepareCuts(path.join(dist, "assets"));
 console.log(
   "Built dist/ with local modules, meshes, and credited reference renders.",
 );

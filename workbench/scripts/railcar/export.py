@@ -46,7 +46,7 @@ import numpy as np
 from mathutils import Vector
 from cycles_random import object_random
 
-ROOT = os.environ.get("LJ_ROOT", "/Users/heatherholtz/Downloads/CS116A/Renderer/renderer-ai")
+ROOT = os.environ.get("LJ_ROOT", os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 OUT = os.path.join(ROOT, "workbench/assets/railcar/export")
 TEXOUT = os.path.join(OUT, "tex")
 TMP = os.path.join(ROOT, "output/railcar/export-tmp")

@@ -18,7 +18,7 @@ import time
 import bpy
 from mathutils import Vector
 
-ROOT = os.environ.get("LJ_ROOT", "/Users/heatherholtz/Downloads/CS116A/Renderer/renderer-ai")
+ROOT = os.environ.get("LJ_ROOT", os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 PH = os.path.join(ROOT, "workbench/assets/railcar/polyhaven")
 OUT = os.path.join(ROOT, "workbench/assets/railcar/export")
 TMP = os.path.join(ROOT, "output/railcar/impostors")

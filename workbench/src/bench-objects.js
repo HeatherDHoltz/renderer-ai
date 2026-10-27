@@ -564,8 +564,11 @@ export function makeBenchObjects(
     targets,
     cases,
     focusBox(id) {
-      for (const [key, c] of Object.entries(cases))
-        c.destination = key === id ? 1 : 0;
+      for (const [key, c] of Object.entries(cases)) {
+        const next=key === id ? 1 : 0;
+        if (c.destination !== next) { c.animationGoal=next; c.animationFrom=c.progress; c.animationStarted=performance.now()/1000; }
+        c.destination=next;
+      }
     },
     boxView(id, aspect) {
       const c = cases[id];
@@ -590,14 +593,15 @@ export function makeBenchObjects(
     animate(time, hover, motion = true) {
       let moving = false;
       for (const c of Object.values(cases)) {
-        c.progress = THREE.MathUtils.damp(
-          c.progress,
-          c.destination,
-          motion ? 4 : 8,
-          time,
-        );
-        if (Math.abs(c.progress - c.destination) < 0.001)
-          c.progress = c.destination;
+        // Finite 1.19s travel matches Heather's selected box recording, in either direction.
+        if (c.animationGoal !== c.destination) {
+          c.animationGoal = c.destination; c.animationFrom = c.progress; c.animationStarted=performance.now()/1000;
+        }
+        if (c.progress !== c.destination) {
+          c.animationTime = Math.min(1.19, performance.now()/1000-c.animationStarted);
+          c.progress = THREE.MathUtils.lerp(c.animationFrom, c.destination, ease(c.animationTime / 1.19));
+          if (c.animationTime >= 1.19) c.progress = c.destination;
+        }
         moving ||= c.progress !== c.destination;
         poseCase(c, c.progress);
       }

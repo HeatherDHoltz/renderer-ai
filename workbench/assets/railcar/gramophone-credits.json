@@ -1,0 +1,9 @@
+{
+  "title": "Vintage Gramophone Game-Asset",
+  "creator": "Rigdhi",
+  "source": "https://sketchfab.com/3d-models/vintage-gramophone-game-asset-e3a21ee0e1004cfea8c13dad50a18034",
+  "requestedAnimatedRepost": "https://sketchfab.com/3d-models/vintage-gramophone-game-asset-by-rigdhi-b0e3c01f844144a2aad07577f47033c0",
+  "license": "CC BY 4.0",
+  "licenseURL": "https://creativecommons.org/licenses/by/4.0/",
+  "adaptations": "Used original creator's unanimated model with intact textures. Separated tonearm, record and fixed crank; added animation pivots and room placement. Creator's 8748 triangles retained. Web maps resized to at most 1024 pixels and encoded as JPEG quality92. Original 4096-pixel body maps retained in Heather's Blender room. New browser animations authored here; repost animation not used."
+}

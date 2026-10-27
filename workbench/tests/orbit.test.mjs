@@ -72,10 +72,11 @@ test("bench zoom reaches close inspection distance and a short step back", () =>
   // About 13 cm from the pivot at this seat (1 unit = 10 cm).
   assert.ok(rig.goal.radius < 1.4);
 });
-test("double-click focus moves close, and adopting poses never ratchets the zoom range", () => {
+test("station focus and adopted poses preserve the station zoom range", () => {
   const { rig, camera } = fixture();
+  rig.station(new THREE.Vector3(1, 2, 3), new THREE.Vector3(1, 0, 0.5));
   const home = rig.homeRadius;
-  rig.focus(new THREE.Vector3(1, -1, 0.5));
+  rig.zoom(0.3);
   assert.ok(Math.abs(rig.goal.radius - home * 0.3) < 1e-12);
   settle(rig, camera);
   // Loupe or case round trips adopt the current (zoomed) pose.
@@ -87,14 +88,11 @@ test("double-click focus moves close, and adopting poses never ratchets the zoom
   rig.home(new THREE.Vector3(0, 3, 8), new THREE.Vector3(0, 0, 0));
   assert.ok(Math.abs(rig.homeRadius - Math.hypot(3, 8)) < 1e-12);
 });
-test("pointer zoom changes pivot toward focus, pullback preserves it, limits remain finite", () => {
+test("zoom retains the selected station pivot and finite limits", () => {
   const { rig, camera } = fixture();
   const point = new THREE.Vector3(3, 1, -4);
   rig.zoom(0.7, point);
-  assert.ok(
-    rig.destination.distanceTo(point) <
-      new THREE.Vector3(0, 0.3, -0.3).distanceTo(point),
-  );
+  assert.deepEqual(rig.destination.toArray(), [0, 0.3, -0.3]);
   const pivot = rig.destination.clone();
   rig.zoom(1 / 0.7, new THREE.Vector3(-4, 2, 0));
   assert.deepEqual(rig.destination, pivot);
@@ -111,9 +109,8 @@ test("pointer zoom changes pivot toward focus, pullback preserves it, limits rem
   rig.zoom(NaN);
   rig.zoom(0);
   assert.ok(Number.isFinite(rig.goal.radius));
-  rig.focus(new THREE.Vector3(100, -100, -100));
-  settle(rig, camera);
-  assert.deepEqual(rig.destination.toArray(), [23, -8.5, -9.5]);
+  assert.deepEqual(rig.destination, pivot);
+  assert.equal(rig.focus, undefined, "arbitrary-point focus is not available");
 });
 test("close orbit keeps the eye outside edited-room cabinet bounds", () => {
   const { rig, camera } = fixture();

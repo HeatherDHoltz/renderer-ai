@@ -149,11 +149,11 @@ function updateLabels() {
   viewer.dataset.tool = state.tool;
   viewer.dataset.background = state.background;
   $("exit-loupe").hidden = state.tool !== "loupe";
-  boxExit.hidden = !state.box;
+  boxExit.hidden = state.tool === "loupe" || (!state.box && (!app || app.focusState.location === "desk"));
   $("loupe-controls").hidden = state.tool !== "loupe";
   const hint = {
     explore:
-      "Drag the ring to turn it · drag the room to explore · scroll to zoom",
+      "Click an area to focus · drag to look around · Escape returns to the desk",
     turn: "Drag jewelry to turn it · drag the room to look around",
     loupe: "Drag to turn the stone · scroll to magnify",
   }[state.tool];
@@ -284,7 +284,7 @@ $("save-photo").addEventListener("click", async () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `little-jeweler-${state.gem}-${state.setting}-${state.metal}.png`;
+    link.download = `diamond-express-${state.gem}-${state.setting}-${state.metal}.png`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 30000);
     announce("Photo saved.");
@@ -414,6 +414,11 @@ function release(event) {
   }
   if (activate?.kind === "box") openBox(activate.value);
   if (activate?.kind === "loupe") setTool("loupe");
+  if (activate?.kind === "location" || activate?.kind === "jewelry") {
+    const location=activate.kind === 'jewelry' ? 'desk' : activate.value;
+    if (location === 'gems' || location === 'metals') openBox(location);
+    else { state.box=null; state.tool='explore'; choose('tool','explore'); app.focusLocation(location); updateLabels(); }
+  }
   if (activate?.kind === "room") activateRoom(activate.value);
   hoverAt(event);
 }
@@ -444,14 +449,6 @@ host.addEventListener(
   },
   { passive: false },
 );
-host.addEventListener("dblclick", (event) => {
-  if (!app || app.transitioning || state.tool === "loupe") return;
-  const p = point(event);
-  app.focus(p.x, p.y);
-  announce(
-    "View focused. Drag to orbit this point; scroll or pinch to move closer.",
-  );
-});
 host.addEventListener("keydown", (event) => {
   if (!app) return;
   const arrows = {
@@ -472,10 +469,6 @@ host.addEventListener("keydown", (event) => {
     if (state.tool === "loupe") changeMagnification(more ? 1 : -1);
     else app.zoom(more ? 0.9 : 1.1);
   }
-  if (event.key.toLowerCase() === "f" && state.tool !== "loupe") {
-    event.preventDefault();
-    app.focus(0.5, 0.5);
-  }
   if (event.key === "Home") {
     event.preventDefault();
     $("reset-view").click();
@@ -487,7 +480,7 @@ document.addEventListener("keydown", (event) => {
     event.altKey ||
     event.ctrlKey ||
     event.metaKey ||
-    event.target.closest("input,textarea,select")
+    (event.key !== "Escape" && event.target.closest("input,textarea,select"))
   )
     return;
   const tool = { 1: "explore", 2: "turn", 3: "loupe" }[event.key];
@@ -496,9 +489,12 @@ document.addEventListener("keydown", (event) => {
     host.focus({ preventScroll: true });
   }
   if (event.key === "Escape") {
+    event.preventDefault();
     if (!$("cabinet").hidden) setDrawer(false);
-    else if (state.box) boxExit.click();
-    else if (state.tool !== "explore") setTool("explore");
+    state.box=null; state.auto=false;
+    app?.setAutoTurn(false); setTool('explore');
+    app?.focusBox(null);
+    updateLabels(); announce('Returning to the desk.');
   }
 });
 
@@ -553,29 +549,35 @@ function fatal(error) {
 }
 function activateRoom(id) {
   if (!app) return;
+  const previous=app.focusState.location;
   announce(app.activateRoom(id));
+  if (app.focusState.location !== previous) { state.tool='explore'; choose('tool','explore'); }
+  if (app.focusState.location !== state.box) state.box=null;
+  updateLabels();
   const r = app.roomState;
   for (const b of document.querySelectorAll('[data-room]')) {
     const id = b.dataset.room;
-    const value = id === 'lamp' ? r.lampOn : id === 'gramophone' ? r.gramophone : id === 'safe' ? !!r.safeGoal : id.startsWith('weight-') ? r.weights[Number(id.slice(-1))] : null;
+    const value = id === 'lamp' ? r.lampOn : id === 'gramophone-tonearm' ? !!r.armGoal : id === 'safe-control' ? !!r.safeGoal : id === 'clock-door' ? !!r.clock?.doorGoal : id.startsWith('weight-') ? r.weights[Number(id.slice(-1))] : null;
     if (value !== null) b.setAttribute('aria-pressed', String(value));
   }
 }
 for (const b of document.querySelectorAll('[data-room]')) b.addEventListener('click', () => activateRoom(b.dataset.room));
-let railAmbience = null, railWanted = false;
-$('toggle-rail-ambience').addEventListener('click', async () => {
-  if (!railAmbience) railAmbience = (await import('./ambience.js')).createAmbience();
+let railWanted = true;
+$('toggle-rail-ambience').setAttribute('aria-pressed', 'true');
+$('toggle-rail-ambience').addEventListener('click', () => {
   railWanted = !railWanted;
-  if (railAmbience.on !== (railWanted && soundEnabled)) railAmbience.toggle();
+  app?.setTrain(railWanted);
   $('toggle-rail-ambience').setAttribute('aria-pressed', String(railWanted));
 });
+// Room fire begins with a real visitor gesture, including ordinary ring dragging.
+document.addEventListener('pointerdown', () => app?.unlockAudio());
+document.addEventListener('keydown', () => app?.unlockAudio());
 let soundEnabled = true;
 $("toggle-sound").textContent = "Sound on";
 $("toggle-sound").setAttribute("aria-pressed", "true");
 $("toggle-sound").addEventListener("click", () => {
   soundEnabled = !soundEnabled;
   app?.setSound(soundEnabled);
-  if (railAmbience && railAmbience.on !== (railWanted && soundEnabled)) railAmbience.toggle();
   $("toggle-sound").textContent = soundEnabled ? "Sound on" : "Sound off";
   $("toggle-sound").setAttribute("aria-pressed", String(soundEnabled));
 });
@@ -612,6 +614,7 @@ async function boot() {
     const { createWorkbench } = await import("./scene.js");
     app = await createWorkbench(host, fatal);
     app.setSound(soundEnabled);
+    app.setTrain(railWanted);
     if (globalThis.__railcar) globalThis.__railcar.app = app;
     if (failed) {
       app.dispose();
@@ -631,9 +634,11 @@ async function boot() {
     updateLabels();
     const loading = $("loading");
     loading.classList.add("fading");
-    setTimeout(() => { if (!failed) loading.hidden = true; }, 950);
+    setTimeout(() => { if (!failed) loading.hidden = true; }, 250);
+    performance.mark("lj:interactive-ready");
     viewer.dataset.ready = "true";
     viewer.dataset.mode = "interactive";
+
   } catch (error) {
     fatal(error);
   }

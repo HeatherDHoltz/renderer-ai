@@ -40,7 +40,7 @@ export function readGemOBJ(text, smooth = false) {
   return geometry;
 }
 
-// Exact float32 positions/uint32 indices from the source OBJ, packed at build.
+// Float32 positions/uint32 indices from the selected packed mesh (original/LOD).
 export function readSettingBinary(buffer) {
   const header = new DataView(buffer);
   if (header.getUint32(0, true) !== 0x31474e52)

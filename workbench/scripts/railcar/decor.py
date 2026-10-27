@@ -1,6 +1,7 @@
 """Room-scale dressing outside the desk: library bay, globe, paintings, fireside
 table, microscope stand, and the examination lighting for the jewellery."""
 import math
+import os
 import bpy
 from mathutils import Vector
 from geo import FLOOR, DESK_TOP, box, cyl, sphere, lathe, coll, anchor, adopt
@@ -9,7 +10,7 @@ import library
 import trinkets
 
 CARPET = FLOOR + 0.04
-GLOBE_TEX = "/Users/heatherholtz/Downloads/CS116A/Renderer/renderer-ai/workbench/assets/railcar/textures/antique-globe.jpg"
+GLOBE_TEX = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../assets/railcar/textures/antique-globe.jpg"))
 
 
 def round_table(name, loc, M, c, r=1.9, h=7.0, marble=True):

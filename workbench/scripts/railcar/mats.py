@@ -7,7 +7,7 @@ import json
 import os
 import bpy
 
-ROOT = os.environ.get("LJ_ROOT", "/Users/heatherholtz/Downloads/CS116A/Renderer/renderer-ai")
+ROOT = os.environ.get("LJ_ROOT", os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 TEX = os.path.join(ROOT, "workbench/assets/railcar/textures")
 MAT_ASSETS = os.path.join(ROOT, "workbench/assets/materials")
 

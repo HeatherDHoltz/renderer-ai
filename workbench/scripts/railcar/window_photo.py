@@ -18,7 +18,7 @@ import sys
 import numpy as np
 from PIL import Image, ImageFilter
 
-ROOT = os.environ.get("LJ_ROOT", "/Users/heatherholtz/Downloads/CS116A/Renderer/renderer-ai")
+ROOT = os.environ.get("LJ_ROOT", os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 SRC = os.path.join(ROOT, "output/railcar/alps-photo")
 OUT = os.path.join(ROOT, "workbench/assets/railcar/export/window")
 PHOTO = os.path.join(SRC, "mannlichen-original.jpg")

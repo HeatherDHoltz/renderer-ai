@@ -49,6 +49,9 @@ def run():
  for o in sources:
   if selected(o.name) and not o.name.startswith('safe ') and not any(m['object']==o.name and m['triangles'] for m in mapping):raise ValueError('Unmatched moving object: '+o.name)
  record={'version':1,'geometryHashes':{g:hashlib.sha256((ASSET/f'railcar-{g}.glb').read_bytes()).hexdigest() for g in ('desk','furnishings')},'objects':details,'parts':mapping,'lamp':app(bpy.data.objects['student lamp flame'].matrix_world.translation),'fixtures':[{'name':o.name,'position':app(o.matrix_world.translation),'color':list(o.data.color),'power':float(o.data.energy)} for o in s.objects if o.type=='LIGHT' and o.data.type=='POINT' and not o.hide_render and ('flame' in o.name or 'visible bulb' in o.name)]}
+ mer=bpy.data.objects.get('globe meridian')
+ if mer:
+  record['globeProjection']={'north':app((mer.matrix_world.to_3x3()@Vector((0,1,0))).normalized()),'prime':app((mer.matrix_world.to_3x3()@Vector((1,0,0))).normalized())}
  (ASSET/'railcar-interactions.json').write_text(json.dumps(record,separators=(',',':')))
  # Individually authored props use normal PBR materials; no images or remote dependencies.
  c=coll('interactive dressing'); new=[]
