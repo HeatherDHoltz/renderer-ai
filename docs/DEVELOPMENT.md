@@ -32,6 +32,12 @@ Use the saved room rather than the default generator, which recreates an older l
 
 Stage exports under `output/`, then compare matching Cycles/browser views before installation. [Geometry checks](../workbench/scripts/railcar/AUDIT.md) · [Lighting rules](../workbench/scripts/railcar/APPEARANCE.md).
 
+## Workshop interaction
+
+The still image and gallery work without JavaScript or WebGL. Small touch devices start with the still; `?interactive` opens 3D and `?static` selects the still. Loading shows an indeterminate activity mark and actual startup stages; scene controls stay hidden and inert until the workbench is ready. Failures retain the still and offer the gallery and retry.
+
+The first action is dragging the ring or choosing a stone from the left case. Focused cases show the current stone or metal and a selection hint. The nonmodal Controls drawer puts gemstone and setting choices first, with exploration help in a disclosure. Its sticky close button and Escape close the drawer without changing the scene; Lift the loupe closes it before inspection. Keep touch instructions and controls usable on narrow and short screens.
+
 ## Delivery and checks
 
 Local builds retain the original assets. [Delivery preparation](STARTUP_FAST_DELIVERY.md) creates smaller copies and optional sharper textures for hosting. Do not replace the originals with delivery assets.
