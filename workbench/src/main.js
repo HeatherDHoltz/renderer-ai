@@ -68,10 +68,10 @@ boxExit.addEventListener("click", () => {
 viewer.append(boxExit);
 const collectionShortcuts = document.createElement("div");
 collectionShortcuts.className = "collection-shortcuts";
-$("cabinet").querySelector(".stone-section").before(collectionShortcuts);
+$("cabinet").querySelector(".inspection-section").append(collectionShortcuts);
 for (const [id, label] of [
-  ["gems", "Open the stone box"],
-  ["metals", "Open the ring collection"],
+  ["gems", "View stone case"],
+  ["metals", "View ring case"],
 ]) {
   const b = document.createElement("button");
   b.type = "button";
@@ -142,6 +142,16 @@ function updateLoupe() {
   $("loupe-more").disabled = state.zoom >= 6;
   app?.setLoupe(0, 0, state.zoom);
 }
+function getExploreHint() {
+  const selectAction = touchInput.matches ? "tap" : "click";
+  if (state.box === "gems")
+    return `${names[state.gem]} selected · ${selectAction} a stone in either tray`;
+  if (state.box === "metals")
+    return `${METALS[state.metal].name} · ${$("finish-value").textContent.toLowerCase()} · ${selectAction} a ring to change it`;
+  if (!app || app.focusState.location === "desk")
+    return `Drag the ring to turn it · ${selectAction} the left case to choose a stone`;
+  return `Drag to look around · ${touchInput.matches ? "pinch" : "scroll"} to zoom`;
+}
 function updateLabels() {
   $("finish").value = state.finish;
   $("finish-value").textContent =
@@ -153,9 +163,7 @@ function updateLabels() {
   boxExit.hidden = state.tool === "loupe" || (!state.box && (!app || app.focusState.location === "desk"));
   $("loupe-controls").hidden = state.tool !== "loupe";
   const hint = {
-    explore: !state.box && (!app || app.focusState.location === "desk")
-      ? `Drag the ring to turn it · ${touchInput.matches ? "tap" : "click"} the left case to choose a stone`
-      : `Drag to look around · ${touchInput.matches ? "pinch" : "scroll"} to zoom`,
+    explore: getExploreHint(),
     turn: "Drag jewelry to turn it · drag the room to look around",
     loupe: touchInput.matches
       ? "Drag to turn the stone · use + and − to magnify"
@@ -495,7 +503,10 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "Escape") {
     event.preventDefault();
-    if (!$("cabinet").hidden) setDrawer(false);
+    if (!$("cabinet").hidden) {
+      setDrawer(false);
+      return;
+    }
     state.box=null; state.auto=false;
     app?.setAutoTurn(false); setTool('explore');
     app?.focusBox(null);

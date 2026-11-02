@@ -167,28 +167,15 @@
           aria-label="Gemstone and material controls"
         >
           <div class="drawer-heading">
-            <span>THE GEM DRAWER</span
+            <h2>Bench controls</h2
             ><button
               type="button"
               id="close-cabinet"
-              aria-label="Close gem drawer"
+              aria-label="Close bench controls"
             >
               ✕
             </button>
           </div>
-          <section class="cabinet-section">
-            <h2>Take a closer look</h2>
-            <button type="button" id="inspect-loupe" aria-keyshortcuts="3">Lift the loupe</button>
-            <p class="keyboard-help">
-              Drag the ring to turn it and the room to look around. Scroll or pinch
-              to zoom toward the selected area. Click the globe, gramophone, safe, clock, fireplace or boxes to focus.
-            </p>
-            <p class="keyboard-help">
-              Keyboard: 1 then arrow keys to look around, 2 then arrow keys to turn
-              the jewelry, 3 for the loupe. + and − zoom, Home resets the view,
-              and Escape returns to the bench.
-            </p>
-          </section>
           <section class="cabinet-section stone-section">
             <div class="section-label">
               <span>01</span>
@@ -292,6 +279,10 @@
               <span>Polished</span><span>Brushed</span>
             </div>
           </section>
+          <section class="cabinet-section inspection-section">
+            <h2>Take a closer look</h2>
+            <button type="button" id="inspect-loupe" aria-keyshortcuts="3">Lift the loupe</button>
+          </section>
           <section class="cabinet-section light-section">
             <div class="section-label">
               <span>03</span>
@@ -355,6 +346,19 @@
               </div>
             </div>
           </section>
+          <details class="cabinet-help">
+            <summary>How to explore</summary>
+            <p class="keyboard-help">
+              Drag the ring to turn it and the room to look around. Scroll or pinch
+              to zoom toward the selected area. Select the globe, gramophone, safe,
+              clock, fireplace or boxes to focus. Use Back to the bench to return.
+            </p>
+            <p class="keyboard-help">
+              Keyboard: 1 then arrow keys to look around, 2 then arrow keys to turn
+              the jewelry, 3 for the loupe. + and − zoom, Home resets the view,
+              and Escape returns to the bench.
+            </p>
+          </details>
           <details class="room-controls">
             <summary>Around the room</summary>
             <p>Click the objects in the room, or use these controls.</p>

@@ -2093,14 +2093,17 @@ dialog h2 {
 }
 .collection-shortcuts {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 7px;
-  margin: 0 0 24px;
+  margin: 8px 0 0;
 }
 .collection-shortcuts button {
-  padding: 12px;
+  min-height: 44px;
+  padding: 8px;
   border: 1px solid #aaa98f;
   border-radius: 5px;
   text-align: left;
+  font-size: 12px;
 }
 
 /* Four tactile tools stay within a narrow phone view. */
@@ -2233,6 +2236,17 @@ body.static-mode #cabinet {
 }
 .opening-note p { margin: 0 0 16px; }
 .opening-note .loading-progress { margin-bottom: 8px; }
+.opening-note .loading-progress::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: middle;
+  animation: breathe 1.5s ease-in-out infinite;
+}
 .opening-note a {
   display: inline-flex;
   align-items: center;
@@ -2336,6 +2350,62 @@ body.static-mode .discovery { display: none; }
 .room-actions button { font: inherit; font-size: .78rem; border: 1px solid #8f795866; border-radius: .3rem; padding: .5rem .65rem; background: transparent; color: inherit; cursor: pointer; }
 .room-actions button[aria-pressed="true"] { background: #8f795826; }
 .room-actions button:focus-visible { outline: 2px solid #b5945c; outline-offset: 2px; }
+
+/* The nonmodal drawer puts material choices before optional guidance. */
+.workshop-game .drawer-heading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 8px 12px 8px 16px;
+  background: #eee7d5;
+  color: #344034;
+}
+.workshop-game .drawer-heading h2 {
+  margin: 0;
+  font: 600 14px/1.4 var(--sans);
+  letter-spacing: 0;
+}
+.workshop-game .drawer-heading button {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 5px;
+  font-size: 16px;
+}
+.workshop-game .cabinet-section {
+  padding: 16px;
+}
+.workshop-game .gem-options button,
+.workshop-game .metal-options button,
+.workshop-game .segmented button,
+.workshop-game .room-actions button {
+  min-height: 44px;
+  font-size: 12px;
+}
+.workshop-game .gem-options button {
+  scroll-margin-top: 72px;
+}
+.workshop-game .inspection-section h2 {
+  margin: 0;
+  font: 19px/1.4 var(--serif);
+}
+.workshop-game .cabinet-help,
+.workshop-game .room-controls {
+  padding: 8px 16px 16px;
+  border-top: 1px solid #b6ac8b55;
+}
+.workshop-game .cabinet-help summary,
+.workshop-game .room-controls summary {
+  min-height: 44px;
+  align-content: center;
+  cursor: pointer;
+  font-size: 13px;
+}
+.workshop-game .room-controls p {
+  opacity: 1;
+  font-size: 12px;
+  line-height: 1.6;
+}
 
 /* Readable, reachable controls retain the room's green and brass language. */
 .workshop-game nav button,
