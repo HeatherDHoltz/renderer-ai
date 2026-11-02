@@ -40,9 +40,10 @@
           id="toggle-cabinet"
           aria-expanded="false"
           aria-controls="cabinet"
+          disabled
         >
-          ◇ &nbsp; Bench controls</button
-        ><button type="button" id="toggle-sound" aria-pressed="false">
+          Controls</button
+        ><button type="button" id="toggle-sound" aria-pressed="false" disabled>
           Sound off</button
         ><a href="./gallery.html" id="open-notes">
           Render journal <span aria-hidden="true">↗</span></a
@@ -66,7 +67,7 @@
       >
         <div class="bench-column">
           <div class="viewer" id="viewer">
-            <div class="viewer-tools">
+            <div class="viewer-tools" inert>
               <button
                 type="button"
                 id="reset-view"
@@ -92,21 +93,26 @@
               id="render-host"
               tabindex="0"
               role="region"
+              inert
               aria-label="Drag the ring or stone to turn it. Drag the room to look around, scroll or pinch to zoom, and click the globe, gramophone, safe, clock, fireplace or boxes to focus. Click the cases to choose gemstones and metals. Click the loupe to look closer. Keys 1 and arrows move the view; 2 and arrows turn the jewelry; 3 lifts the loupe. Home resets, Escape returns to the bench."
             ></div>
             <div id="object-hint" class="object-hint" hidden></div>
             <div class="loading static" id="loading">
               <img class="loading-poster" src="./assets/railcar/poster.jpg"
                 alt="A jeweler’s desk and gemstone cases in an ornate Victorian railcar" fetchpriority="high" />
-              <span class="opening-note">Opening the interactive car… <a href="./gallery.html">View images while it loads ↗</a></span>
-              <span class="loading-progress" id="loading-progress" aria-live="polite"></span>
+              <div class="opening-note">
+                <h2>A jeweler’s workshop aboard a Victorian train.</h2>
+                <p>Turn the ring, choose a gemstone, and look closer through the loupe.</p>
+                <p class="loading-progress" id="loading-progress" role="status" aria-atomic="true">Opening the 3D workshop…</p>
+                <a href="./gallery.html">View the image gallery ↗</a>
+              </div>
               <div class="static-note" id="static-note">
                 <p>
-                  The Diamond Express · a view of the railcar.
-                  Explore the gallery on any device, or try the interactive room.
+                  A jeweler’s workshop aboard a Victorian train.
+                  Explore the still-image gallery on any device.
                 </p>
                 <a href="./gallery.html">View the gallery</a>
-                <a href="?interactive" id="open-interactive">Explore in 3D</a>
+                <a href="?interactive" id="open-interactive" hidden>Explore in 3D</a>
               </div>
             </div>
             <div class="render-error" id="render-error" hidden>
@@ -133,7 +139,7 @@
               <output id="loupe-zoom" aria-live="polite">2×</output>
               <button type="button" id="loupe-more" aria-label="Increase loupe magnification">+</button>
             </div>
-            <div class="viewer-bottom">
+            <div class="viewer-bottom" inert>
               <span id="interaction-hint"
                 ><svg viewBox="0 0 20 20" aria-hidden="true">
                   <path
@@ -157,6 +163,7 @@
           class="cabinet"
           id="cabinet"
           hidden
+          inert
           aria-label="Gemstone and material controls"
         >
           <div class="drawer-heading">

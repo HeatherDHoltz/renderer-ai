@@ -2161,38 +2161,40 @@ dialog h2 {
 }
 .loading-progress {
   font-family: var(--sans, system-ui);
-  font-size: 12px;
-  letter-spacing: 0.14em;
+  font-size: 13px;
   color: #e3c188;
-  min-height: 1em;
+  min-height: 1.5em;
 }
 .loading.static .loading-poster {
   filter: none;
   transform: none;
 }
-.loading.static > span {
+.loading.static .opening-note {
   display: none;
 }
 /* The still has no live bench: hide its controls. */
 body.static-mode .viewer-bottom,
 body.static-mode .tool-tray,
 body.static-mode #loupe-controls,
-body.static-mode #toggle-cabinet {
+body.static-mode #toggle-cabinet,
+body.static-mode .exit-loupe,
+body.static-mode #object-hint,
+body.static-mode #cabinet {
   display: none;
 }
 .static-note {
   position: absolute;
   left: 16px;
-  right: 16px;
   bottom: 24px;
-  max-width: 520px;
-  margin: 0 auto;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: rgba(20, 26, 20, 0.78);
+  width: min(376px, calc(100% - 32px));
+  padding: 20px;
+  border: 1px solid #ddc68b38;
+  border-radius: 8px;
+  background: #14201bf2;
   backdrop-filter: blur(6px);
   font-size: 14px;
-  text-align: center;
+  line-height: 1.6;
+  text-align: left;
 }
 .static-note p {
   margin: 0 0 10px;
@@ -2216,20 +2218,34 @@ body.static-mode #toggle-cabinet {
   position: absolute;
   bottom: 24px;
   left: 16px;
-  right: 16px;
-  width: fit-content;
-  margin: auto;
-  padding: 12px 18px;
-  border-radius: 12px;
-  background: #14201be8;
-  font: 14px/1.7 var(--sans, system-ui);
-  text-align: center;
+  width: min(376px, calc(100% - 32px));
+  padding: 20px;
+  border: 1px solid #ddc68b38;
+  border-radius: 8px;
+  background: #14201bf2;
+  font: 14px/1.6 var(--sans, system-ui);
+  text-align: left;
 }
-.opening-note a { color: #f3e6c8; display: block; }
-.loading-progress { position: absolute; bottom: 105px; }
+.opening-note h2 {
+  margin: 0 0 8px;
+  color: #f3e6c8;
+  font: 22px/1.2 var(--serif);
+}
+.opening-note p { margin: 0 0 16px; }
+.opening-note .loading-progress { margin-bottom: 8px; }
+.opening-note a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #f3e6c8;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
 .static-note a,
 .render-error a {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: #f3e6c8;
   padding: 8px 12px;
   text-underline-offset: 3px;
@@ -2320,3 +2336,75 @@ body.static-mode .discovery { display: none; }
 .room-actions button { font: inherit; font-size: .78rem; border: 1px solid #8f795866; border-radius: .3rem; padding: .5rem .65rem; background: transparent; color: inherit; cursor: pointer; }
 .room-actions button[aria-pressed="true"] { background: #8f795826; }
 .room-actions button:focus-visible { outline: 2px solid #b5945c; outline-offset: 2px; }
+
+/* Readable, reachable controls retain the room's green and brass language. */
+.workshop-game nav button,
+.workshop-game nav > a {
+  min-height: 44px;
+  font-size: 12px;
+}
+.workshop-game .viewer-tools button,
+.workshop-game .loupe-controls button {
+  width: 44px;
+  height: 44px;
+}
+.workshop-game .viewer-bottom #auto-turn,
+.workshop-game .exit-loupe {
+  min-height: 44px;
+  font-size: 12px;
+}
+.workshop-game #interaction-hint {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.workshop-game .viewer-bottom {
+  justify-content: space-between;
+}
+.workshop-game .viewer-bottom #auto-turn {
+  position: static;
+  flex-shrink: 0;
+}
+.workshop-game .viewer-bottom #interaction-hint {
+  max-width: min(560px, calc(100% - 120px));
+}
+.workshop-game .loupe-controls {
+  font-size: 14px;
+}
+@media (pointer: coarse) {
+  .workshop-game .exit-loupe kbd { display: none; }
+}
+@media (max-width: 600px) {
+  .workshop-game .site-header {
+    padding-inline: 12px;
+  }
+  .workshop-game nav {
+    gap: 6px;
+  }
+  .workshop-game nav button {
+    padding-inline: 10px;
+  }
+  .workshop-game .viewer-tools {
+    top: 77px;
+    right: 12px;
+  }
+  .workshop-game .viewer-bottom,
+  .workshop-game .viewer[data-tool="loupe"] .viewer-bottom {
+    left: 12px;
+    right: 12px;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .workshop-game .viewer[data-tool="loupe"] .viewer-bottom {
+    bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+  .workshop-game .viewer-bottom #interaction-hint {
+    padding: 8px;
+    max-width: calc(100% - 106px);
+  }
+  .opening-note,
+  .static-note {
+    bottom: max(16px, env(safe-area-inset-bottom));
+    padding: 16px;
+  }
+}

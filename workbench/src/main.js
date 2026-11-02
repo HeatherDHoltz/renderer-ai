@@ -25,6 +25,7 @@ const names = Object.fromEntries(
 );
 const host = $("render-host"),
   viewer = $("viewer");
+const touchInput = matchMedia("(pointer: coarse)");
 const metalChoices = document.querySelector(
   '[role="group"][aria-label="Metal"]',
 );
@@ -58,7 +59,7 @@ const boxExit = document.createElement("button");
 boxExit.id = "exit-box";
 boxExit.className = "exit-loupe";
 boxExit.hidden = true;
-boxExit.textContent = "← Back to the bench · Esc";
+boxExit.textContent = "← Back to the bench";
 boxExit.addEventListener("click", () => {
   state.box = null;
   app?.focusBox(null);
@@ -152,10 +153,13 @@ function updateLabels() {
   boxExit.hidden = state.tool === "loupe" || (!state.box && (!app || app.focusState.location === "desk"));
   $("loupe-controls").hidden = state.tool !== "loupe";
   const hint = {
-    explore:
-      "Click an area to focus · drag to look around · Escape returns to the desk",
+    explore: !state.box && (!app || app.focusState.location === "desk")
+      ? `Drag the ring to turn it · ${touchInput.matches ? "tap" : "click"} the left case to choose a stone`
+      : `Drag to look around · ${touchInput.matches ? "pinch" : "scroll"} to zoom`,
     turn: "Drag jewelry to turn it · drag the room to look around",
-    loupe: "Drag to turn the stone · scroll to magnify",
+    loupe: touchInput.matches
+      ? "Drag to turn the stone · use + and − to magnify"
+      : "Drag to turn the stone · scroll to magnify",
   }[state.tool];
   $("interaction-hint").textContent = hint;
   document
@@ -176,7 +180,7 @@ function setTool(value) {
   app?.setTool(value);
   updateLabels();
   announce(
-    `${value === "explore" ? "Explore" : value === "turn" ? "Turn" : "Loupe"} selected. ${value === "loupe" ? "Drag to turn the jewelry inside the eyepiece. Escape returns to the bench." : ""}`,
+    `${value === "explore" ? "Explore" : value === "turn" ? "Turn" : "Loupe"} selected. ${value === "loupe" ? "Drag to turn the jewelry inside the eyepiece. Use Back to the bench to return." : ""}`,
   );
 }
 
@@ -476,6 +480,7 @@ host.addEventListener("keydown", (event) => {
 });
 document.addEventListener("keydown", (event) => {
   if (
+    viewer.dataset.ready !== "true" ||
     $("notes-dialog").open ||
     event.altKey ||
     event.ctrlKey ||
@@ -533,6 +538,7 @@ function fatal(error) {
   viewer.dataset.mode = "fallback";
   viewer.dataset.ready = "false";
   viewer.dataset.error = failure.code;
+  setControlsAvailable(false);
   $("loading").hidden = false;
   $("loading").classList.remove("fading");
   $("loading").classList.add("static");
@@ -595,19 +601,34 @@ function showStatic() {
   viewer.dataset.mode = "static";
   $("loading").classList.add("static");
   $("static-note").hidden = false;
+  $("open-interactive").hidden = false;
+  setControlsAvailable(false);
 }
-host.addEventListener("loadprogress", (e) => {
-  const { loaded, total } = e.detail;
-  if (total > 0)
-    $("loading-progress").textContent = `${Math.round((100 * loaded) / total)}%`;
+host.addEventListener("loadprogress", () => {
+  if (viewer.dataset.mode !== "loading") return;
+  const status = $("loading-progress");
+  const message = "Loading the room and jewelry…";
+  if (status.textContent !== message) status.textContent = message;
 });
+function setControlsAvailable(available) {
+  document.querySelectorAll(
+    ".viewer-tools, #render-host, .viewer-bottom, #cabinet, #loupe-controls, .exit-loupe",
+  ).forEach((element) => { element.inert = !available; });
+  $("toggle-cabinet").disabled = !available;
+  $("toggle-sound").disabled = !available;
+  host.setAttribute("aria-busy", String(viewer.dataset.mode === "loading"));
+  if (!available) {
+    $("cabinet").hidden = true;
+    $("toggle-cabinet").setAttribute("aria-expanded", "false");
+  }
+}
 async function boot() {
   if (prefersStatic()) {
     showStatic();
     return;
   }
-  document.body.classList.remove("static-mode");
   viewer.dataset.mode = "loading";
+  setControlsAvailable(false);
   $("static-note").hidden = true;
   $("loading").classList.remove("static");
   try {
@@ -638,6 +659,10 @@ async function boot() {
     performance.mark("lj:interactive-ready");
     viewer.dataset.ready = "true";
     viewer.dataset.mode = "interactive";
+    document.body.classList.remove("static-mode");
+    setControlsAvailable(true);
+    if (loading.contains(document.activeElement)) host.focus({ preventScroll: true });
+    announce(`The workshop is ready. ${$("interaction-hint").textContent}.`);
 
   } catch (error) {
     fatal(error);
