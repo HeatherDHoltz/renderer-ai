@@ -280,16 +280,27 @@ $("reset-view").addEventListener("click", () => {
 });
 $("auto-turn").addEventListener("click", () => {
   const next = !state.auto;
-  if (next && (state.tool !== "turn" || state.box)) setTool("turn");
+  if (next && (state.box || !["turn", "loupe"].includes(state.tool))) setTool("turn");
   state.auto = next;
   app?.setAutoTurn(next);
   updateLabels();
   announce(next ? "Slow turn started." : "Slow turn paused.");
 });
+let photoNoticeTimer;
+function showPhotoStatus(message, transient = false) {
+  clearTimeout(photoNoticeTimer);
+  const notice = $("photo-status");
+  notice.textContent = message;
+  notice.hidden = false;
+  announce(message);
+  if (transient) photoNoticeTimer = setTimeout(() => { notice.hidden = true; }, 6000);
+}
 $("save-photo").addEventListener("click", async () => {
   if (!app) return;
   const button = $("save-photo");
-  button.disabled = true;
+  if (button.getAttribute("aria-disabled") === "true") return;
+  button.setAttribute("aria-disabled", "true");
+  showPhotoStatus("Preparing photo…");
   try {
     const blob = await app.photo();
     if (!blob) throw new Error("Image export unavailable");
@@ -299,11 +310,11 @@ $("save-photo").addEventListener("click", async () => {
     link.download = `diamond-express-${state.gem}-${state.setting}-${state.metal}.png`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 30000);
-    announce("Photo saved.");
+    showPhotoStatus("Photo ready — check your downloads.", true);
   } catch {
-    announce("The photo could not be saved. Please try again.");
+    showPhotoStatus("Could not prepare photo. Try the camera again.");
   } finally {
-    button.disabled = false;
+    button.removeAttribute("aria-disabled");
   }
 });
 const pointers = new Map();

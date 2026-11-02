@@ -2408,6 +2408,24 @@ body.static-mode .discovery { display: none; }
 }
 
 /* Readable, reachable controls retain the room's green and brass language. */
+.workshop-game #save-photo[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: progress;
+}
+.workshop-game .photo-status {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: max-content;
+  max-width: min(260px, calc(100vw - 32px));
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #ddc68b38;
+  border-radius: 5px;
+  background: #14201bf2;
+  color: #f3e6c8;
+  font: 13px/1.5 var(--sans);
+}
 .workshop-game nav button,
 .workshop-game nav > a {
   min-height: 44px;
@@ -2444,6 +2462,12 @@ body.static-mode .discovery { display: none; }
   .workshop-game .exit-loupe kbd { display: none; }
 }
 @media (max-width: 600px) {
+  .workshop-game .photo-status {
+    top: 0;
+    right: calc(100% + 8px);
+    width: min(260px, calc(100vw - 128px));
+    padding: 8px;
+  }
   .workshop-game .site-header {
     padding-inline: 12px;
   }

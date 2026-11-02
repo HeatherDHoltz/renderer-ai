@@ -1155,12 +1155,23 @@ export async function createWorkbench(host, onFatalError) {
     // Ambient-only frames (fire, forest) hold 30 fps; interaction draws every vsync.
     const ambientOnly = !needsFrame && !moving && !objectsMoving && !caustics.settling;
     if (ambientOnly ? now - lastDraw > 1000 / 30 - 4 : needsFrame || now - lastDraw > 16) {
-      if (auto && inspection === 0) {
+      if (auto && (inspection === 0 || inspection === 1)) {
+        const center = inspection === 1
+          ? stone.localToWorld(stone.geometry.boundingBox.getCenter(new THREE.Vector3()))
+          : null;
         const q = new THREE.Quaternion().setFromAxisAngle(
           new THREE.Vector3(0, 1, 0),
           Math.min((now - lastDraw) / 1000, 0.1) * 0.22,
         );
         spin.quaternion.premultiply(q).normalize();
+        // Keep the loupe's stone centered, as manual specimen rotation does.
+        if (center) {
+          scene.updateMatrixWorld(true);
+          const next = stone.localToWorld(
+            stone.geometry.boundingBox.getCenter(new THREE.Vector3()),
+          );
+          spin.position.add(center.sub(next));
+        }
         key.shadow.needsUpdate = true;
         workshop.sun.shadow.needsUpdate = true;
       }
